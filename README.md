@@ -1,6 +1,6 @@
 # Near Field
 
-A 2D shooting demo for exploring movement inertia, curved trajectories, reflections, and static force fields.
+A 2D shooting demo for exploring movement inertia and curved trajectories. Move, aim, and choose where your bullets turn bright and become damaging. Each character carries a force field that slows and deflects incoming bright bullets; sideways movement at launch and during defense can reinforce or cancel the deflection.
 
 Concept and gameplay design by czrorz. Code written by ChatGPT.
 

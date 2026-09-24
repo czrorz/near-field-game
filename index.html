@@ -160,12 +160,10 @@ html[lang="en"] .setting output{white-space:nowrap}
  <details class="settings" id="settings">
   <summary>说明与设置</summary>
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
-  <p class="notes">用 WASD 或左摇杆移动，鼠标选择射击方向和子弹变亮的起点，旁边的线段表示它接下来能够造成伤害的路段。点击发射一组子弹；按住射击，装填完成后会立即发射下一组。连发期间仍可移动和瞄准。头顶的短条是生命值；圆内三角在开火时变暗，装填时逐渐变亮。</p>
-  <p class="notes">暗点子弹可以看见，但不能造成伤害；它不受人物力场影响，但会受地图场影响。你看不到对方选定的变亮位置。子弹变亮后，进入对方力场会减速、转弯，弯曲方向由发射时的横向移动和对方当前的横向移动共同决定。双方的暗点子弹相碰会抵消，亮点子弹则会穿过其他子弹。命中造成一点伤害，并推开对手。</p>
-  <p class="notes">变亮起点距离人物中心至少 100；如果此时还在对手身体内，会等到离开身体后再变亮。能够造成伤害的路段不会因此延长，走完这段路程后子弹就会消失。所有距离都按子弹实际走过的路线计算。下方数值双方共用，展开设置时游戏暂停。</p>
-  <p class="notes">深色实心墙吸收子弹，亮边墙和椭圆边界反弹子弹；暗弹和亮弹都受影响，人物不能穿墙。反弹仍按累计路程变亮和消失。星球外的淡圆区域吸引暗弹和亮弹，双方效果相同；人物不受影响。切换地图会重开本局。</p>
-  <p class="notes">双旋涡中，左侧顺时针、右侧逆时针改变子弹轨迹；暗弹和亮弹都受影响，人物不受影响。</p>
-  <p class="notes">横流带左侧向下、右侧向上推动暗弹和亮弹，人物不受影响。吸收迷宫的墙会吸收所有子弹。</p>
+  <p class="notes">用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有随身力场，使进入其中的对方亮弹减速、偏转；射手开火时的横移与对手当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。</p>
+  <p class="notes">鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。</p>
+  <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰会抵消，亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。</p>
+  <p class="notes">墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。切换地图会重开本局。</p>
   <section class="settings-group" aria-labelledby="movement-settings">
    <h2 id="movement-settings">人物与移动</h2>
    <div class="settings-grid field-grid">
@@ -474,12 +472,10 @@ const ENGLISH={
  "对手": "Opponent",
  "暗点：无伤害": "Dim: harmless",
  "亮点：可命中": "Bright: can hit",
- "用 WASD 或左摇杆移动，鼠标选择射击方向和子弹变亮的起点，旁边的线段表示它接下来能够造成伤害的路段。点击发射一组子弹；按住射击，装填完成后会立即发射下一组。连发期间仍可移动和瞄准。头顶的短条是生命值；圆内三角在开火时变暗，装填时逐渐变亮。": "Move with WASD or the left stick. The mouse sets your firing direction and where your bullets turn bright; the line shows the distance over which they can deal damage. Click to fire a burst, or hold to fire the next burst as soon as reloading finishes. You can keep moving and aiming throughout a burst. The short bar above each character shows health. The triangle inside the circle turns dark when a burst starts and gradually brightens as you reload.",
- "暗点子弹可以看见，但不能造成伤害；它不受人物力场影响，但会受地图场影响。你看不到对方选定的变亮位置。子弹变亮后，进入对方力场会减速、转弯，弯曲方向由发射时的横向移动和对方当前的横向移动共同决定。双方的暗点子弹相碰会抵消，亮点子弹则会穿过其他子弹。命中造成一点伤害，并推开对手。": "Dim bullets are visible, but cannot deal damage. Character fields do not affect them, but map fields do. You cannot see where your opponent has chosen to make their bullets turn bright. Once bright, bullets slow down and curve inside the opposing field. Their curve depends on the shooter's sideways movement at launch and the opponent's current sideways movement. Opposing dim bullets cancel each other on contact; bright bullets pass through other bullets. Each hit deals one point of damage and knocks the opponent back.",
- "变亮起点距离人物中心至少 100；如果此时还在对手身体内，会等到离开身体后再变亮。能够造成伤害的路段不会因此延长，走完这段路程后子弹就会消失。所有距离都按子弹实际走过的路线计算。下方数值双方共用，展开设置时游戏暂停。": "The brightening point must be at least 100 units from the character's center. If a bullet is inside the opponent at that point, it stays dim until it leaves their body. This does not extend its damaging path; the bullet disappears when that path ends. Distances follow the bullet's actual route. The settings below apply to both sides. Opening settings pauses the game.",
- "深色实心墙吸收子弹，亮边墙和椭圆边界反弹子弹；暗弹和亮弹都受影响，人物不能穿墙。反弹仍按累计路程变亮和消失。星球外的淡圆区域吸引暗弹和亮弹，双方效果相同；人物不受影响。切换地图会重开本局。": "Dark solid walls absorb bullets; outlined walls and the elliptical boundary reflect them. Both dim and bright bullets interact with walls, which also block characters. Activation and expiry still follow total distance traveled. The faint circular area around the planet attracts both dim and bright bullets equally for both sides; characters are unaffected. Changing maps starts a new round.",
- "双旋涡中，左侧顺时针、右侧逆时针改变子弹轨迹；暗弹和亮弹都受影响，人物不受影响。": "In Twin vortices, the left field turns bullets clockwise and the right field counterclockwise. Both dim and bright bullets are affected; characters are not.",
- "横流带左侧向下、右侧向上推动暗弹和亮弹，人物不受影响。吸收迷宫的墙会吸收所有子弹。": "Crossflow pushes both dim and bright bullets downward in the left band and upward in the right band; characters are unaffected. The walls in Absorbing maze absorb all bullets.",
+ "用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有随身力场，使进入其中的对方亮弹减速、偏转；射手开火时的横移与对手当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。": "Move with WASD or the left stick, aim with the mouse, and click to fire. Bullets start dim and become damaging when they turn bright. Each character carries a force field that slows and deflects incoming bright bullets. The shooter's sideways movement at launch and the opponent's current sideways movement can reinforce or cancel the deflection. Dim bullets are unaffected by character fields.",
+ "鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。": "The mouse sets where your bullets turn bright; the nearby line marks the following damaging path. Your opponent's chosen starting point is hidden. Brightening starts at least 100 units from the shooter's center. A bullet still inside the opponent at that point stays dim until it leaves. All distances follow the actual flight path. Delayed brightening does not extend the damaging path; the bullet disappears when that path ends.",
+ "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰会抵消，亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets cancel each other on contact; bright bullets pass through other bullets. Each hit deals one point of damage and knocks the target back. The bar above a character shows health. The inner triangle darkens when firing starts and gradually brightens during reload. Settings apply to both sides; opening them pauses the game.",
+ "墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。切换地图会重开本局。": "Walls block characters; dark walls absorb bullets and bright-edged walls reflect them. Map fields affect all bullet trajectories, but not characters. Changing maps starts a new round.",
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
  "椭圆比例": "Ellipse ratio",
