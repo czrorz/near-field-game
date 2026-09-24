@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const path=require('node:path');
 const {createGame}=require('./game-harness.cjs');
 
-const game=createGame(path.join(__dirname,'..','near-field.html'));
+const game=createGame(path.join(__dirname,'..','index.html'));
 const results=game.inspect(`(()=>{
  setMap('open');cfg.drag=0;cfg.spinForce=0;cfg.propulsion=300;
  p=createActor(0,600,375);enemy=createActor(1,900,375);

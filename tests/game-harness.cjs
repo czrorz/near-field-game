@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { performance } = require('node:perf_hooks');
 
-const GAME_FILE = path.join(__dirname, '..', 'near-field.html');
+const GAME_FILE = path.join(__dirname, '..', 'index.html');
 
 function createGame(fileOrHtml = GAME_FILE, {
   storage = {}, storageThrows = false, search = '?test',

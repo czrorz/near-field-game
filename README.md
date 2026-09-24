@@ -6,7 +6,7 @@ Concept and gameplay design by czrorz. Code written by ChatGPT.
 
 ## Play
 
-Open `near-field.html` in a browser. The page, styles, game logic, and synthesized sound effects are contained in this single file. No dependencies or build step are required to play.
+Open `index.html` in a browser. The page, styles, game logic, and synthesized sound effects are contained in this single file. No dependencies or build step are required to play.
 
 Choose a map and mode at the top. **Instructions & settings** below the arena contains the controls and five groups of parameters. Opening settings pauses the game; changing maps starts a new round.
 
@@ -16,7 +16,7 @@ The browser uses `localStorage` to remember parameters, map, mode, and language.
 
 | File | Purpose |
 | --- | --- |
-| `near-field.html` | Complete game, distributed as a single standalone file |
+| `index.html` | Complete game, distributed as a single standalone file |
 | `tests/game-harness.cjs` | Offline test environment with mock DOM, Canvas, and storage interfaces |
 | `tests/check-game.cjs` | Entry point for map, projectile, settings, round, and input regression checks |
 | `tests/projectile-expiry.cjs` | Checks projectile lifetime, damaging-path endpoints, and the ordering of wall contacts and hits |
