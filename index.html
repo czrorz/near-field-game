@@ -48,6 +48,7 @@ summary{cursor:pointer;color:var(--muted);font-size:13px;width:fit-content}
 .settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:25px;margin:22px 0 17px}
 .setting label{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-bottom:10px}
 .setting output{color:var(--ink);font-variant-numeric:tabular-nums}
+.setting select{width:100%}
 input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
 .settings-foot{display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .check{display:flex;align-items:center;gap:7px}
@@ -162,7 +163,7 @@ html[lang="en"] .setting output{white-space:nowrap}
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
   <p class="notes">用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有随身力场，使进入其中的对方亮弹减速、偏转；射手开火时的横移与对手当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。</p>
   <p class="notes">鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。</p>
-  <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰会抵消，亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。</p>
+  <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。</p>
   <p class="notes">墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。切换地图会重开本局。</p>
   <section class="settings-group" aria-labelledby="movement-settings">
    <h2 id="movement-settings">人物与移动</h2>
@@ -257,6 +258,26 @@ html[lang="en"] .setting output{white-space:nowrap}
      <div class="range-bounds" aria-hidden="true"><span>50</span><span>800</span></div>
      <p class="setting-help">从选定的变亮起点开始，子弹还能飞过多长的路程。弯曲弹道也按实际路程计算。</p>
     </div>
+    <div class="setting">
+     <label for="initialSpinSign">初始带旋方向<output id="initialSpinSign-value">+1</output></label>
+     <select id="initialSpinSign" aria-describedby="initialSpinSign-help">
+      <option value="1" selected>正向（+）</option>
+      <option value="-1">反向（−）</option>
+     </select>
+     <p class="setting-help" id="initialSpinSign-help">正向使初始带旋产生的偏转与发射时的横移同向，反向则相反。双方共用，仅影响新发射的子弹。</p>
+    </div>
+    <div class="setting">
+     <label for="launchSpinScale">发射带旋系数<output id="launchSpinScale-value">1.0</output></label>
+     <input id="launchSpinScale" type="range" min="0" max="4" step="0.1" value="1">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>4</span></div>
+     <p class="setting-help">单独调节发射时横移留下的旋转强度，0 表示不带旋。仅影响新发射的子弹，不改变接收者横移的作用。</p>
+    </div>
+    <div class="setting">
+     <label for="annihilationChance">相消概率<output id="annihilationChance-value">50%</output></label>
+     <input id="annihilationChance" type="range" min="0" max="100" step="5" value="50">
+     <div class="range-bounds" aria-hidden="true"><span>0%</span><span>100%</span></div>
+     <p class="setting-help">双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。</p>
+    </div>
    </div>
   </section>
   <section class="settings-group" aria-labelledby="field-settings">
@@ -279,6 +300,12 @@ html[lang="en"] .setting output{white-space:nowrap}
      <input id="spinForce" type="range" min="0" max="10800" step="50" value="5400">
      <div class="range-bounds" aria-hidden="true"><span>0</span><span>10800</span></div>
      <p class="setting-help">越大，子弹越容易转弯。发射时的横移给子弹留下自旋，对方的横移会加强或抵消这个效果。</p>
+    </div>
+    <div class="setting">
+     <label for="receiverSpinScale">接收横移偏转系数<output id="receiverSpinScale-value">1.0</output></label>
+     <input id="receiverSpinScale" type="range" min="0" max="4" step="0.1" value="1">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>4</span></div>
+     <p class="setting-help">单独调节接收者当前横移产生的偏转，0 可关闭。实时生效，不改变子弹发射时已经携带的旋转。</p>
     </div>
    </div>
    <label class="check field-visibility"><input id="showField" type="checkbox">显示力场圈</label>
@@ -410,12 +437,12 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 const DEFAULTS={
  maxHealth:10,actorRadius:15,actorAspect:0,moveSpeed:235,inertia:.45,
  burstCount:3,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
- bulletSize:100,launchSpeed:800,propulsion:300,band:200,
+ annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,band:200,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,
  radius:150,drag:.020,spinForce:5400,baseKnockback:24,impactScale:.26,
  difficulty:'easy',autofire:true,sound:true,showField:false,showRange:true
 };
 const cfg={...DEFAULTS};
-const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','band','radius','drag','spinForce'];
+const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','band','initialSpinSign','launchSpinScale','annihilationChance','radius','drag','spinForce','receiverSpinScale'];
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
@@ -474,7 +501,7 @@ const ENGLISH={
  "亮点：可命中": "Bright: can hit",
  "用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有随身力场，使进入其中的对方亮弹减速、偏转；射手开火时的横移与对手当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。": "Move with WASD or the left stick, aim with the mouse, and click to fire. Bullets start dim and become damaging when they turn bright. Each character carries a force field that slows and deflects incoming bright bullets. The shooter's sideways movement at launch and the opponent's current sideways movement can reinforce or cancel the deflection. Dim bullets are unaffected by character fields.",
  "鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。": "The mouse sets where your bullets turn bright; the nearby line marks the following damaging path. Your opponent's chosen starting point is hidden. Brightening starts at least 100 units from the shooter's center. A bullet still inside the opponent at that point stays dim until it leaves. All distances follow the actual flight path. Delayed brightening does not extend the damaging path; the bullet disappears when that path ends.",
- "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰会抵消，亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets cancel each other on contact; bright bullets pass through other bullets. Each hit deals one point of damage and knocks the target back. The bar above a character shows health. The inner triangle darkens when firing starts and gradually brightens during reload. Settings apply to both sides; opening them pauses the game.",
+ "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets have a chance to cancel each other on contact; otherwise both pass through; bright bullets pass through other bullets. Each hit deals one point of damage and knocks the target back. The bar above a character shows health. The inner triangle darkens when firing starts and gradually brightens during reload. Settings apply to both sides; opening them pauses the game.",
  "墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。切换地图会重开本局。": "Walls block characters; dark walls absorb bullets and bright-edged walls reflect them. Map fields affect all bullet trajectories, but not characters. Changing maps starts a new round.",
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
@@ -507,6 +534,16 @@ const ENGLISH={
  "命中与击退": "Hits & knockback",
  "初始弹速": "Initial bullet speed",
  "子弹刚发射时每秒飞过的距离。": "Distance per second immediately after launch.",
+ "初始带旋方向": "Initial spin direction",
+ "发射带旋系数": "Launch spin multiplier",
+ "相消概率": "Cancellation chance",
+ "双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。": "When opposing dim bullets collide, they disappear together with this probability; otherwise they pass through. Both sides use the same rule. With the probability unchanged, the same pair always gives the same outcome. The bot cannot foresee the random outcome.",
+ "接收横移偏转系数": "Receiver movement deflection multiplier",
+ "单独调节发射时横移留下的旋转强度，0 表示不带旋。仅影响新发射的子弹，不改变接收者横移的作用。": "Independently scales spin from sideways movement at firing; 0 gives no launch spin. Affects newly fired bullets only, without changing the receiver's movement contribution.",
+ "单独调节接收者当前横移产生的偏转，0 可关闭。实时生效，不改变子弹发射时已经携带的旋转。": "Independently scales deflection from the receiver's current sideways movement; 0 disables it. Takes effect immediately without changing existing launch spin.",
+ "正向（+）": "Positive (+)",
+ "反向（−）": "Negative (−)",
+ "正向使初始带旋产生的偏转与发射时的横移同向，反向则相反。双方共用，仅影响新发射的子弹。": "Positive makes launch spin bend bullets in the direction of sideways movement at firing; negative reverses it. Shared by both sides. Applies only to newly fired bullets.",
  "持续推进加速度": "Forward acceleration",
  "没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。": "Speed gained each second without drag. With an initial speed of 800 and acceleration of 300, speed reaches 1100 after one second.",
  "杀伤路段长度": "Damaging path length",
@@ -567,7 +604,7 @@ let language='zh',staticTranslations=[],attributeTranslations=[],lastAnnouncemen
 let overlayContent={title:'',copy:'',button:'开始对战',values:{}};
 try{if(localStorage.getItem('near-field-language')==='en')language='en';}catch{}
 function tr(text,values={}){return(language==='en'?(ENGLISH[text]??text):text).replace(/\{(\w+)\}/g,(_,key)=>String(values[key]??''));}
-function formatSetting(name,value){if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='drag'?value.toFixed(3):name==='impactScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value}):name==='reloadTime'?tr('{value} 秒',{value:value.toFixed(1)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':name==='padRange'?String(Math.round(value)):String(value);}
+function formatSetting(name,value){if(name==='annihilationChance')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='initialSpinSign'?(value===1?'+1':'−1'):name==='drag'?value.toFixed(3):name==='impactScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value}):name==='reloadTime'?tr('{value} 秒',{value:value.toFixed(1)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':name==='padRange'?String(Math.round(value)):String(value);}
 function refreshOverlayText(){const {title,copy,button,values}=overlayContent;$('overlay-title').textContent=tr(title,values);$('overlay-copy').textContent=tr(copy,values);$('start').textContent=tr(button);}
 function applyLanguage(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=tr('近场');
@@ -823,11 +860,12 @@ function curveWallHit(wall,x0,y0,x1,y1,r){
  return{t:upper,x:point.x+point.nx*radius,y:point.y+point.ny*radius,nx:point.nx,ny:point.ny,wall};
 }
 // Broad-phase rejection handles nearly every projectile substep.
-function firstWallHit(x0,y0,x1,y1,r){
+function firstWallHit(x0,y0,x1,y1,r,projectile=false){
  const dx=x1-x0,dy=y1-y0,aa=dx*dx+dy*dy;let best=null,limit=Infinity;
  for(const wall of WALLS){
-  if(wall.kind){const hit=curveWallHit(wall,x0,y0,x1,y1,r);if(hit&&hit.t<limit){limit=hit.t;best=hit;}continue;}
-  const radius=wall.r+r;
+  const bodyRadius=projectile&&wall.type==='reflect'?0:r;
+  if(wall.kind){const hit=curveWallHit(wall,x0,y0,x1,y1,bodyRadius);if(hit&&hit.t<limit){limit=hit.t;best=hit;}continue;}
+  const radius=wall.r+bodyRadius;
   // Horizontal capsules reuse the vertical solve by exchanging local axes.
   const horizontal=!!wall.horizontal,wx=horizontal?wall.y:wall.x,wy0=horizontal?wall.x0:wall.y0,wy1=horizontal?wall.x1:wall.y1;
   const lx0=horizontal?y0:x0,ly0=horizontal?x0:y0,lx1=horizontal?y1:x1,ly1=horizontal?x1:y1,ldx=horizontal?dy:dx,ldy=horizontal?dx:dy;
@@ -996,7 +1034,7 @@ function brakingWeight(x,y,carrier=p){
 // current transverse motion. Receiver motion attracts the bullet along that
 // transverse direction, so opposite signed contributions cancel. Side force is perpendicular to
 // velocity. Fixed map fields add their own position-dependent acceleration.
-function receiverSpin(carrier,dx,dy){return carrier?(dx*(carrier.vy||0)-dy*(carrier.vx||0))/ACTOR.speed:0;}
+function receiverSpin(carrier,dx,dy){return carrier?cfg.receiverSpinScale*(dx*(carrier.vy||0)-dy*(carrier.vx||0))/ACTOR.speed:0;}
 function effectiveSpin(b,vx,vy,carrier=b.team===0?enemy:p){
  const speed=Math.hypot(vx,vy),dx=speed>1e-8?vx/speed:b.dx||0,dy=speed>1e-8?vy/speed:b.dy||0;
  return(b.spin||0)+receiverSpin(carrier,dx,dy);
@@ -1166,7 +1204,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
   const activeCarrier=fieldActive&&carrier&&carrier.team!==b.team?carrier:null;
   const speed=Math.hypot(b.vx,b.vy),thrust=cfg.propulsion;
   const receiverSpeed=activeCarrier?Math.hypot(activeCarrier.vx||0,activeCarrier.vy||0):0;
-  const receiverMotion=receiverSpeed/ACTOR.speed;
+  const receiverMotion=cfg.receiverSpinScale*receiverSpeed/ACTOR.speed;
   const sideForce=activeCarrier?Math.abs(cfg.spinForce)*(Math.abs(b.spin||0)+receiverMotion):0;
   // A conservative bound for each adaptive RK4 step. The lateral force does
   // no physical work, but is included here to bound intermediate stage speeds.
@@ -1208,7 +1246,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
    projectileRK4(b,eventTime,activeCarrier,fieldActive);b.travel=boundary;
    advanced=eventTime;
   }
-  const wallHit=firstWallHit(initial.x,initial.y,b.x,b.y,b.r);
+  const wallHit=firstWallHit(initial.x,initial.y,b.x,b.y,b.r,true);
   if(wallHit){
    advanced*=wallHit.t;Object.assign(b,initial);
    projectileRK4(b,advanced,activeCarrier,fieldActive);b.x=wallHit.x;b.y=wallHit.y;
@@ -1262,11 +1300,14 @@ function shotRangePlan(actor,range,aim=actor.aim||0){
  const intervalEnd=fieldStart+cfg.band;
  return{fieldStart,intervalEnd,start:offset+fieldStart,end:offset+intervalEnd};
 }
-function shotSpin(actor,aim){return (Math.cos(aim)*(actor.vy||0)-Math.sin(aim)*(actor.vx||0))/ACTOR.speed;}
+function shotSpin(actor,aim){return cfg.launchSpinScale*cfg.initialSpinSign*(Math.cos(aim)*(actor.vy||0)-Math.sin(aim)*(actor.vx||0))/ACTOR.speed;}
 function fire(actor,team,aim=actor.aim,range=actor.range){
  const dx=Math.cos(aim),dy=Math.sin(aim),distance=muzzleDistance(actor,aim)+3;
  const {fieldStart,intervalEnd}=shotRangePlan(actor,range,aim),x=actor.x+dx*distance,y=actor.y+dy*distance;
- const b={id:++shotId,x,y,px:x,py:y,dx,dy,spin:shotSpin(actor,aim),launchSpeed:cfg.launchSpeed,vx:dx*cfg.launchSpeed,vy:dy*cfg.launchSpeed,r:ACTOR.shotRadius,team,age:0,dead:false,freshSpawn:true,travel:0,prevTravel:0,fieldStart,intervalEnd,intervalLength:intervalEnd-fieldStart,armingDelay:cfg.armingDelay??0,armedAge:0,damageStart:null,damageEnd:intervalEnd,damageLength:0};startProjectileDamage(b);bullets.push(b);
+ const b={id:++shotId,x,y,px:x,py:y,dx,dy,spin:shotSpin(actor,aim),launchSpeed:cfg.launchSpeed,vx:dx*cfg.launchSpeed,vy:dy*cfg.launchSpeed,r:ACTOR.shotRadius,team,age:0,dead:false,freshSpawn:true,travel:0,prevTravel:0,fieldStart,intervalEnd,intervalLength:intervalEnd-fieldStart,armingDelay:cfg.armingDelay??0,armedAge:0,damageStart:null,damageEnd:intervalEnd,damageLength:0};
+ // Both teams draw once at launch; random values stay hidden from the bot.
+ b.collisionRandom=Math.random();
+ startProjectileDamage(b);bullets.push(b);
  playShotSound(actor);
  if(team===0)shots++;return b;
 }
@@ -1337,6 +1378,8 @@ function collisionEvent(b,a){
 // phase at contact is authoritative, even if a bullet activates later in-frame.
 function projectilePairEvent(a,b){
  if(!a||!b||a===b||a.dead||b.dead||a.team===b.team)return null;
+ const sum=a.collisionRandom+b.collisionRandom;
+ if((sum>=1?sum-1:sum)>=cfg.annihilationChance/100)return null;
  const as=a.motionSegments,bs=b.motionSegments;
  if(!Array.isArray(as)||!Array.isArray(bs)||!as.length||!bs.length)return null;
  const radius=a.r+b.r;
@@ -1355,7 +1398,9 @@ function projectilePairEvent(a,b){
  let i=0,j=0;
  while(i<as.length&&j<bs.length){
   const sa=as[i],sb=bs[j],lo=Math.max(0,sa.from,sb.from),hi=Math.min(1,sa.to,sb.to,end);
-  if(sa.phase==='ghost'&&sb.phase==='ghost'&&lo<=hi&&lo<end){
+   if(sa.phase==='ghost'&&sb.phase==='ghost'&&lo<=hi&&lo<end&&
+      Math.min(sa.x0,sa.x1)<=Math.max(sb.x0,sb.x1)+radius&&Math.min(sb.x0,sb.x1)<=Math.max(sa.x0,sa.x1)+radius&&
+      Math.min(sa.y0,sa.y1)<=Math.max(sb.y0,sb.y1)+radius&&Math.min(sb.y0,sb.y1)<=Math.max(sa.y0,sa.y1)+radius){
    const a0=position(sa,lo),b0=position(sb,lo),a1=position(sa,hi),b1=position(sb,hi);
    const x=a0.x-b0.x,y=a0.y-b0.y,dx=(a1.x-a0.x)-(b1.x-b0.x),dy=(a1.y-a0.y)-(b1.y-b0.y);
    const c=x*x+y*y-radius*radius;
@@ -1494,7 +1539,7 @@ function botLearn(bot,observation){
    if(!prev&&source&&!fieldActive&&!mapAffected&&Math.hypot(b.x-source.x,b.y-source.y)<cfg.launchSpeed*.11+35){
     // A launch seen near the shooter supplies a noisy initial spin estimate
     // from visible motion, never the projectile's stored spin.
-    spin=(b.vx*source.vy-b.vy*source.vx)/Math.max(1,speed*ACTOR.speed);confidence=.55;
+    spin=cfg.launchSpinScale*cfg.initialSpinSign*(b.vx*source.vy-b.vy*source.vx)/Math.max(1,speed*ACTOR.speed);confidence=.55;
    }
    if(prev){const dt=frame.time-prev.time,oldSpeed=Math.hypot(prev.vx,prev.vy);
     if(previousActive&&!fieldActive)expired=true;
@@ -1510,7 +1555,7 @@ function botLearn(bot,observation){
       const omega=Math.atan2(prev.vx*b.vy-prev.vy*b.vx,prev.vx*b.vx+prev.vy*b.vy)/dt;
       const nx=(b.vx+prev.vx)/(speed+oldSpeed),ny=(b.vy+prev.vy)/(speed+oldSpeed);
       const estimate=omega*Math.hypot((speed+oldSpeed)*.5,6)/(cfg.spinForce*w)-receiverSpin(body,nx,ny);
-      if(Number.isFinite(estimate)&&Math.abs(estimate)<2){spin=confidence<.3?estimate:spin*.55+estimate*.45;confidence=Math.min(1,confidence+.2);}
+      if(Number.isFinite(estimate)&&Math.abs(estimate)<2*Math.max(1,cfg.launchSpinScale)){spin=confidence<.3?estimate:spin*.55+estimate*.45;confidence=Math.min(1,confidence+.2);}
      }
     }
    }else if(fieldActive){
@@ -1518,7 +1563,8 @@ function botLearn(bot,observation){
     // estimate instead of granting a fresh full interval to a live round.
     used=b.arming?Math.min(cfg.band*.5,speed*(cfg.armingDelay??0)*.5):cfg.band*.65;
    }
-   bot.tracks.set(b.id,{...b,time:frame.time,spin:clamp(spin,-1.6,1.6),confidence,used,armedAt,expired});
+   const spinLimit=1.6*Math.max(1,cfg.launchSpinScale);
+   bot.tracks.set(b.id,{...b,time:frame.time,spin:clamp(spin,-spinLimit,spinLimit),confidence,used,armedAt,expired});
   }
   bot.learnedAt=frame.time;
  }
@@ -1564,7 +1610,7 @@ function botForecastActiveStep(b,dt,body){
    const fraction=until/ds;h*=fraction;ds=until;
    nextSpeed=speed+(nextSpeed-speed)*fraction;endX=oldX+(endX-oldX)*fraction;endY=oldY+(endY-oldY)*fraction;
   }
-  const wallHit=firstWallHit(oldX,oldY,endX,endY,b.r||ACTOR.shotRadius);
+  const wallHit=firstWallHit(oldX,oldY,endX,endY,b.r||ACTOR.shotRadius,true);
   if(wallHit){
    const fraction=clamp(wallHit.t,0,1);h*=fraction;ds*=fraction;
    nextSpeed=speed+(nextSpeed-speed)*fraction;endX=wallHit.x;endY=wallHit.y;
@@ -1637,7 +1683,7 @@ function botForecastStep(b,dt,body){
    let h=Math.min(remaining,eventTime,nearMap ? .025 : Infinity);
    let projected=freeState(h);
    if(nearMap&&projected.travel>until){h=timeAtDistance(until,h);projected=freeState(h);}
-   let wallHit=firstWallHit(b.x,b.y,projected.x,projected.y,b.r||ACTOR.shotRadius);
+   let wallHit=firstWallHit(b.x,b.y,projected.x,projected.y,b.r||ACTOR.shotRadius,true);
    if(wallHit){
     const distance=projected.travel*clamp(wallHit.t,0,1);
     h=nearMap?timeAtDistance(distance,h):2*distance/(speed+Math.sqrt(speed*speed+2*cfg.propulsion*distance));
@@ -1881,7 +1927,7 @@ function botAnnihilationScore(best,forecast,contacts){
  for(let k=0;k<contacts.length;k++){
   const contact=contacts[k],path=forecast.paths[k];if(!contact||contact.time>best.time)continue;
   const group=groups.get(path.id)||{blocked:0,defense:0};
-  const probability=path.probability*contact.chance;
+  const probability=path.probability*contact.chance*cfg.annihilationChance/100;
   group.blocked+=probability;
   // A collision after the forecasted body hit offers no protection.
   if(contact.time<path.dangerTime)group.defense+=probability*path.danger;
@@ -2052,7 +2098,7 @@ function botControl(actor,target,projectiles,dt,options={}){
   bot.observedAt=observation.time;bot.decisions++;return bot.output;
  }
  const ready=!actor.salvo&&actor.cd<=0&&bot.time>=bot.nextAttack;
- bot.annForecast=(BOT_TUNING.annBlockWeight>0||BOT_TUNING.annDefenseWeight>0)&&(ready||actor.salvo)?
+ bot.annForecast=cfg.annihilationChance>0&&(BOT_TUNING.annBlockWeight>0||BOT_TUNING.annDefenseWeight>0)&&(ready||actor.salvo)?
   botAnnihilationForecast(self,direction,threats,age):null;
  // Every decision during a burst may steer its remaining rounds. Reloading
  // still tracks the observed opponent; no world-space burst target is locked.
@@ -2166,14 +2212,18 @@ function simulate(dt,control){
  if(control.press){if(mouse.press===control.press)mouse.press=null;control.press=null;}
  if(e)updateWeapon(e,ai.shoot,dt,false);
  for(const b of bullets)stepBullet(b,dt);
- const events=[];
- for(let i=0;i<bullets.length;i++){
-  const b=bullets[i];if(b.dead)continue;
-  for(let j=i+1;j<bullets.length;j++){const event=projectilePairEvent(b,bullets[j]);if(event)events.push(event);}
+ const events=[],ghosts=[[],[]];
+ for(const b of bullets){
+  if(b.dead)continue;
+  // Include pre-activation motion even when the bullet ends this step bright.
+  if(cfg.annihilationChance>0&&b.motionSegments.some(s=>s.phase==='ghost'&&s.from<b.collisionEnd))ghosts[b.team].push(b);
   const target=b.team===1?p:e;
   if(target){const contact=collisionEvent(b,target);if(contact)events.push({kind:'hit',t:contact.t,b,target,contact});}
  }
- // The first physical contact wins. At equal times interception wins the tie.
+ for(const a of ghosts[0])for(const b of ghosts[1]){
+  const event=projectilePairEvent(a,b);if(event)events.push(event);
+ }
+ // Resolve contacts in time order, with cancellation first at equal times.
  events.sort((a,b)=>a.t-b.t||(a.kind==='annihilate'?0:1)-(b.kind==='annihilate'?0:1));
  for(const ev of events){
   if(ev.kind==='annihilate'){
@@ -2441,6 +2491,7 @@ const SETTINGS_KEY='near-field-settings';
 let settingsDirty=false,padRangeDirty=false,restoringDefaults=false;
 function validSettingValue(name,value){
  if(typeof value!=='number'||!Number.isFinite(value))return false;
+ if(name==='initialSpinSign')return value===1||value===-1;
  const input=$(name),displayValue=name==='inertia'?value*1000:value,min=Number(input.min),max=Number(input.max),step=Number(input.step);
  if(!Number.isFinite(min)||!Number.isFinite(max)||displayValue<min-1e-8||displayValue>max+1e-8)return false;
  // Shoulder buttons adjust this distance continuously between slider ticks.
