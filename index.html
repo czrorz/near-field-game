@@ -129,6 +129,8 @@ html[lang="en"] .setting output{white-space:nowrap}
    <label class="sr-only" for="map">地图</label>
    <select id="map">
     <option value="open">地图 · 空场</option>
+    <option value="loop">地图 · 弹道回环</option>
+    <option value="klein">地图 · 克莱因瓶</option>
     <option value="four" selected>地图 · 四墙</option>
     <option value="barrier">地图 · 星球</option>
     <option value="ellipse">地图 · 椭圆反射场</option>
@@ -154,17 +156,17 @@ html[lang="en"] .setting output{white-space:nowrap}
   </div>
  </header>
  <section class="arena" id="arena" aria-label="近场对战场地">
-  <canvas id="game" width="1200" height="750" aria-label="WASD 或左摇杆移动，鼠标瞄准，点击射击，R 重开。玩法与参数见下方说明与设置。">请使用支持 Canvas 的现代浏览器。</canvas>
+  <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="WASD 或左摇杆移动，鼠标瞄准，点击射击，R 重开。玩法与参数见下方说明与设置。">请使用支持 Canvas 的现代浏览器。</canvas>
   <div class="overlay" id="overlay"><div class="dialog"><h2 id="overlay-title"></h2><p id="overlay-copy"></p><button class="primary" id="start" type="button">开始对战</button><div class="keys" id="keys"><span><kbd>WASD / 左杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准 · 点击连发</span><span><kbd>R</kbd>重开</span><span><kbd>Space</kbd>暂停</span></div><p id="controller-help" style="font-size:12px;margin-bottom:0">左摇杆可搭配鼠标。触屏用左侧摇杆移动，点击场地射击。</p></div></div>
   <div class="toast" id="toast" aria-live="polite"></div>
  </section>
  <details class="settings" id="settings">
   <summary>说明与设置</summary>
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
-  <p class="notes">用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有随身力场，使进入其中的对方亮弹减速、偏转；射手开火时的横移与对手当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。</p>
+  <p class="notes">用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有两个随身场：接收场减速、偏转对方亮弹，控弹场只偏转自己的亮弹；射手开火时的横移与场主人当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。</p>
   <p class="notes">鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。</p>
   <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。</p>
-  <p class="notes">墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。切换地图会重开本局。</p>
+  <p class="notes">墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。回环地图中，子弹从对边继续飞行，人物不跨界，飞行路程继续累计。克莱因瓶的上下暖色长边会将子弹左右翻转，水平速度与自旋反向；左右正常回环，边框外人物像按相同规则显示。切换地图会重开本局。</p>
   <section class="settings-group" aria-labelledby="movement-settings">
    <h2 id="movement-settings">人物与移动</h2>
    <div class="settings-grid field-grid">
@@ -198,6 +200,18 @@ html[lang="en"] .setting output{white-space:nowrap}
      <div class="range-bounds" aria-hidden="true"><span>200</span><span>1200</span></div>
      <p class="setting-help">越大，加速、刹车和转向需要的时间越长，最高速度不变。</p>
     </div>
+    <div class="setting">
+     <label for="bodyRepulsion">人物排斥强度<output id="bodyRepulsion-value">300</output></label>
+     <input id="bodyRepulsion" type="range" min="0" max="3000" step="25" value="300">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>3000</span></div>
+     <p class="setting-help">范围内越近排斥越强，在范围边缘平滑归零。双方受力相反，0 可关闭。</p>
+    </div>
+    <div class="setting">
+     <label for="bodyRepulsionRange">人物排斥距离<output id="bodyRepulsionRange-value">100</output></label>
+     <input id="bodyRepulsionRange" type="range" min="0" max="400" step="10" value="100">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>400</span></div>
+     <p class="setting-help">按双方圆心距离计算，小于此距离才产生排斥。0 可关闭。</p>
+    </div>
    </div>
   </section>
   <section class="settings-group" aria-labelledby="combat-settings">
@@ -228,6 +242,7 @@ html[lang="en"] .setting output{white-space:nowrap}
      <p class="setting-help">手柄瞄准时，人物到子弹变亮起点的距离，也可用 LB / RB 调节。鼠标或触屏直接选位置。</p>
     </div>
    </div>
+   <label class="check field-visibility"><input id="continuousFire" type="checkbox">持续开火（无需按住）</label>
    <label class="check field-visibility"><input id="showRange" type="checkbox" checked>显示距离线</label>
    <p class="notes">左摇杆可搭配鼠标。纯手柄用右摇杆瞄准、RT 射击；触屏用左侧摇杆移动，点击场地射击。</p>
   </section>
@@ -284,10 +299,16 @@ html[lang="en"] .setting output{white-space:nowrap}
    <h2 id="field-settings">力场</h2>
    <div class="settings-grid field-grid">
     <div class="setting">
-     <label for="radius">力场半径<output id="radius-value">150</output></label>
+     <label for="radius">接收场半径<output id="radius-value">150</output></label>
      <input id="radius" type="range" min="50" max="250" step="5" value="150">
      <div class="range-bounds" aria-hidden="true"><span>50</span><span>250</span></div>
      <p class="setting-help">人物周围能影响对方亮点子弹的范围。</p>
+    </div>
+    <div class="setting">
+     <label for="controlRadius">控弹场半径<output id="controlRadius-value">300</output></label>
+     <input id="controlRadius" type="range" min="0" max="600" step="10" value="300">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>600</span></div>
+     <p class="setting-help">只偏转自己的亮弹，不减速；偏转强度共用。0 可关闭。显示力场时，虚线表示控弹场。</p>
     </div>
     <div class="setting">
      <label for="drag">阻力系数<output id="drag-value">0.020</output></label>
@@ -339,7 +360,7 @@ html[lang="en"] .setting output{white-space:nowrap}
 'use strict';
 /*
  * Near Field — single-file demo. See README.md for the code map and checks.
- * World coordinates: 1200 × 750, x right / y down, time in seconds.
+ * World coordinates: 1200 × 750 (wrap maps: 840 × 525), x right / y down, time in seconds.
  * Mechanics use STEP; rendering never advances live physics.
  * Keep damage distance cumulative across curves/reflections. Static map forces
  * affect every bullet phase; character fields affect materialized bullets only.
@@ -348,13 +369,16 @@ html[lang="en"] .setting output{white-space:nowrap}
 // === 01 · World, maps and static map fields ===
 const $ = id => document.getElementById(id);
 const canvas=$('game'),ctx=canvas.getContext('2d'),arena=$('arena');
-const W=1200,H=750,STEP=1/120,TAU=Math.PI*2;
+const VIEW_W=1200,VIEW_H=750,STEP=1/120,TAU=Math.PI*2;
+let W=1200,H=750;
 // Minimum selected activation distance, measured from the firing body center.
 const MIN_ACTIVATION_RANGE=100;
 const AIM_STROKE=1.2;
 const C={bg:'#20282a',edge:'#414f50',player:'#b2ceca',enemy:'#d2b49b'};
 const MAPS={
  open:{walls:[]},
+ loop:{width:840,height:525,wrap:true,walls:[]},
+ klein:{width:840,height:525,wrap:true,twist:true,walls:[]},
  four:{walls:[
  {x:446,y0:158,y1:305,r:7,type:'absorb'},
  {x:754,y0:158,y1:305,r:7,type:'reflect'},
@@ -385,7 +409,7 @@ const MAPS={
  ]}
 };
 let mapId='four',WALLS=MAPS.four.walls,mapFields=[];
-function setMap(id){if(!Object.hasOwn(MAPS,id))return false;mapId=id;const map=MAPS[id];WALLS=map.walls;mapFields=map.fields||(map.field?[map.field]:[]);return true;}
+function setMap(id){if(!Object.hasOwn(MAPS,id))return false;mapId=id;const map=MAPS[id],width=map.width||VIEW_W,height=map.height||VIEW_H;mouse.x+=(width-W)/2;mouse.y+=(height-H)/2;W=width;H=height;WALLS=map.walls;mapFields=map.fields||(map.field?[map.field]:[]);return true;}
 const mapAccelerationScratch={x:0,y:0};
 // Fixed, bounded acceleration fields. The reusable result is copied by each
 // caller before another query; RK4 and bot forecasts allocate no extra vectors.
@@ -435,24 +459,24 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 
 // === 02 · Shared settings, runtime state and numeric helpers ===
 const DEFAULTS={
- maxHealth:10,actorRadius:15,actorAspect:0,moveSpeed:235,inertia:.45,
+ maxHealth:10,actorRadius:15,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
  burstCount:3,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,band:200,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,
- radius:150,drag:.020,spinForce:5400,baseKnockback:24,impactScale:.26,
- difficulty:'easy',autofire:true,sound:true,showField:false,showRange:true
+ radius:150,controlRadius:300,drag:.020,spinForce:5400,baseKnockback:24,impactScale:.26,
+ difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true
 };
 const cfg={...DEFAULTS};
-const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','band','initialSpinSign','launchSpinScale','annihilationChance','radius','drag','spinForce','receiverSpinScale'];
+const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','bodyRepulsion','bodyRepulsionRange','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','band','initialSpinSign','launchSpinScale','annihilationChance','radius','controlRadius','drag','spinForce','receiverSpinScale'];
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
 const keys=new Set(),mouse={x:850,y:375,down:false,press:null};
 const touch={move:null,aim:null,target:null};
-const TOUCH_STICK={x:125,y:H-115,radius:65,hitRadius:86};
+const TOUCH_STICK={x:125,get y(){return H-115;},radius:65,hitRadius:86};
 let inputMode='mouse',moveSource='keyboard',aimSource='mouse',gamepadName='',padPrev=[],rightPrev={x:0,y:0,m:0},rightAnchor={x:0,y:0,m:0},seed=3947;
-let state='ready',p,enemy,bullets=[],bulletFades=[],effects=[],elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
+let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],effects=[],elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
 let ending=null,defeatedEnemy=null;
-let accumulator=0,last=0,hudAt=-1,toastUntil=0,shotId=0,rounds=0,renderFrames=0;
+let accumulator=0,last=0,hudAt=-1,toastUntil=0,shotId=0,rounds=0,renderFrames=0,renderDirty=true,renderedState=null;
 let audioCtx=null,audioMaster=null,audioVoices=0,audioPlayed=0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
@@ -465,6 +489,8 @@ const ENGLISH={
  "键盘 + 鼠标": "Keyboard + mouse",
  "地图": "Map",
  "地图 · 空场": "Map · Open field",
+ "地图 · 弹道回环": "Map · Bullet loop",
+ "地图 · 克莱因瓶": "Map · Klein bottle",
  "地图 · 四墙": "Map · Four walls",
  "地图 · 星球": "Map · Planet",
  "地图 · 椭圆反射场": "Map · Ellipse arena",
@@ -499,10 +525,10 @@ const ENGLISH={
  "对手": "Opponent",
  "暗点：无伤害": "Dim: harmless",
  "亮点：可命中": "Bright: can hit",
- "用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有随身力场，使进入其中的对方亮弹减速、偏转；射手开火时的横移与对手当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。": "Move with WASD or the left stick, aim with the mouse, and click to fire. Bullets start dim and become damaging when they turn bright. Each character carries a force field that slows and deflects incoming bright bullets. The shooter's sideways movement at launch and the opponent's current sideways movement can reinforce or cancel the deflection. Dim bullets are unaffected by character fields.",
+ "用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有两个随身场：接收场减速、偏转对方亮弹，控弹场只偏转自己的亮弹；射手开火时的横移与场主人当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。": "Move with WASD or the left stick, aim with the mouse, and click to fire. Bullets start dim and become damaging when they turn bright. Each character carries two fields: a receiving field that slows and deflects opposing bright bullets, and a control field that only deflects their own bright bullets. The shooter's sideways movement at launch and the field owner's current sideways movement can reinforce or cancel the deflection. Dim bullets are unaffected by character fields.",
  "鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。": "The mouse sets where your bullets turn bright; the nearby line marks the following damaging path. Your opponent's chosen starting point is hidden. Brightening starts at least 100 units from the shooter's center. A bullet still inside the opponent at that point stays dim until it leaves. All distances follow the actual flight path. Delayed brightening does not extend the damaging path; the bullet disappears when that path ends.",
  "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets have a chance to cancel each other on contact; otherwise both pass through; bright bullets pass through other bullets. Each hit deals one point of damage and knocks the target back. The bar above a character shows health. The inner triangle darkens when firing starts and gradually brightens during reload. Settings apply to both sides; opening them pauses the game.",
- "墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。切换地图会重开本局。": "Walls block characters; dark walls absorb bullets and bright-edged walls reflect them. Map fields affect all bullet trajectories, but not characters. Changing maps starts a new round.",
+ "墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。回环地图中，子弹从对边继续飞行，人物不跨界，飞行路程继续累计。克莱因瓶的上下暖色长边会将子弹左右翻转，水平速度与自旋反向；左右正常回环，边框外人物像按相同规则显示。切换地图会重开本局。": "Walls block characters; dark walls absorb bullets and bright-edged walls reflect them. Map fields affect all bullet trajectories, but not characters. On wrap maps, bullets continue from the opposite edge while characters stay inside. Travel distance keeps accumulating. On Klein bottle, crossing the warm-colored top or bottom edge flips the bullet horizontally, reversing horizontal velocity and spin; left and right wrap normally. Character images outside follow the same mapping. Changing maps starts a new round.",
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
  "椭圆比例": "Ellipse ratio",
@@ -548,15 +574,22 @@ const ENGLISH={
  "没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。": "Speed gained each second without drag. With an initial speed of 800 and acceleration of 300, speed reaches 1100 after one second.",
  "杀伤路段长度": "Damaging path length",
  "从选定的变亮起点开始，子弹还能飞过多长的路程。弯曲弹道也按实际路程计算。": "How far a bullet can travel beyond the selected brightening point. Curved paths are measured along their actual route.",
- "力场半径": "Field radius",
+ "接收场半径": "Receiving field radius",
+ "控弹场半径": "Control field radius",
+ "只偏转自己的亮弹，不减速；偏转强度共用。0 可关闭。显示力场时，虚线表示控弹场。": "Deflects your own bright bullets without slowing them, using the shared deflection strength. Set to 0 to disable. The control field appears dashed when fields are shown.",
  "人物周围能影响对方亮点子弹的范围。": "The area around a character that affects opposing bright bullets.",
  "阻力系数": "Drag coefficient",
  "越大，场内子弹减速越明显；设为 0 则不减速。弹速越高，阻力越强；人物顺着来弹方向后退时，阻力会减弱。子弹始终有推进力。": "Higher values slow bullets more inside the field; 0 disables drag. Faster bullets experience stronger drag. Retreating in the direction of an incoming bullet reduces drag. Bullets always keep their forward thrust.",
  "偏转强度": "Deflection strength",
  "越大，子弹越容易转弯。发射时的横移给子弹留下自旋，对方的横移会加强或抵消这个效果。": "Higher values produce stronger curves. Sideways movement at launch gives a bullet spin; the opponent's sideways movement can reinforce or counter it.",
  "显示力场圈": "Show field circles",
+ "持续开火（无需按住）": "Continuous fire (no button held)",
  "显示距离线": "Show range indicator",
  "移动惯性": "Movement inertia",
+ "人物排斥强度": "Character repulsion",
+ "范围内越近排斥越强，在范围边缘平滑归零。双方受力相反，0 可关闭。": "Repulsion strengthens up close and smoothly reaches zero at the range boundary. Both characters receive opposite forces. Set to 0 to disable.",
+ "人物排斥距离": "Character repulsion range",
+ "按双方圆心距离计算，小于此距离才产生排斥。0 可关闭。": "Repulsion acts only when the distance between character centers is below this value. Set to 0 to disable.",
  "越大，加速、刹车和转向需要的时间越长，最高速度不变。": "Higher values make acceleration, braking and turns take longer. Top speed stays the same.",
  "手柄瞄准距离": "Controller aim distance",
  "手柄瞄准时，人物到子弹变亮起点的距离，也可用 LB / RB 调节。鼠标或触屏直接选位置。": "The distance to the brightening point when aiming with a controller. LB / RB also adjusts it. Mouse and touch input select the position directly.",
@@ -821,7 +854,7 @@ function bodyShape(a){
  const amplitude=Math.hypot(qx,qy),angle=.5*Math.atan2(qy,qx);
  return{angle,rx:a.r*Math.exp(amplitude),ry:a.r*Math.exp(-amplitude)};
 }
-function createActor(team,x,y){return{...impactState(),team,x,y,px:x,py:y,vx:0,vy:0,r:ACTOR.radius,hp:ACTOR.health,maxHp:ACTOR.health,aim:team===0?0:Math.PI,cd:0,reloadDuration:WEAPON.reload,salvo:null,salvoSeq:0,triggerHeld:false,triggerBlocked:false,range:550,bot:null};}
+function createActor(team,x,y){return{...impactState(),team,x,y,px:x,py:y,vx:0,vy:0,r:ACTOR.radius,hp:ACTOR.health,maxHp:ACTOR.health,aim:team===0?0:Math.PI,cd:0,reloadDuration:WEAPON.reload,salvo:null,salvoSeq:0,triggerHeld:false,triggerBlocked:false,fireBuffered:false,range:550,bot:null};}
 function actorInset(actor){return 27+bodyShape(actor).rx;}
 // Curve queries are analytic or bounded; maps never expand into many small walls.
 function curveClosest(wall,x,y){
@@ -860,7 +893,29 @@ function curveWallHit(wall,x0,y0,x1,y1,r){
  return{t:upper,x:point.x+point.nx*radius,y:point.y+point.ny*radius,nx:point.nx,ny:point.ny,wall};
 }
 // Broad-phase rejection handles nearly every projectile substep.
+const LOOP_WALL={type:'wrap'};
+function loopBoundaryHit(x0,y0,x1,y1){
+ const dx=x1-x0,dy=y1-y0;
+ const tx=dx>0&&x1>=W-24?(W-24-x0)/dx:dx<0&&x1<=24?(24-x0)/dx:Infinity;
+ const ty=dy>0&&y1>=H-24?(H-24-y0)/dy:dy<0&&y1<=24?(24-y0)/dy:Infinity;
+ const t=Math.min(tx,ty);if(!Number.isFinite(t)||t< -1e-9||t>1)return null;
+ const q=clamp(t,0,1);
+ return{t:q,x:clamp(x0+dx*q,24,W-24),y:clamp(y0+dy*q,24,H-24),
+  nx:Math.abs(tx-t)<1e-9?-Math.sign(dx):0,ny:Math.abs(ty-t)<1e-9?-Math.sign(dy):0,wall:LOOP_WALL};
+}
+function respondProjectileWall(b,hit,epsilon=1e-5){
+ if(hit.wall.type==='wrap'){
+  b.x+=hit.nx*(W-48-epsilon);b.y+=hit.ny*(H-48-epsilon);
+  if(MAPS[mapId].twist&&hit.ny){b.x=W-b.x;b.vx=-b.vx;b.spin=-(b.spin||0);const speed=Math.hypot(b.vx,b.vy);if(speed>1e-8){b.dx=b.vx/speed;b.dy=b.vy/speed;}}
+  return;
+ }
+ const dot=b.vx*hit.nx+b.vy*hit.ny;
+ if(dot<0){b.vx-=2*dot*hit.nx;b.vy-=2*dot*hit.ny;}
+ const speed=Math.hypot(b.vx,b.vy);if(speed>1e-8){b.dx=b.vx/speed;b.dy=b.vy/speed;}
+ b.x+=hit.nx*epsilon;b.y+=hit.ny*epsilon;
+}
 function firstWallHit(x0,y0,x1,y1,r,projectile=false){
+ if(projectile&&MAPS[mapId].wrap)return loopBoundaryHit(x0,y0,x1,y1);
  const dx=x1-x0,dy=y1-y0,aa=dx*dx+dy*dy;let best=null,limit=Infinity;
  for(const wall of WALLS){
   const bodyRadius=projectile&&wall.type==='reflect'?0:r;
@@ -919,6 +974,15 @@ function resizeActors(){
  if(p&&enemy)separateActors(p,enemy);
  for(const actor of actors){actor.px=actor.x;actor.py=actor.y;}
 }
+function applyActorRepulsion(a,b,dt){
+ if(!b||cfg.bodyRepulsion<=0)return;
+ const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy,R=cfg.bodyRepulsionRange;
+ if(d2>=R*R)return;
+ const d=Math.sqrt(d2),impulse=cfg.bodyRepulsion*(1-d/R)**2*dt;
+ const ix=(d>1e-9?dx/d:a.team===0?-1:1)*impulse,iy=(d>1e-9?dy/d:0)*impulse;
+ a.ivx+=ix;a.ivy+=iy;
+ b.ivx-=ix;b.ivy-=iy;
+}
 function moveActor(a,targetX,targetY,inertia,dt,minX,minY,maxX,maxY){
  a.px=a.x;a.py=a.y;let dx,dy;
  if(inertia>0){const retain=Math.exp(-dt/inertia);dx=targetX*dt+(a.mvx-targetX)*inertia*(1-retain);dy=targetY*dt+(a.mvy-targetY)*inertia*(1-retain);a.mvx=targetX+(a.mvx-targetX)*retain;a.mvy=targetY+(a.mvy-targetY)*retain;}
@@ -951,16 +1015,16 @@ let lastDeviceMode=null,lastDeviceLanguage=null;
 function refreshInput(){
  const mode=aimSource==='touch'||moveSource==='touch'?'touch':aimSource==='pad'?(moveSource==='pad'?'pad':'keyboard-pad'):(moveSource==='pad'?'hybrid':'mouse');inputMode=mode;
  if(mode===lastDeviceMode&&language===lastDeviceLanguage)return;
- lastDeviceMode=mode;lastDeviceLanguage=language;
+ lastDeviceMode=mode;lastDeviceLanguage=language;renderDirty=true;
  const labels={mouse:'键盘 + 鼠标',pad:'双摇杆手柄',hybrid:'左摇杆 + 鼠标','keyboard-pad':'键盘 + 右摇杆',touch:'触屏'};
  const label=tr(labels[mode]);if($('device').textContent!==label)$('device').textContent=label;
 }
 function claimMouseAim(){aimSource='mouse';rightAnchor={...rightPrev};}
 function losePad(){flushSettings();const used=moveSource==='pad'||aimSource==='pad';gamepadName='';padPrev=[];rightPrev={x:0,y:0,m:0};rightAnchor={...rightPrev};if(moveSource==='pad')moveSource='keyboard';if(aimSource==='pad')aimSource='mouse';refreshInput();if(used){pause();toast('手柄已断开');}}
 function reset(run=false){
- flushSettings();
+ flushSettings();renderDirty=true;roundMode=$('mode').value;
  if(run)stopStartupPreparation();
- seed=3947+(rounds++*813);p=createActor(0,300,375);
+ seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);
  ending=null;defeatedEnemy=null;
  bullets=[];bulletFades=[];effects=[];elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);state=run?'running':'ready';
@@ -969,11 +1033,11 @@ function reset(run=false){
 }
 function isPracticeMode(){return $('mode').value==='practice'||$('mode').value==='practice-dodge';}
 function spawnEnemy(){
- const x=900,y=375;
+ const x=W*.75,y=H*.5;
  enemy=createActor(1,x,y);enemy.aim=Math.atan2(p.y-y,p.x-x);constrainActor(enemy);
 }
 function showOverlay(title,copy,button,values={}){overlayContent={title,copy,button,values};refreshOverlayText();$('keys').hidden=['won','lost','draw'].includes(state);$('controller-help').hidden=['won','lost','draw'].includes(state);$('overlay').hidden=false;}
-function clearFireInput(){mouse.down=false;mouse.press=null;touch.move=null;touch.aim=null;touch.target=null;if(p){p.triggerHeld=false;p.triggerBlocked=true;}}
+function clearFireInput(){mouse.down=false;mouse.press=null;touch.move=null;touch.aim=null;touch.target=null;if(p){p.triggerHeld=false;p.triggerBlocked=true;p.fireBuffered=false;}}
 function pause(){flushSettings();if(state!=='running')return;state='paused';clearFireInput();keys.clear();$('pause').textContent=tr('继续');showOverlay('暂停一下','调整场的参数，或继续刚才的交战。','继续游戏');announce('已暂停');}
 function resume(){if(state!=='paused')return;state='running';accumulator=0;last=0;$('overlay').hidden=true;$('pause').textContent=tr('暂停');$('settings').open=false;deferAudioUnlock();}
 function togglePause(){if(state==='running')pause();else if(state==='paused')resume();}
@@ -1024,7 +1088,7 @@ function getInput(pad){
 }
 
 // === 07 · Projectile forces, integration, phases and weapons ===
-function fieldWeight(x,y,carrier=p){if(!carrier)return 0;const r2=((x-carrier.x)**2+(y-carrier.y)**2)/(cfg.radius*cfg.radius);return r2<1?(1-r2)**2:0;}
+function fieldWeight(x,y,carrier=p,radius=cfg.radius){if(!carrier||radius<=0)return 0;const r2=((x-carrier.x)**2+(y-carrier.y)**2)/(radius*radius);return r2<1?(1-r2)**2:0;}
 // Uniform field braking: the same damping coefficient everywhere inside.
 // Speed stays continuous; only the presence of the extra drag switches.
 function brakingWeight(x,y,carrier=p){
@@ -1133,28 +1197,36 @@ function startProjectileDamage(b,carrier=b.team===0?enemy:p){
  b.damageStart=b.travel;b.damageEnd=end;b.damageLength=end-b.travel;return true;
 }
 
-function bulletAcceleration(b,x,y,vx,vy,travel=b.travel||0,carrier=b.team===0?enemy:p,fieldActive=projectileFieldActive(b,travel),speed=Math.hypot(vx,vy)){
- if(!fieldActive||carrier&&carrier.team===b.team)carrier=null;
+function bulletAcceleration(b,x,y,vx,vy,travel=b.travel||0,carrier=b.team===0?enemy:p,fieldActive=projectileFieldActive(b,travel),speed=Math.hypot(vx,vy),source=null){
  const dx=speed>1e-8?vx/speed:b.dx||0,dy=speed>1e-8?vy/speed:b.dy||0;
- const weight=fieldWeight(x,y,carrier),braking=brakingWeight(x,y,carrier);
- // The projectile always accelerates forward. Only a solid projectile inside
- // the opposing field receives additional quadratic drag; there is no drag
- // in free flight and no distance-dependent reference or assigned speed.
- const retreat=carrier?Math.max(0,dx*(carrier.vx||0)+dy*(carrier.vy||0)):0;
- const closingSpeed=Math.max(0,speed-retreat);
- const forward=cfg.propulsion-braking*cfg.drag*closingSpeed*closingSpeed;
- // Source spin and receiver transverse motion add as signed scalars.
- // This perpendicular force changes direction without directly changing speed.
- const turn=cfg.spinForce*((b.spin||0)+receiverSpin(carrier,dx,dy))*weight/Math.hypot(speed,6);
+ let forward=cfg.propulsion,turn=0;
+ // Character fields add independently; source is supplied only for bright flight.
+ if(fieldActive)for(let i=0;i<2;i++){
+  const body=i?source:carrier;if(!body||i&&body===carrier)continue;
+  const radius=i?cfg.controlRadius:cfg.radius;if(radius<=0)continue;
+  const ox=x-body.x,oy=y-body.y,r2=(ox*ox+oy*oy)/(radius*radius);if(r2>=1)continue;
+  if(!i){const retreat=Math.max(0,dx*(body.vx||0)+dy*(body.vy||0)),closing=Math.max(0,speed-retreat);forward-=cfg.drag*closing*closing;}
+  turn+=((b.spin||0)+receiverSpin(body,dx,dy))*(1-r2)**2;
+ }
+ turn*=cfg.spinForce/Math.hypot(speed,6);
  const mapForce=mapAcceleration(x,y);
  return{x:forward*dx-turn*vy+mapForce.x,y:forward*dy+turn*vx+mapForce.y};
 }
-function projectileRK4(b,dt,carrier,fieldActive){
+function projectileStraightTime(distance,speed){
+ return 2*Math.max(0,distance)/(speed+Math.sqrt(speed*speed+2*cfg.propulsion*Math.max(0,distance)));
+}
+function projectileStraightStep(b,dt){
+ const speed=Math.hypot(b.vx,b.vy),dx=b.vx/speed,dy=b.vy/speed;
+ const distance=(speed+.5*cfg.propulsion*dt)*dt,nextSpeed=speed+cfg.propulsion*dt;
+ b.x+=dx*distance;b.y+=dy*distance;b.travel+=distance;
+ b.vx=dx*nextSpeed;b.vy=dy*nextSpeed;b.dx=dx;b.dy=dy;
+}
+function projectileRK4(b,dt,carrier,fieldActive,source=null){
  const h=dt*.5,x=b.x,y=b.y,vx=b.vx,vy=b.vy,s=b.travel;
- const speed1=Math.hypot(vx,vy),a=bulletAcceleration(b,x,y,vx,vy,s,carrier,fieldActive,speed1);
- const v2x=vx+a.x*h,v2y=vy+a.y*h,speed2=Math.hypot(v2x,v2y),a2=bulletAcceleration(b,x+vx*h,y+vy*h,v2x,v2y,s+speed1*h,carrier,fieldActive,speed2);
- const v3x=vx+a2.x*h,v3y=vy+a2.y*h,speed3=Math.hypot(v3x,v3y),a3=bulletAcceleration(b,x+v2x*h,y+v2y*h,v3x,v3y,s+speed2*h,carrier,fieldActive,speed3);
- const v4x=vx+a3.x*dt,v4y=vy+a3.y*dt,speed4=Math.hypot(v4x,v4y),a4=bulletAcceleration(b,x+v3x*dt,y+v3y*dt,v4x,v4y,s+speed3*dt,carrier,fieldActive,speed4);
+ const speed1=Math.hypot(vx,vy),a=bulletAcceleration(b,x,y,vx,vy,s,carrier,fieldActive,speed1,source);
+ const v2x=vx+a.x*h,v2y=vy+a.y*h,speed2=Math.hypot(v2x,v2y),a2=bulletAcceleration(b,x+vx*h,y+vy*h,v2x,v2y,s+speed1*h,carrier,fieldActive,speed2,source);
+ const v3x=vx+a2.x*h,v3y=vy+a2.y*h,speed3=Math.hypot(v3x,v3y),a3=bulletAcceleration(b,x+v2x*h,y+v2y*h,v3x,v3y,s+speed2*h,carrier,fieldActive,speed3,source);
+ const v4x=vx+a3.x*dt,v4y=vy+a3.y*dt,speed4=Math.hypot(v4x,v4y),a4=bulletAcceleration(b,x+v3x*dt,y+v3y*dt,v4x,v4y,s+speed3*dt,carrier,fieldActive,speed4,source);
  b.x=x+dt/6*(vx+2*v2x+2*v3x+v4x);b.y=y+dt/6*(vy+2*v2y+2*v3y+v4y);
  b.vx=vx+dt/6*(a.x+2*a2.x+2*a3.x+a4.x);b.vy=vy+dt/6*(a.y+2*a2.y+2*a3.y+a4.y);
  b.travel=s+dt/6*(speed1+2*speed2+2*speed3+speed4);
@@ -1162,7 +1234,7 @@ function projectileRK4(b,dt,carrier,fieldActive){
 }
 // Shared by gameplay and bot forecasts. Split at accumulated distance events
 // and at the end of the arming timer. Every accepted RK4 segment has one phase.
-function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
+function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
  if(!Number.isFinite(b.vx)||!Number.isFinite(b.vy)){const launch=b.launchSpeed??cfg.launchSpeed;b.vx=b.dx*launch;b.vy=b.dy*launch;}
  b.travel=b.travel||0;b.motionSegments=[];b.damageSegments=[];b.damageWindow=null;b.endPoint=null;b.wallEnd=null;let remaining=dt,wallContacts=0;
  if(b.wallAbsorbed)return;
@@ -1201,25 +1273,29 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
   }
   const elapsed=dt-remaining,damaging=projectileDamageActive(b,b.travel,true);
   const fieldActive=projectileFieldActive(b,b.travel,true);
-  const activeCarrier=fieldActive&&carrier&&carrier.team!==b.team?carrier:null;
+  const activeCarrier=fieldActive&&carrier&&carrier.team!==b.team?carrier:null,activeSource=damaging&&cfg.controlRadius>0?source:null;
   const speed=Math.hypot(b.vx,b.vy),thrust=cfg.propulsion;
   const receiverSpeed=activeCarrier?Math.hypot(activeCarrier.vx||0,activeCarrier.vy||0):0;
+  const sourceSpeed=activeSource?Math.hypot(activeSource.vx||0,activeSource.vy||0):0,sourceMotion=cfg.receiverSpinScale*sourceSpeed/ACTOR.speed;
   const receiverMotion=cfg.receiverSpinScale*receiverSpeed/ACTOR.speed;
-  const sideForce=activeCarrier?Math.abs(cfg.spinForce)*(Math.abs(b.spin||0)+receiverMotion):0;
+  const sideForce=Math.abs(cfg.spinForce)*((activeCarrier?Math.abs(b.spin||0)+receiverMotion:0)+(activeSource?Math.abs(b.spin||0)+sourceMotion:0));
   // A conservative bound for each adaptive RK4 step. The lateral force does
   // no physical work, but is included here to bound intermediate stage speeds.
   const mapForce=mapForceBound(b.x,b.y,(speed+thrust*remaining)*remaining);
+  const straight=!fieldActive&&mapForce===0&&speed>1e-8&&thrust>=0;
   const possibleSpeed=speed+(thrust+sideForce+mapForce)*remaining;
-  const near=activeCarrier&&Math.hypot(b.x-activeCarrier.x,b.y-activeCarrier.y)<cfg.radius+possibleSpeed*remaining;
+  const receiverDistance=activeCarrier?Math.hypot(b.x-activeCarrier.x,b.y-activeCarrier.y):Infinity;
+  const near=receiverDistance<cfg.radius+possibleSpeed*remaining;
+  const nearSource=activeSource&&Math.hypot(b.x-activeSource.x,b.y-activeSource.y)<cfg.controlRadius+possibleSpeed*remaining;
   const dragSlope=near?cfg.drag*(3*possibleSpeed+2*receiverSpeed):0;
-  const turning=near?Math.abs(cfg.spinForce)*(Math.abs(b.spin||0)+3*receiverMotion)/Math.hypot(speed,6):0;
+  const turning=Math.abs(cfg.spinForce)*((near?Math.abs(b.spin||0)+3*receiverMotion:0)+(nearSource?Math.abs(b.spin||0)+3*sourceMotion:0))/Math.hypot(speed,6);
   const slope=dragSlope+thrust/Math.max(speed,6)+turning+mapForce/Math.max(speed,60);
   let h=Math.min(remaining,.025,.4/Math.max(1,slope));
   if(twoPhase&&fieldActive&&!Number.isFinite(b.damageStart))h=Math.min(h,Math.max(0,(b.armingDelay??cfg.armingDelay??0)-b.armedAge));
   if(h<1e-12){activateAt(elapsed);continue;}
   // Resolve the sharp range boundary with a smaller time step, not a
   // spatial transition zone or a discontinuous assignment to velocity.
-  if(activeCarrier&&Math.abs(Math.hypot(b.x-activeCarrier.x,b.y-activeCarrier.y)-cfg.radius)<possibleSpeed*h)h=Math.min(h,.001);
+  if(Math.abs(receiverDistance-cfg.radius)<possibleSpeed*h)h=Math.min(h,.001);
   if(b.activationBlocked){const exit=projectileBlockedExitTime(b,motionCarrier,elapsed,dt,h);if(Number.isFinite(exit))h=Math.min(h,Math.max(1e-9,exit));}
   let boundary=Infinity;
   const start=twoPhase?b.fieldStart:b.solidStart,end=projectileEnd(b);
@@ -1227,29 +1303,37 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
    if(b.travel<start)boundary=start;
    else if(Number.isFinite(end)&&b.travel<end)boundary=end;
   }
-  // Most substeps cannot reach a phase boundary and need just one RK4 solve.
-  // The two exceptional substeps locate that event in time, using the same
-  // frozen-phase dynamics as the accepted segment. Snapping path length only
-  // removes root-finding roundoff; it never alters the actual velocity.
+  // Dark, field-free flight has an exact constant-acceleration solution.
+  // Curved phase events stop within one millionth of a world unit.
   const initial={x:b.x,y:b.y,vx:b.vx,vy:b.vy,travel:b.travel,dx:b.dx,dy:b.dy};
-  projectileRK4(b,h,activeCarrier,fieldActive);
+  if(straight)projectileStraightStep(b,h);else projectileRK4(b,h,activeCarrier,fieldActive,activeSource);
   let advanced=h;
   if(b.travel>=boundary-PROJECTILE_PATH_EPS){
+   // Keep the previous conservative probe budget and search limits.
    if(b.probeWorkLeft!==undefined)b.probeWorkLeft-=34;
-   let low=0,high=h;
-   for(let i=0;i<34;i++){
-    const middle=(low+high)*.5;Object.assign(b,initial);
-    projectileRK4(b,middle,activeCarrier,fieldActive);
-    if(b.travel<boundary)low=middle;else high=middle;
+   if(straight){
+    advanced=Math.min(h,projectileStraightTime(boundary-initial.travel,speed));
+    Object.assign(b,initial);projectileStraightStep(b,advanced);
+   }else{
+    let low=0,high=h;
+    for(let i=0;i<34;i++){
+     const middle=(low+high)*.5;Object.assign(b,initial);
+     projectileRK4(b,middle,activeCarrier,fieldActive,activeSource);
+     if(Math.abs(b.travel-boundary)<=1e-6){low=high=middle;break;}
+     if(b.travel<boundary)low=middle;else high=middle;
+     if((high-low)*Math.max(1,possibleSpeed)<=1e-6)break;
+    }
+    advanced=(low+high)*.5;Object.assign(b,initial);
+    projectileRK4(b,advanced,activeCarrier,fieldActive,activeSource);
    }
-   const eventTime=(low+high)*.5;Object.assign(b,initial);
-   projectileRK4(b,eventTime,activeCarrier,fieldActive);b.travel=boundary;
-   advanced=eventTime;
+   b.travel=boundary;
   }
   const wallHit=firstWallHit(initial.x,initial.y,b.x,b.y,b.r,true);
   if(wallHit){
-   advanced*=wallHit.t;Object.assign(b,initial);
-   projectileRK4(b,advanced,activeCarrier,fieldActive);b.x=wallHit.x;b.y=wallHit.y;
+   advanced=straight?Math.min(advanced,projectileStraightTime((b.travel-initial.travel)*wallHit.t,speed)):advanced*wallHit.t;
+   Object.assign(b,initial);
+   if(straight)projectileStraightStep(b,advanced);else projectileRK4(b,advanced,activeCarrier,fieldActive,activeSource);
+   b.x=wallHit.x;b.y=wallHit.y;
   }
   let motionSegment=null;
   if(advanced>0){
@@ -1261,11 +1345,8 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
   remaining=Math.max(0,remaining-advanced);
   if(Number.isFinite(end)&&b.travel>=end&&!b.endPoint)b.endPoint={x:b.x,y:b.y,t:(dt-remaining)/dt};
   if(wallHit&&!b.endPoint){
-   if(wallHit.wall.type==='absorb'||++wallContacts>4){b.wallAbsorbed=true;b.wallEnd={x:b.x,y:b.y,t:(dt-remaining)/dt};break;}
-   const dot=b.vx*wallHit.nx+b.vy*wallHit.ny;
-   if(dot<0){b.vx-=2*dot*wallHit.nx;b.vy-=2*dot*wallHit.ny;}
-   const speed=Math.hypot(b.vx,b.vy);if(speed>1e-8){b.dx=b.vx/speed;b.dy=b.vy/speed;}
-   b.x+=wallHit.nx*1e-5;b.y+=wallHit.ny*1e-5;
+   if(wallHit.wall.type==='absorb'||wallHit.wall.type!=='wrap'&&++wallContacts>4){b.wallAbsorbed=true;b.wallEnd={x:b.x,y:b.y,t:(dt-remaining)/dt};break;}
+   respondProjectileWall(b,wallHit);
   }
   activateAt(dt-remaining);
   // Legacy arming intervals are already field-active, so they also stop
@@ -1274,13 +1355,14 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p){
  }
 }
 function stepBullet(b,dt){
- b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;integrateProjectile(b,dt);b.age+=dt;
+ b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;integrateProjectile(b,dt,b.team===0?enemy:p,b.team===0?p:enemy);b.age+=dt;
  // Expiry is resolved after swept collisions, so a hit before damageEnd
  // within this same simulation step is still valid.
  const end=projectileEnd(b);b.ended=Number.isFinite(end)&&b.travel>=end;
- b.expired=b.wallAbsorbed||b.ended||b.age>12||b.x<20||b.x>W-20||b.y<20||b.y>H-20;
+ b.expired=b.wallAbsorbed||b.ended||b.age>12||!MAPS[mapId].wrap&&(b.x<20||b.x>W-20||b.y<20||b.y>H-20);
  // Pair collisions stop at lifetime or arena exit, even within this frame.
  b.collisionEnd=Math.min(1,b.endPoint?.t??1,b.wallEnd?.t??1,dt>0?Math.max(0,(12-(b.age-dt))/dt):1);
+ if(MAPS[mapId].wrap)return;
  for(const segment of b.motionSegments){
   if(segment.from>=b.collisionEnd)break;
   const {x0,y0,x1,y1}=segment,span=segment.to-segment.from;
@@ -1317,7 +1399,10 @@ function updateWeapon(actor,pressed,dt,automatic=false,point=null){
  // Direction, selected range and launch spin are sampled on EVERY round.
  const edge=!!point||pressed&&!actor.triggerHeld;actor.triggerHeld=!!pressed;
  if(!pressed||point)actor.triggerBlocked=false;
- if(!actor.salvo&&actor.cd<=1e-8&&!actor.triggerBlocked&&(edge||automatic&&pressed)){
+ // Buffer one player press only in the last 150 ms of reload; keep aiming live.
+ if(actor.team===0&&edge&&!actor.salvo&&!actor.triggerBlocked&&actor.cd>0&&actor.cd<=.15)actor.fireBuffered=true;
+ if(!actor.salvo&&actor.cd<=1e-8&&!actor.triggerBlocked&&(edge||actor.fireBuffered||automatic&&pressed)){
+  actor.fireBuffered=false;
   const count=WEAPON.count;
   // A settings change applies to the next group, including its reload.
   actor.salvo={count,remaining:count,next:0,interval:WEAPON.interval,reload:WEAPON.reload};actor.salvoSeq++;
@@ -1346,11 +1431,15 @@ function activeWindow(b){
 // Interval spent inside a unit circle; unlike closest-point checks, this also
 // handles becoming solid while already overlapping a moving target.
 function overlapWindow(x,y,dx,dy){const a=dx*dx+dy*dy,c=x*x+y*y-1;if(a<1e-14)return c<=0?[0,1]:null;const b=x*dx+y*dy,disc=b*b-a*c;if(disc<0)return null;const root=Math.sqrt(disc),lo=Math.max(0,(-b-root)/a),hi=Math.min(1,(-b+root)/a);return lo<=hi?[lo,hi]:null;}
-function collisionEvent(b,a){
+function collisionShape(a){
+ const shape=bodyShape(a);return{shape,co:Math.cos(shape.angle),si:Math.sin(shape.angle)};
+}
+function collisionEvent(b,a,shapeCache=null){
  const active=activeWindow(b);if(!active)return null;
  const clippedEnd=Number.isFinite(b.collisionEnd)&&b.collisionEnd<1?b.collisionEnd:Infinity;
  const end=Math.min(clippedEnd,Number.isFinite(b.endPoint?.t)?b.endPoint.t:Infinity);
- const shape=bodyShape(a),co=Math.cos(shape.angle),si=Math.sin(shape.angle),rx=shape.rx+b.r,ry=shape.ry+b.r;
+ const {shape,co,si}=shapeCache?(shapeCache[a.team]??=collisionShape(a)):collisionShape(a),rx=shape.rx+b.r,ry=shape.ry+b.r;
+ const bound=Math.max(rx,ry)+PROJECTILE_PATH_EPS;
  // Accepted damage substeps preserve both the activation event's exact time and
  // its position, even if field drag changes speed sharply during this frame.
  const segments=Array.isArray(b.damageSegments)?b.damageSegments:[{from:active[0],to:active[1],x0:b.px+(b.x-b.px)*active[0],y0:b.py+(b.y-b.py)*active[0],x1:b.px+(b.x-b.px)*active[1],y1:b.py+(b.y-b.py)*active[1]}];
@@ -1360,6 +1449,8 @@ function collisionEvent(b,a){
   const origin=b.damageCarrierStart&&b.damageCarrierStart.team===a.team?b.damageCarrierStart:{x:a.px,y:a.py};
   const span=segment.to-segment.from,ax0=origin.x+(a.x-origin.x)*segment.from,ay0=origin.y+(a.y-origin.y)*segment.from;
   const x=segment.x0-ax0,y=segment.y0-ay0,dx=segment.x1-segment.x0-(a.x-origin.x)*span,dy=segment.y1-segment.y0-(a.y-origin.y)*span;
+  // Reject only when the whole relative segment misses the enclosing square.
+  if(x>bound&&x+dx>bound||x< -bound&&x+dx< -bound||y>bound&&y+dy>bound||y< -bound&&y+dy< -bound)continue;
   const localX=co*x+si*y,localY=-si*x+co*y,localDx=co*dx+si*dy,localDy=-si*dx+co*dy;
   const overlap=overlapWindow(localX/rx,localY/ry,localDx/rx,localDy/ry);if(!overlap)continue;
   const localTime=overlap[0],t=segment.from+span*localTime;
@@ -1548,13 +1639,13 @@ function botLearn(bot,observation){
     // public velocity samples; never read the projectile's range endpoints.
     if(fieldActive)used=previousActive?used+(speed+oldSpeed)*.5*dt:speed*dt*.5;
     if(fieldActive){
-     const body=frame.self,w=fieldWeight((b.x+prev.x)*.5,(b.y+prev.y)*.5,body);
+     const body=frame.self,mx=(b.x+prev.x)*.5,my=(b.y+prev.y)*.5,w=fieldWeight(mx,my,body),sw=b.solid&&prev.solid?fieldWeight(mx,my,source,cfg.controlRadius):0,totalWeight=w+sw;
      // Known map forces bend a visible track without revealing launch spin.
      // Preserve the earlier estimate across these samples, including activation.
-     if(!mapAffected&&previousActive&&dt>0&&dt<.09&&w>.08&&cfg.spinForce>1&&speed>20){
+     if(!mapAffected&&previousActive&&dt>0&&dt<.09&&totalWeight>.08&&cfg.spinForce>1&&speed>20){
       const omega=Math.atan2(prev.vx*b.vy-prev.vy*b.vx,prev.vx*b.vx+prev.vy*b.vy)/dt;
       const nx=(b.vx+prev.vx)/(speed+oldSpeed),ny=(b.vy+prev.vy)/(speed+oldSpeed);
-      const estimate=omega*Math.hypot((speed+oldSpeed)*.5,6)/(cfg.spinForce*w)-receiverSpin(body,nx,ny);
+      const estimate=(omega*Math.hypot((speed+oldSpeed)*.5,6)/cfg.spinForce-receiverSpin(body,nx,ny)*w-receiverSpin(source,nx,ny)*sw)/totalWeight;
       if(Number.isFinite(estimate)&&Math.abs(estimate)<2*Math.max(1,cfg.launchSpinScale)){spin=confidence<.3?estimate:spin*.55+estimate*.45;confidence=Math.min(1,confidence+.2);}
      }
     }
@@ -1573,14 +1664,15 @@ function botLearn(bot,observation){
 // Cheap forecast of the SAME propulsion, quadratic drag and scalar-spin law.
 // Scalar drag is solved exactly for each locally fixed carrier velocity;
 // midpoint rotation avoids unstable Euler growth at large deflection settings.
-function botForecastActiveStep(b,dt,body){
+function botForecastActiveStep(b,dt,body,source=null){
  let remaining=dt,wallContacts=0,windowStopped=false;b.forecastWindow=null;b.warm=Math.max(0,b.warm||0);
  while(remaining>1e-6&&b.left>0){
   if(b.left<=1e-7){b.left=0;break;}
   const speed=Math.max(1e-6,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
   const active=b.before<=1e-5,damaging=active&&b.warm<=1e-7;
   const w=active?fieldWeight(b.x,b.y,body):0,inside=active&&brakingWeight(b.x,b.y,body);
-  const rate=cfg.spinForce*(b.spin+receiverSpin(body,nx,ny))*w/Math.hypot(speed,6);
+  const sourceWeight=damaging?fieldWeight(b.x,b.y,source,cfg.controlRadius):0;
+  const rate=cfg.spinForce*((b.spin+receiverSpin(body,nx,ny))*w+(b.spin+receiverSpin(source,nx,ny))*sourceWeight)/Math.hypot(speed,6);
   // Bound forecast detail in very tight curls; live RK4 motion is unchanged.
   let h=Math.min(remaining,.025,Math.max(.004,.25/Math.max(1,Math.abs(rate))));
   if(active&&!damaging)h=Math.min(h,b.warm);
@@ -1601,7 +1693,8 @@ function botForecastActiveStep(b,dt,body){
   const mx=Math.cos(midAngle),my=Math.sin(midAngle);
   const midX=b.x+mx*midSpeed*h*.5,midY=b.y+my*midSpeed*h*.5;
   const midWeight=active?fieldWeight(midX,midY,body):0;
-  const omega=cfg.spinForce*(b.spin+receiverSpin(body,mx,my))*midWeight/Math.hypot(midSpeed,6);
+  const sourceMidWeight=damaging?fieldWeight(midX,midY,source,cfg.controlRadius):0;
+  const omega=cfg.spinForce*((b.spin+receiverSpin(body,mx,my))*midWeight+(b.spin+receiverSpin(source,mx,my))*sourceMidWeight)/Math.hypot(midSpeed,6);
   const moveAngle=angle+omega*h*.5,oldX=b.x,oldY=b.y;
   const mapForce=mapAcceleration(midX,midY),ax=mapForce.x,ay=mapForce.y,forced=ax!==0||ay!==0;
   const driftX=Math.cos(moveAngle)*midSpeed+ax*h*.5,driftY=Math.sin(moveAngle)*midSpeed+ay*h*.5;
@@ -1628,9 +1721,7 @@ function botForecastActiveStep(b,dt,body){
   remaining-=h;
   if(wallHit){
    if(wallHit.wall.type==='absorb'){b.left=0;break;}
-   const normalSpeed=b.vx*wallHit.nx+b.vy*wallHit.ny;
-   b.vx-=2*normalSpeed*wallHit.nx;b.vy-=2*normalSpeed*wallHit.ny;
-   b.x+=wallHit.nx*1e-4;b.y+=wallHit.ny*1e-4;
+   respondProjectileWall(b,wallHit,1e-4);
    // Keep only the pre-bounce window; joining both legs would cut through
    // the wall. The next forecast step assesses the reflected flight again.
    windowStopped=true;
@@ -1641,6 +1732,7 @@ function botForecastActiveStep(b,dt,body){
 }
 // Only the visible phase initializes materialization in forecasts.
 function botForecastStep(b,dt,body){
+   const sourceTime=b.sourceTime||0;b.sourceTime=sourceTime+dt;
   if(typeof b.materialized!=='boolean')b.materialized=!!(b.solid||b.arming);
   b.forecastWindow=null;b.forecastGhostWindow=null;
   let elapsed=0,wallContacts=0,ghostWindowStopped=false;
@@ -1666,7 +1758,9 @@ function botForecastStep(b,dt,body){
     }
     if(b.materialized){
       if(b.forecastGhostWindow)b.forecastGhostWindow.ghostEndExclusive=true;
-      botForecastActiveStep(b,remaining,bodyAt(elapsed+remaining*.5));
+      const owner=b.sourceField,t=sourceTime+elapsed+remaining*.5;
+      const source=owner?{x:owner.x+(owner.vx||0)*t,y:owner.y+(owner.vy||0)*t,vx:owner.vx,vy:owner.vy}:null;
+      botForecastActiveStep(b,remaining,bodyAt(elapsed+remaining*.5),source);
       if(b.forecastWindow){
         b.forecastWindow.lo=(elapsed+b.forecastWindow.lo*remaining)/dt;
         b.forecastWindow.hi=(elapsed+b.forecastWindow.hi*remaining)/dt;
@@ -1714,9 +1808,7 @@ function botForecastStep(b,dt,body){
    elapsed+=h;
    if(wallHit){
     if(wallHit.wall.type==='absorb'){b.left=0;break;}
-    const normalSpeed=b.vx*wallHit.nx+b.vy*wallHit.ny;
-    b.vx-=2*normalSpeed*wallHit.nx;b.vy-=2*normalSpeed*wallHit.ny;
-    b.x+=wallHit.nx*1e-4;b.y+=wallHit.ny*1e-4;
+    respondProjectileWall(b,wallHit,1e-4);
     // Interception scoring uses the first straight leg only in this step.
     // Reflected velocity and remaining distance carry into subsequent steps.
     ghostWindowStopped=true;
@@ -1735,9 +1827,12 @@ function botThreatRank(b,a){
  const x=b.x-a.x,y=b.y-a.y,vx=b.vx-a.vx,vy=b.vy-a.vy,t=clamp(-(x*vx+y*vy)/(vx*vx+vy*vy+1),0,1);
  return Math.hypot(x+vx*t,y+vy*t)+Math.hypot(x,y)*.1;
 }
+function botRankThreats(bullets,actor,limit){
+ return bullets.map(bullet=>({bullet,rank:botThreatRank(bullet,actor)}))
+  .sort((a,b)=>a.rank-b.rank).slice(0,limit).map(entry=>entry.bullet);
+}
 function botObservedThreats(observation,actor,age,level,bot){
- const ranked=observation.bullets.filter(b=>!bot.tracks.get(b.id)?.expired)
-  .sort((a,b)=>botThreatRank(a,actor)-botThreatRank(b,actor)).slice(0,level.threats);
+ const ranked=botRankThreats(observation.bullets.filter(b=>!bot.tracks.get(b.id)?.expired),actor,level.threats);
  const threats=[];
  for(const visible of ranked){
   const track=bot.tracks.get(visible.id)||{spin:0,confidence:0,used:0};
@@ -1747,7 +1842,7 @@ function botObservedThreats(observation,actor,age,level,bot){
   const armingDelay=cfg.armingDelay??0,fieldActive=visible.solid||visible.arming;
   const hypotheses=fieldActive?[[0,1]]:[[Math.max(0,distance-cfg.band*.70),.55],[Math.max(0,distance-cfg.band*.12),.45]];
   for(const [before,probability] of hypotheses){
-   const b={...visible,before,left:fieldActive?Math.max(0,cfg.band-track.used):cfg.band,
+   const b={...visible,before,sourceField:observation.target,sourceTime:0,left:fieldActive?Math.max(0,cfg.band-track.used):cfg.band,
     warm:visible.solid?0:visible.arming?clamp(armingDelay-(observation.time-(track.armedAt??observation.time-armingDelay*.5)),0,armingDelay):armingDelay,
     spin:track.spin,weight:probability*(fieldActive?1:BOT_TUNING.ghostWeight),annProbability:probability};
    // Bring the delayed observation forward through our KNOWN movement. No
@@ -1788,29 +1883,12 @@ function botPracticePlan(bot,actor,target){
  bot.practice={kind,started:bot.time,until:bot.time+profile.duration+rand()*.7,
   range:profile.range+(rand()-.5)*60,tangent:profile.tangent,side,resume:kind==='reposition'?next:null};
 }
-function botMoveScore(actor,target,threats,direction,bot,level){
- const count=Math.ceil(level.horizon*22),dt=level.horizon/count,states=[actor],dodgeRadius=bodyShape(actor).rx;let body=actor;
- for(let i=0;i<count;i++){body=botBodyStep(body,direction,dt);states.push(body);}
- let risk=0;
- for(const incoming of threats){const b={...incoming};let worst=0;
-  for(let i=0;i<count&&b.left>0;i++){
-   const old=states[i],next=states[i+1];
-   const carrier={...old,x:(old.x+next.x)*.5,y:(old.y+next.y)*.5,vx:(old.vx+next.vx)*.5,vy:(old.vy+next.vy)*.5};
-   botForecastStep(b,dt,carrier);
-   // A preparing bullet can already curve, but contact in that phase carries
-   // zero damage risk. Test only this forecast step's damaging subsegment.
-   const window=b.forecastWindow;if(!window)continue;
-   const ax=next.x-old.x,ay=next.y-old.y,span=window.hi-window.lo;
-   const rx=window.x1-(old.x+ax*window.lo),ry=window.y1-(old.y+ay*window.lo);
-   const dx=window.x2-window.x1-ax*span,dy=window.y2-window.y1-ay*span;
-   const q=clamp(-(rx*dx+ry*dy)/(dx*dx+dy*dy+1e-12),0,1);
-   const clearance=Math.hypot(rx+q*dx,ry+q*dy)-dodgeRadius-b.r;
-   const proximity=clamp(1-clearance/(level.margin+12),0,1);
-   worst=Math.max(worst,(proximity*proximity*75+(clearance<0?180:0))/(.65+(i+window.lo+q*span)*dt));
-  }
-  risk+=worst*incoming.weight;
- }
- const predicted=botTargetAt(target,level.horizon),offset=unit(predicted.x-body.x,predicted.y-body.y);
+function botBodyMidpoint(a,b){
+ return{...a,x:(a.x+b.x)*.5,y:(a.y+b.y)*.5,vx:(a.vx+b.vx)*.5,vy:(a.vy+b.vy)*.5};
+}
+function botMoveContext(actor,target,bot,level){
+ const count=Math.ceil(level.horizon*22),dt=level.horizon/count,dodgeRadius=bodyShape(actor).rx;
+ const predicted=botTargetAt(target,level.horizon);
  const current=unit(target.x-actor.x,target.y-actor.y),cross=Math.abs(current.x*actor.vy-current.y*actor.vx)/ACTOR.speed;
  // Reloading creates breathing room; ready shots and a target already moving
  // away encourage closing. A broad, state-dependent range replaces 430.
@@ -1829,6 +1907,35 @@ function botMoveScore(actor,target,threats,direction,bot,level){
   const length=point=>Math.hypot(point.x-actor.x,point.y-actor.y)+Math.hypot(target.x-point.x,target.y-point.y);
   waypoint=length(top)<=length(bottom)?top:bottom;
  }
+ const radial=clamp((current.d-preferred)/170,-1,1);
+ const tangent=bot.practice?bot.practice.side*bot.practice.tangent:0;
+ const center=bot.practice?.kind==='reposition'?unit(W*.5-actor.x,H*.5-actor.y):{x:0,y:0};
+ const desired=bot.practice?unit(current.x*radial-current.y*tangent+center.x*1.4,current.y*radial+current.x*tangent+center.y*1.4):unit(current.x*radial-current.y*bot.side*profile.tangent,current.y*radial+current.x*bot.side*profile.tangent);
+ return{count,dt,dodgeRadius,predicted,profile,preferred,waypoint,desired};
+}
+function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveContext(actor,target,bot,level)){
+ const {count,dt,dodgeRadius,predicted,profile,preferred,waypoint,desired}=shared,states=[actor],carriers=[];let body=actor;
+ for(let i=0;i<count;i++){body=botBodyStep(body,direction,dt);states.push(body);}
+ let risk=0;
+ for(const incoming of threats){const b={...incoming};let worst=0;
+  for(let i=0;i<count&&b.left>0;i++){
+   const old=states[i],next=states[i+1];
+   const carrier=carriers[i]??=botBodyMidpoint(old,next);
+   botForecastStep(b,dt,carrier);
+   // A preparing bullet can already curve, but contact in that phase carries
+   // zero damage risk. Test only this forecast step's damaging subsegment.
+   const window=b.forecastWindow;if(!window)continue;
+   const ax=next.x-old.x,ay=next.y-old.y,span=window.hi-window.lo;
+   const rx=window.x1-(old.x+ax*window.lo),ry=window.y1-(old.y+ay*window.lo);
+   const dx=window.x2-window.x1-ax*span,dy=window.y2-window.y1-ay*span;
+   const q=clamp(-(rx*dx+ry*dy)/(dx*dx+dy*dy+1e-12),0,1);
+   const clearance=Math.hypot(rx+q*dx,ry+q*dy)-dodgeRadius-b.r;
+   const proximity=clamp(1-clearance/(level.margin+12),0,1);
+   worst=Math.max(worst,(proximity*proximity*75+(clearance<0?180:0))/(.65+(i+window.lo+q*span)*dt));
+  }
+  risk+=worst*incoming.weight;
+ }
+ const offset=unit(predicted.x-body.x,predicted.y-body.y);
  // A wall end is a near-term steering goal. Reuse an earlier predicted body
  // so a full-horizon overshoot of that corner cannot make standing still win.
  const routeIndex=waypoint?Math.min(count,Math.ceil(.35/dt)):count,routeBody=states[routeIndex];
@@ -1840,10 +1947,6 @@ function botMoveScore(actor,target,threats,direction,bot,level){
   wallDistance=Math.min(wallDistance,(1-radial)*Math.min(wall.rx,wall.ry)-(inset-24)-wall.r);
  }
  const wallCost=clamp((95-wallDistance)/95,0,1)**2*13*BOT_TUNING.wallWeight;
- const radial=clamp((current.d-preferred)/170,-1,1);
- const tangent=bot.practice?bot.practice.side*bot.practice.tangent:0;
- const center=bot.practice?.kind==='reposition'?unit(W*.5-actor.x,H*.5-actor.y):{x:0,y:0};
- const desired=bot.practice?unit(current.x*radial-current.y*tangent+center.x*1.4,current.y*radial+current.x*tangent+center.y*1.4):unit(current.x*radial-current.y*bot.side*profile.tangent,current.y*radial+current.x*bot.side*profile.tangent);
  const alignment=waypoint?clamp((Math.hypot(waypoint.x-actor.x,waypoint.y-actor.y)-Math.hypot(waypoint.x-routeBody.x,waypoint.y-routeBody.y))/Math.max(1,ACTOR.speed*routeIndex*dt),-1,1):direction.x*desired.x+direction.y*desired.y;
  const change=Math.hypot(direction.x-bot.output.x,direction.y-bot.output.y);
  const requestedWall=firstWallHit(actor.x,actor.y,actor.x+direction.x*ACTOR.speed*.35,actor.y+direction.y*ACTOR.speed*.35,dodgeRadius+3);
@@ -1857,17 +1960,15 @@ function botMoveScore(actor,target,threats,direction,bot,level){
 // Their spin/onset are hypotheses already learned by botObservedThreats; the
 // exact opposing launch spin and activation distance remain unavailable.
 function botAnnihilationForecast(actor,direction,threats,age){
- const dt=1/30,count=24,states=[actor],paths=[],dodgeRadius=bodyShape(actor).rx;
+ const candidates=threats.slice(0,12).filter(b=>!b.materialized&&!b.solid&&!b.arming&&b.left>1e-7);
+ if(!candidates.length)return null;
+ const dt=1/30,count=24,states=[actor],carriers=[],paths=[],dodgeRadius=bodyShape(actor).rx;
  for(let i=0;i<count;i++)states.push(botBodyStep(states[i],direction,dt));
- for(const incoming of threats.slice(0,12)){
-  // A visibly solid round (or an onset hypothesis already brought forward
-  // into its active phase) cannot be intercepted by shooting at it.
-  if(incoming.materialized||incoming.solid||incoming.arming)continue;
+ for(const incoming of candidates){
   const b={...incoming},segments=[];let danger=0,dangerTime=Infinity;
   for(let i=0;i<count&&b.left>1e-7;i++){
    const previous=states[i],next=states[i+1],old={x:b.x,y:b.y};
-   const body={...previous,x:(previous.x+next.x)*.5,y:(previous.y+next.y)*.5,
-    vx:(previous.vx+next.vx)*.5,vy:(previous.vy+next.vy)*.5};
+   const body=carriers[i]??=botBodyMidpoint(previous,next);
    botForecastStep(b,dt,body);
    segments.push({x0:old.x,y0:old.y,x1:b.x,y1:b.y,
     ghost:b.forecastGhostWindow?{...b.forecastGhostWindow}:null});
@@ -1888,7 +1989,7 @@ function botAnnihilationForecast(actor,direction,threats,age){
   const probability=incoming.annProbability??1;
   if(segments.some(segment=>segment.ghost))paths.push({id:incoming.id,r:incoming.r,probability,danger,dangerTime,segments});
  }
- return{dt,age,paths};
+ return paths.length?{dt,age,paths}:null;
 }
 function botAnnihilationCrossings(b,index,forecast,contacts){
  if(!forecast||index>=24)return;
@@ -1961,7 +2062,9 @@ function botAnnihilationDefensiveAim(actor,forecast){
  return best;
 }
 
-function botAimProbe(actor,target,angle,range,annForecast=null){
+function botAimProbe(actor,target,angle,range,annForecast=null,targetAt=null,sourceAt=null){
+ targetAt??=t=>botTargetAt(target,t);
+ sourceAt??=t=>botTargetAt(actor,t);
  const firingBody={...actor,aim:angle},offset=muzzleDistance(firingBody,angle)+3,dx=Math.cos(angle),dy=Math.sin(angle);
  range=clamp(range,MIN_ACTIVATION_RANGE,1400);
  const {fieldStart,intervalEnd}=shotRangePlan(firingBody,range,angle);
@@ -1978,8 +2081,8 @@ function botAimProbe(actor,target,angle,range,annForecast=null){
   b.intervalLength/Math.max(25,Math.min(cfg.launchSpeed,equilibrium))+.6,.7,6),dt=1/30;
  let best={miss:Infinity,travel:fieldStart,time:duration};const annContacts=[];let annIndex=0;
  for(let t=0;t<duration;t+=dt){
-  const old={x:b.x,y:b.y,travel:b.travel},before=botTargetAt(target,t),after=botTargetAt(target,t+dt);
-  integrateProjectile(b,dt,botTargetAt(target,t+dt*.5));
+  const old={x:b.x,y:b.y,travel:b.travel},before=targetAt(t),after=targetAt(t+dt);
+  integrateProjectile(b,dt,targetAt(t+dt*.5),sourceAt(t+dt*.5));
   if(annForecast)botAnnihilationCrossings(b,annIndex++,annForecast,annContacts);
   const ds=b.travel-old.travel;
   for(const segment of b.damageSegments){
@@ -2018,8 +2121,19 @@ function botAim(actor,target,bot,level){
  const base=Math.atan2(prediction.y-actor.y,prediction.x-actor.x);
  const baseRange=Math.hypot(prediction.x-actor.x,prediction.y-actor.y)-cfg.band*.5;
  const span=Math.max(cfg.band*.75,Math.min(cfg.radius*.55,120),cfg.launchSpeed*preparation*.5);
- let best=null;
- function consider(angle,range){const shot=botAimProbe(actor,target,angle,range,bot.annForecast);if(!best||shot.score<best.score)best=shot;}
+ let best=null;const targetCache=new Map(),sourceCache=new Map();
+ // Every candidate shares the same target forecast during this decision.
+ const targetAt=t=>{
+  let body=targetCache.get(t);
+  if(!body){body=botTargetAt(target,t);targetCache.set(t,body);}
+  return body;
+ };
+ const sourceAt=t=>{
+  let body=sourceCache.get(t);
+  if(!body){body=botTargetAt(actor,t);sourceCache.set(t,body);}
+  return body;
+ };
+ function consider(angle,range){const shot=botAimProbe(actor,target,angle,range,bot.annForecast,targetAt,sourceAt);if(!best||shot.score<best.score)best=shot;}
  // Changing range moves both fixed endpoints; search direction and range together.
  const angles=[-.30,0,.30],ranges=[-1,0,1];
  for(const da of angles)for(const dr of ranges)consider(base+da,baseRange+dr*span);
@@ -2065,9 +2179,8 @@ function botControl(actor,target,projectiles,dt,options={}){
   bot.nextSample=bot.time+1/30;
   // All projectiles are visible now. Only their CURRENT public phase is
   // copied; a future activation distance must never enter delayed history.
-  const seen=projectiles.filter(b=>!b.dead&&!b.expired&&b.team!==self.team)
-   .map(botBullet).filter(b=>Number.isFinite(b.vx)&&Number.isFinite(b.vy))
-   .sort((a,b)=>botThreatRank(a,self)-botThreatRank(b,self)).slice(0,24);
+  const seen=botRankThreats(projectiles.filter(b=>!b.dead&&!b.expired&&b.team!==self.team)
+   .map(botBullet).filter(b=>Number.isFinite(b.vx)&&Number.isFinite(b.vy)),self,24);
   bot.history.push({time:bot.time,self:botVisibleBody(actor),target:target?botVisibleBody(target):null,bullets:seen});
   while(bot.history.length>1&&bot.history[1].time<bot.time-.85)bot.history.shift();
  }
@@ -2090,7 +2203,8 @@ function botControl(actor,target,projectiles,dt,options={}){
  if(options.fire===false)botPracticePlan(bot,self,perceived);
  else if(bot.practice)delete bot.practice;
  const threats=botObservedThreats(observation,self,age,level,bot);let direction=BOT_DIRECTIONS[0],score=Infinity;
- for(const candidate of BOT_DIRECTIONS){const cost=botMoveScore(self,perceived,threats,candidate,bot,level);if(cost<score){score=cost;direction=candidate;}}
+ const moveContext=botMoveContext(self,perceived,bot,level);
+ for(const candidate of BOT_DIRECTIONS){const cost=botMoveScore(self,perceived,threats,candidate,bot,level,moveContext);if(cost<score){score=cost;direction=candidate;}}
  // Practice targets use the same delayed movement decisions, without firing.
  if(options.fire===false){
   bot.pendingShot=false;bot.annForecast=null;
@@ -2121,7 +2235,7 @@ function createStartupAIJob(){
  actor.vx=90;actor.vy=160;
  const shortActor={...actor,x:43.1,y:375.1,vx:.1,vy:.1},shortTarget={...target,x:42.1,y:375.1};
  const bot={annForecast:null,noiseAngle:0,noiseRange:0,side:1,output:{x:0,y:0}};
- let phase=0,index=0,bullet=null,forecast=null;
+ let phase=0,index=0,bullet=null;
  return()=>{
   // Begin with paths that immediately leave the arena, then gradually
   // exercise longer curves. Never run a full cold search as one idle job.
@@ -2136,9 +2250,8 @@ function createStartupAIJob(){
    integrateProjectile(bullet,1/30,target);
    if(++index===96){phase++;index=0;}
   }else if(phase===3){
-   if(!forecast)forecast=botAnnihilationForecast(actor,{x:0,y:0},[],.1);
    const fraction=Math.min(1,index/24),warmActor={...actor,x:43.1+856.9*fraction,vx:90.1*fraction,vy:160.1*fraction},warmTarget={...target,x:42.1+257.9*fraction};
-   botAimProbe(warmActor,warmTarget,Math.PI+[-.3,0,.3][index%3],100+400*fraction,forecast);
+   botAimProbe(warmActor,warmTarget,Math.PI+[-.3,0,.3][index%3],100+400*fraction);
    if(++index===48){phase++;index=0;}
   }else if(phase===4){
    botMoveScore(actor,target,[],{x:Math.cos(index*Math.PI/4),y:Math.sin(index*Math.PI/4)},bot,BOT_LEVELS.easy);
@@ -2190,6 +2303,7 @@ function simulate(dt,control){
  // botBullet strips private projectile fields only when a sensory sample is due.
  const ai=e?(fixed?{x:0,y:0,aim:Math.atan2(p.y-e.y,p.x-e.x),range:Math.hypot(p.x-e.x,p.y-e.y)-cfg.band*.5,shoot:false}:botControl(e,p,bullets,dt,practice?{difficulty:'advanced',fire:false}:{})):null;
  if(practice&&ai)ai.shoot=false;
+ applyActorRepulsion(p,e,dt);
  moveActor(p,control.x*ACTOR.speed,control.y*ACTOR.speed,cfg.inertia,dt);
  if(e){moveActor(e,ai.x*ACTOR.speed,ai.y*ACTOR.speed,cfg.inertia,dt);e.aim=ai.aim;e.range=clamp(ai.range,MIN_ACTIVATION_RANGE,1400);}
  else if(practice){enemyDelay-=dt;if(enemyDelay<=0)spawnEnemy();}
@@ -2208,17 +2322,18 @@ function simulate(dt,control){
  if(aimPoint){p.aim=Math.atan2(aimPoint.y-p.y,aimPoint.x-p.x);p.range=clamp(Math.hypot(aimPoint.x-p.x,aimPoint.y-p.y),MIN_ACTIVATION_RANGE,1400);}
  constrainActor(p);if(e){constrainActor(e);separateActors(p,e);}
  if(aimPoint){p.aim=Math.atan2(aimPoint.y-p.y,aimPoint.x-p.x);p.range=clamp(Math.hypot(aimPoint.x-p.x,aimPoint.y-p.y),MIN_ACTIVATION_RANGE,1400);}
- updateWeapon(p,control.shoot,dt,!!control.autoFire,control.press);
+ if(cfg.continuousFire)p.triggerBlocked=false;
+ updateWeapon(p,cfg.continuousFire||control.shoot,dt,cfg.continuousFire||!!control.autoFire,control.press);
  if(control.press){if(mouse.press===control.press)mouse.press=null;control.press=null;}
  if(e)updateWeapon(e,ai.shoot,dt,false);
  for(const b of bullets)stepBullet(b,dt);
- const events=[],ghosts=[[],[]];
+ const events=[],ghosts=[[],[]],hitShapes=[];
  for(const b of bullets){
   if(b.dead)continue;
   // Include pre-activation motion even when the bullet ends this step bright.
   if(cfg.annihilationChance>0&&b.motionSegments.some(s=>s.phase==='ghost'&&s.from<b.collisionEnd))ghosts[b.team].push(b);
   const target=b.team===1?p:e;
-  if(target){const contact=collisionEvent(b,target);if(contact)events.push({kind:'hit',t:contact.t,b,target,contact});}
+  if(target){const contact=collisionEvent(b,target,hitShapes);if(contact)events.push({kind:'hit',t:contact.t,b,target,contact});}
  }
  for(const a of ghosts[0])for(const b of ghosts[1]){
   const event=projectilePairEvent(a,b);if(event)events.push(event);
@@ -2292,6 +2407,7 @@ function drawField(carrier,team){
  const rgb=team===0?'143,178,169':'184,158,134';const R=cfg.radius;ctx.save();
  ctx.fillStyle=`rgba(${rgb},.045)`;circle(carrier.x,carrier.y,R);ctx.fill();
  ctx.lineWidth=1;ctx.strokeStyle=`rgba(${rgb},.34)`;circle(carrier.x,carrier.y,R);ctx.stroke();
+ if(cfg.controlRadius>0&&cfg.controlRadius!==R){ctx.setLineDash([5,5]);ctx.strokeStyle=`rgba(${rgb},.22)`;circle(carrier.x,carrier.y,cfg.controlRadius);ctx.stroke();}
  ctx.restore();
 }
 function drawRange(){
@@ -2303,43 +2419,55 @@ function drawRange(){
  ctx.moveTo(start,-capRadius);ctx.lineTo(start,capRadius);ctx.moveTo(end,-capRadius);ctx.lineTo(end,capRadius);ctx.stroke();ctx.restore();
 }
 
-function drawActor(a,team,gray=0){
+function actorDrawing(a,team,gray=0){
  const muted=(r,g,b)=>{const luminance=.2126*r+.7152*g+.0722*b;return `rgb(${[r,g,b].map(v=>Math.round(v+(luminance-v)*gray)).join(',')})`;};
  const paint=hex=>{if(!gray)return hex;const n=parseInt(hex.slice(1),16);return muted(n>>16,(n>>8)&255,n&255);};
- const color=paint(team===0?C.player:C.enemy),shape=bodyShape(a);
- ctx.save();ctx.translate(a.x,a.y);
- ctx.save();ctx.rotate(shape.angle);
- const bodyPath=()=>{ctx.beginPath();ctx.ellipse(0,0,shape.rx,shape.ry,0,0,TAU);};
- bodyPath();ctx.fillStyle=paint(team===0?'#91aaa5':'#9f8d7d');ctx.fill();
- // Find the ellipse parameter whose point lies exactly on the live aim ray.
+ const shape=bodyShape(a),body=new Path2D();body.ellipse(0,0,shape.rx,shape.ry,0,0,TAU);
+ // Prepare geometry and charge colors once for the body and all its images.
  const relative=a.aim-shape.angle;
  const tipAngle=Math.atan2(shape.rx*Math.sin(relative),shape.ry*Math.cos(relative));
  const rearHalfAngle=Math.PI*2/9,rearA=tipAngle+Math.PI-rearHalfAngle,rearB=tipAngle+Math.PI+rearHalfAngle;
  const tipX=shape.rx*Math.cos(tipAngle),tipY=shape.ry*Math.sin(tipAngle);
  const backAX=shape.rx*Math.cos(rearA),backAY=shape.ry*Math.sin(rearA);
  const backBX=shape.rx*Math.cos(rearB),backBY=shape.ry*Math.sin(rearB);
- ctx.save();bodyPath();ctx.clip();
- // Two chords meet at the muzzle; the rear boundary is the body's own arc.
- ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(backAX,backAY);
- ctx.ellipse(0,0,shape.rx,shape.ry,0,rearA,rearB);ctx.closePath();
- // Stay dark for the whole burst, then brighten continuously while reloading.
+ const chargePath=new Path2D();chargePath.moveTo(tipX,tipY);chargePath.lineTo(backAX,backAY);
+ chargePath.ellipse(0,0,shape.rx,shape.ry,0,rearA,rearB);chargePath.closePath();
+ const seam=new Path2D();seam.moveTo(backAX,backAY);seam.lineTo(tipX,tipY);seam.lineTo(backBX,backBY);
  const charge=a.salvo?0:clamp(1-a.cd/a.reloadDuration,0,1);
  const empty=team===0?[44,65,66]:[61,48,47],ready=team===0?[103,143,136]:[148,115,98];
  const fill=empty.map((low,i)=>Math.round(low+(ready[i]-low)*charge));
- ctx.fillStyle=gray?muted(...fill):`rgb(${fill.join(',')})`;ctx.fill();
- ctx.beginPath();ctx.moveTo(backAX,backAY);ctx.lineTo(tipX,tipY);ctx.lineTo(backBX,backBY);
- ctx.strokeStyle=paint(team===0?'#d2dfd6':'#e2d3c1');
- ctx.lineWidth=1.25;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+ return{shape,body,chargePath,seam,bodyColor:paint(team===0?'#91aaa5':'#9f8d7d'),
+  chargeColor:gray?muted(...fill):`rgb(${fill.join(',')})`,seamColor:paint(team===0?'#d2dfd6':'#e2d3c1'),
+  outlineColor:paint(a.hitFlash>0?'#eee5cd':team===0?C.player:C.enemy),arcColor:paint(C.enemy)};
+}
+function drawActor(a,team,gray=0,projection=false,drawing=actorDrawing(a,team,gray)){
+ ctx.save();ctx.translate(a.x,a.y);
+ ctx.save();ctx.rotate(drawing.shape.angle);
+ ctx.fillStyle=drawing.bodyColor;ctx.fill(drawing.body);
+ ctx.save();ctx.clip(drawing.body);ctx.fillStyle=drawing.chargeColor;ctx.fill(drawing.chargePath);
+ ctx.strokeStyle=drawing.seamColor;ctx.lineWidth=1.25;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke(drawing.seam);
  ctx.restore();
- bodyPath();ctx.strokeStyle=a.hitFlash>0?paint('#eee5cd'):color;ctx.lineWidth=a.hitFlash>0?2.2:1.4;ctx.stroke();
+ ctx.strokeStyle=drawing.outlineColor;ctx.lineWidth=a.hitFlash>0?2.2:1.4;ctx.stroke(drawing.body);
  ctx.restore();
- if(a.hitArc>0){ctx.save();ctx.globalAlpha=a.hitArc/.3;ctx.strokeStyle=paint(C.enemy);ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,a.r+10,a.hitAngle-.48,a.hitAngle+.48);ctx.stroke();ctx.restore();}
- ctx.restore();if(a.hp>0)drawHealth(a,team);
+ if(!projection&&a.hitArc>0){ctx.save();ctx.globalAlpha=a.hitArc/.3;ctx.strokeStyle=drawing.arcColor;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,a.r+10,a.hitAngle-.48,a.hitAngle+.48);ctx.stroke();ctx.restore();}
+ ctx.restore();if(!projection&&a.hp>0)drawHealth(a,team);
+}
+
+function drawLoopImages(a,gray,drawing){
+ if(!MAPS[mapId].wrap)return;
+ const ox=(VIEW_W-W)/2,oy=(VIEW_H-H)/2,r=drawing.shape.rx+3;
+ for(let iy=-1;iy<=1;iy++)for(let ix=-1;ix<=1;ix++){
+  if(!ix&&!iy)continue;
+  const flip=MAPS[mapId].twist&&iy!==0,dx=ix*(W-48),dy=iy*(H-48),x=(flip?W-a.x:a.x)+dx,y=a.y+dy;
+  if(x+r< -ox||x-r>W+ox||y+r< -oy||y-r>H+oy)continue;
+  ctx.save();ctx.translate(dx+(flip?W:0),dy);if(flip)ctx.scale(-1,1);ctx.globalAlpha=.4;
+  drawActor(a,a.team,gray,true,drawing);ctx.restore();
+ }
 }
 
 function drawHealth(a,team){
  // A short, unboxed line: faint missing health and a quieter filled portion.
- const scale=Math.max(1,Math.min(2,W/(canvas.clientWidth||W))),width=32*scale;
+ const scale=Math.max(1,Math.min(2,VIEW_W/(canvas.clientWidth||VIEW_W))),width=32*scale;
  const reservedRadius=a.r*Math.sqrt(1+Math.abs(cfg.actorAspect)/100)*Math.exp(.29);
  const x=a.x,y=a.y-reservedRadius-7*scale,health=clamp(a.hp/a.maxHp,0,1);
  ctx.save();ctx.strokeStyle=team===0?C.player:C.enemy;ctx.lineWidth=1.5*scale;ctx.lineCap='round';
@@ -2353,10 +2481,21 @@ function drawTouch(){
  ctx.save();ctx.strokeStyle='rgba(185,202,196,.25)';ctx.lineWidth=1.5;circle(x,y,radius);ctx.stroke();
  ctx.fillStyle=t?'rgba(185,202,196,.28)':'rgba(185,202,196,.12)';circle(x+u.x*d,y+u.y*d,19);ctx.fill();ctx.restore();
 }
+const bulletGlowCache=new Map();
+function bulletGlow(radius,color){
+ const key=color+':'+radius;let glow=bulletGlowCache.get(key);if(glow)return glow;
+ const scale=Math.max(1,Math.ceil(canvas.width/VIEW_W),Math.ceil(canvas.height/VIEW_H));
+ const image=document.createElement('canvas'),size=Math.ceil(radius*5.6*scale)+2,center=size*.5;
+ image.width=image.height=size;const paint=image.getContext('2d');
+ const gradient=paint.createRadialGradient(center,center,radius*.5*scale,center,center,radius*2.8*scale);
+ gradient.addColorStop(0,color+'66');gradient.addColorStop(1,color+'00');
+ paint.fillStyle=gradient;paint.fillRect(0,0,size,size);
+ glow={image,extent:size/(2*scale)};bulletGlowCache.set(key,glow);return glow;
+}
 function drawBullet(b,fade=null){
  const phase=fade===null?projectilePhase(b):{solid:b.fadeSolid!==false,alpha:fade*(b.fadeSolid===false?.64:1)},palette=BULLET_COLORS[b.team===0?0:1],color=phase.solid?palette.solid:palette.ghost;
  ctx.save();ctx.globalAlpha=phase.alpha;
- if(phase.solid){const glow=ctx.createRadialGradient(b.x,b.y,b.r*.5,b.x,b.y,b.r*2.8);glow.addColorStop(0,color+'66');glow.addColorStop(1,color+'00');ctx.fillStyle=glow;circle(b.x,b.y,b.r*2.8);ctx.fill();}
+ if(phase.solid){const glow=bulletGlow(b.r,color),r=glow.extent;ctx.drawImage(glow.image,b.x-r,b.y-r,r*2,r*2);}
  ctx.fillStyle=color;circle(b.x,b.y,b.r);ctx.fill();
  if(phase.solid){ctx.fillStyle=palette.core;circle(b.x,b.y,b.r*.58);ctx.fill();}
  ctx.restore();
@@ -2388,15 +2527,20 @@ function drawWalls(){
  ctx.restore();
 }
 function render(){
+ renderDirty=false;renderedState=state;
  const visualPlayer=ending?.actors[0]||p,visualEnemy=ending?ending.actors[1]:enemy;
  const gray=ending?clamp((ending.age-.08)/.32,0,1):0;
- renderFrames++;const sx=canvas.width/W,sy=canvas.height/H;ctx.setTransform(sx,0,0,sy,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
- if(mapId!=='ellipse'){ctx.strokeStyle=C.edge;ctx.lineWidth=.75;ctx.strokeRect(24,24,W-48,H-48);}
+ renderFrames++;const sx=canvas.width/VIEW_W,sy=canvas.height/VIEW_H,ox=(VIEW_W-W)/2,oy=(VIEW_H-H)/2;ctx.setTransform(sx,0,0,sy,ox*sx,oy*sy);ctx.fillStyle=C.bg;ctx.fillRect(-ox,-oy,VIEW_W,VIEW_H);
+ if(mapId!=='ellipse'){ctx.save();ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;ctx.lineWidth=MAPS[mapId].wrap?1.2:.75;if(MAPS[mapId].wrap)ctx.setLineDash([9,6]);
+  if(MAPS[mapId].twist)ctx.strokeStyle='#c0a88b';for(const y of [24,H-24]){ctx.beginPath();ctx.moveTo(24,y);ctx.lineTo(W-24,y);ctx.stroke();}
+  ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;
+  for(const x of [24,W-24]){ctx.beginPath();ctx.moveTo(x,24);ctx.lineTo(x,H-24);ctx.stroke();}
+  ctx.restore();}
  drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending)drawRange();
  drawWalls();
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3));else drawBullet(b);}
  for(const fade of bulletFades)drawBullet(fade,1-fade.age/fade.life);
- for(const actor of [visualEnemy,visualPlayer]){if(actor)drawActor(actor,actor.team,ending&&actor.hp<=0?gray:0);}
+ for(const actor of [visualEnemy,visualPlayer]){if(actor){const fade=ending&&actor.hp<=0?gray:0,drawing=actorDrawing(actor,actor.team,fade);drawLoopImages(actor,fade,drawing);drawActor(actor,actor.team,fade,false,drawing);}}
  for(const e of effects){const t=e.age/e.life;ctx.save();ctx.globalAlpha=(1-t)*.8;ctx.strokeStyle=e.kind==='intercept'?'#d5ddd5':e.kind==='hit'||e.kind==='kill'?C.enemy:C.player;ctx.lineWidth=1;circle(e.x,e.y,(e.kind==='kill'?18:2)+t*(e.kind==='kill'?35:e.kind==='intercept'?9:7+e.strength*6));ctx.stroke();
   if(e.kind==='kill'){ctx.globalAlpha=(1-t)*.4;for(let i=0;i<8;i++){const a=i/8*TAU;ctx.fillStyle=C.enemy;circle(e.x+Math.cos(a)*(20+t*45),e.y+Math.sin(a)*(20+t*45),2*(1-t)+.5);ctx.fill();}}
   else if(e.kind!=='intercept'){for(let i=-1;i<=1;i++){const angle=e.angle+i*.55,d=4+t*(8+e.strength*10);ctx.beginPath();ctx.moveTo(e.x+Math.cos(angle)*d,e.y+Math.sin(angle)*d);ctx.lineTo(e.x+Math.cos(angle)*(d+3),e.y+Math.sin(angle)*(d+3));ctx.stroke();}}ctx.restore();
@@ -2414,11 +2558,13 @@ function frame(now){
  // A controller can start or resume here; reset the clock before computing dt.
  const pad=pollPad(),dt=last?Math.max(0,Math.min((now-last)/1000,.05)):0;last=now;
  if(state==='running'||state==='ending'){const input=state==='running'?getInput(pad):null;accumulator+=dt;while(accumulator>=STEP&&(state==='running'||state==='ending')){if(state==='running')simulate(STEP,input);else updateEnding(STEP);accumulator-=STEP;}}else accumulator=0;
- render();if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}requestAnimationFrame(frame);
+ if(state==='running'||state==='ending'||renderDirty||renderedState!==state)render();
+ if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}requestAnimationFrame(frame);
 }
-function pointerWorld(e){const b=canvas.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*W,y:(e.clientY-b.top)/b.height*H};}
+function pointerWorld(e){const b=canvas.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*VIEW_W-(VIEW_W-W)/2,y:(e.clientY-b.top)/b.height*VIEW_H-(VIEW_H-H)/2};}
 canvas.addEventListener('pointerdown',e=>{
  if(state!=='running')return;
+ canvas.focus({preventScroll:true});
  unlockAudio();const q=pointerWorld(e);
  if(e.pointerType==='touch'){
   e.preventDefault();
@@ -2449,11 +2595,12 @@ function pointerUp(e){
  if(e.type==='pointerup'&&state==='running'&&(activeAim||heldMouse||touch.move?.id===e.pointerId))unlockAudio();
  // Normal capture release follows pointerup: retain a queued quick tap then.
  // Unexpected capture loss or cancellation must never start another group.
- if((e.type==='pointercancel'||e.type==='lostpointercapture'&&(activeAim||heldMouse))&&mouse.press?.pointerId===e.pointerId)mouse.press=null;
+ if(e.type==='pointercancel'||e.type==='lostpointercapture'&&(activeAim||heldMouse)){if(mouse.press?.pointerId===e.pointerId)mouse.press=null;p.fireBuffered=false;}
  for(const name of ['move','aim'])if(touch[name]?.id===e.pointerId)touch[name]=null;
  if(e.pointerType!=='touch'&&(e.button===0||e.type==='pointercancel'||e.type==='lostpointercapture'))mouse.down=false;
 }
 window.addEventListener('pointerup',pointerUp);window.addEventListener('pointercancel',pointerUp);canvas.addEventListener('lostpointercapture',pointerUp);canvas.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('focusin',e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON','SUMMARY'].includes(e.target.tagName))keys.clear();});
 window.addEventListener('keydown',e=>{
  if(['INPUT','SELECT','TEXTAREA','BUTTON','SUMMARY'].includes(document.activeElement?.tagName))return;
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
@@ -2474,7 +2621,12 @@ $('start').addEventListener('click',()=>{startOrResume();$('start').blur();});$(
 for(const id of ['start','restart','pause','sound'])$(id).addEventListener('pointerup',e=>{
  if(e.pointerType==='touch'&&(id!=='sound'||!cfg.sound))resumeExistingAudio(id==='sound');
 });
-$('mode').addEventListener('change',()=>{const mode=$('mode').value;if(BOT_LEVELS[mode])cfg.difficulty=mode;saveSettings();reset(true);$('mode').blur();});
+$('mode').addEventListener('change',()=>{
+ const run=state==='running',settingsOpen=$('settings').open,mode=$('mode').value;
+ if(BOT_LEVELS[mode])cfg.difficulty=mode;
+ if(BOT_LEVELS[mode]&&BOT_LEVELS[roundMode]){roundMode=mode;saveSettings();$('mode').blur();return;}
+ saveSettings();reset(run);if(!run)showOverlay('','','开始对战');$('settings').open=settingsOpen;render();$('mode').blur();
+});
 $('map').addEventListener('change',()=>{
  const run=state==='running',settingsOpen=$('settings').open;
  if(setMap($('map').value)){saveSettings();reset(run);if(!run)showOverlay('','','开始对战');$('settings').open=settingsOpen;render();}
@@ -2506,7 +2658,7 @@ function restoreSettings(){
     if(name==='actorAspect'&&Number.isFinite(value)&&Math.abs(value)<=100&&value%5===0)value=Math.sign(value)*Math.round(Math.abs(value)/10)*10;
     if(validSettingValue(name,value))cfg[name]=value;
    }
-   for(const name of ['sound','showField','showRange'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+   for(const name of ['sound','showField','showRange','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
    if(typeof saved.difficulty==='string'&&Object.hasOwn(BOT_LEVELS,saved.difficulty))cfg.difficulty=saved.difficulty;
    if(typeof saved.mode==='string'&&(Object.hasOwn(BOT_LEVELS,saved.mode)||saved.mode==='practice'||saved.mode==='practice-dodge')){
     $('mode').value=saved.mode;if(Object.hasOwn(BOT_LEVELS,saved.mode))cfg.difficulty=saved.mode;
@@ -2515,13 +2667,13 @@ function restoreSettings(){
   }
  }catch{}
  for(const name of SETTING_NAMES)$(name).value=name==='inertia'?cfg[name]*1000:cfg[name];
- $('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));
+ $('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
  $('map').value=mapId;syncDifficultyControl();
 }
 function saveSettings(){
  if(restoringDefaults)return;
  const values={};for(const name of SETTING_NAMES)values[name]=validSettingValue(name,cfg[name])?cfg[name]:DEFAULTS[name];
- try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty}));}catch{}
+ try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty}));}catch{}
  settingsDirty=padRangeDirty=false;
 }
 function flushSettings(){if(settingsDirty)saveSettings();}
@@ -2540,15 +2692,16 @@ $('maxHealth').addEventListener('change',()=>{
 });
 $('showField').addEventListener('change',()=>{cfg.showField=$('showField').checked;saveSettings();render();});
 $('showRange').addEventListener('change',()=>{cfg.showRange=$('showRange').checked;saveSettings();render();});
+$('continuousFire').addEventListener('change',()=>{cfg.continuousFire=$('continuousFire').checked;saveSettings();});
 $('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?.6:0;saveSettings();$('sound').blur();});
-$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,name==='inertia'?DEFAULTS[name]*1000:DEFAULTS[name]])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
+$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,name==='inertia'?DEFAULTS[name]*1000:DEFAULTS[name]])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();render();});
 for(const name of SETTING_NAMES){$(name).addEventListener('input',()=>{settingsDirty=true;});$(name).addEventListener('change',saveSettings);}
 window.addEventListener('pagehide',flushSettings);
 
 // === 15 · Boot and resize ===
 restoreSettings();refreshInput();
-function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}}
+function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;bulletGlowCache.clear();renderDirty=true;}}
 new ResizeObserver(resize).observe(canvas);reset();resize();initializeLanguage();if(navigator.maxTouchPoints>0&&matchMedia('(pointer:coarse)').matches){moveSource=aimSource='touch';refreshInput();}requestAnimationFrame(frame);queueAudioPreparation();scheduleStartupPreparation();
 
 // === 16 · Opt-in local test hooks (?test only) ===

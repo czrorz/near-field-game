@@ -1,6 +1,6 @@
 # Near Field
 
-A 2D shooting demo for exploring movement inertia and curved trajectories. Move, aim, and choose where your bullets turn bright and become damaging. Each character carries a force field that slows and deflects incoming bright bullets; sideways movement at launch and during defense can reinforce or cancel the deflection.
+A 2D shooting demo for exploring movement inertia and curved trajectories. Move, aim, and choose where your bullets turn bright and become damaging. Each character carries a receiving field that slows and deflects incoming bright bullets and a separate control field that bends their own bright bullets without slowing them. Sideways movement at launch and by the field owner can reinforce or cancel the deflection.
 
 Concept and gameplay design by czrorz. Code written by ChatGPT.
 
@@ -8,7 +8,11 @@ Concept and gameplay design by czrorz. Code written by ChatGPT.
 
 Open `index.html` in a browser. The page, styles, game logic, and synthesized sound effects are contained in this single file. No dependencies or build step are required to play.
 
-Choose a map and mode at the top. **Instructions & settings** below the arena contains the controls and five groups of parameters. Opening settings pauses the game; changing maps starts a new round.
+Choose a map and mode at the top. **Instructions & settings** below the arena contains the controls and five groups of parameters. Opening settings pauses the game. Difficulty can change during combat without interrupting or resetting the round. Changing the map or switching into, out of, or between practice modes resets the round: it continues immediately only if the game was running; otherwise, it waits for you to start.
+
+The nine maps explore open space, absorbing and reflecting walls, static force fields, and wrapping boundaries. Bullet loop wraps bullets across opposite edges. Klein bottle additionally mirrors bullets horizontally when they cross the top or bottom edge, reversing horizontal velocity and spin. Characters stay inside; translucent translated or mirrored images provide aiming references outside the arena.
+
+Under **Bullet trajectory**, **Initial spin direction** selects whether launch spin bends bullets with or against sideways movement at firing. Positive preserves the original behavior. Both sides share the choice; it applies to newly fired bullets and is remembered with the other settings.
 
 The browser uses `localStorage` to remember parameters, map, mode, and language. It does not change other computer settings. Clearing browser site data removes these preferences; moving the file or switching browsers may not preserve them. The game remains playable when storage is unavailable.
 
@@ -39,7 +43,7 @@ Map definitions live in `MAPS`; their selector options live in the top-level `se
 
 ## Development rules
 
-- The world measures 1200 × 750 units, with x increasing to the right and y downward. Time is measured in seconds. Physics uses `STEP = 1/120`; rendering does not advance the simulation.
+- Most maps use a 1200 × 750 world; Bullet loop and Klein bottle use 840 × 525. The view remains 1200 × 750, centering smaller maps without changing display scale. Coordinates increase rightward and downward. Time is measured in seconds. Physics uses `STEP = 1/120`; rendering does not advance the simulation.
 - Brightening and damaging-path limits depend on actual accumulated travel distance. Curves, reflections, and delayed brightening inside a character do not extend that path.
 - Map fields affect every projectile phase. Character fields do not affect dim bullets. Fields do not move characters.
 - Projectiles use swept collision checks against character ellipses. Character-to-character and character-to-wall collisions use enclosing circles. Health bars reserve space for the maximum deformation and stay steady as characters turn.
@@ -55,6 +59,6 @@ With Node.js available in the development environment, run this command from the
 node tests/check-game.cjs
 ```
 
-The checks cover simulation and drawing calls for all seven maps, character-wall contacts, maze connectivity at maximum deformation, map-field effects across projectile phases, restored settings and storage failures, practice modes, clearing firing input on pause, controller range limits, and hit ordering around projectile expiry.
+The existing checks target the original seven maps, character-wall contacts, maze connectivity at maximum deformation, map-field effects across projectile phases, restored settings and storage failures, practice modes, clearing firing input on pause, controller range limits, and hit ordering around projectile expiry. The suite has not been updated or rerun for the newer Bullet loop and Klein bottle maps or the latest rendering and performance changes; it does not establish coverage of the current nine-map version.
 
 These are offline logic checks with mock Canvas and audio interfaces. Visual appearance, touch and controller hardware, sound, and browser frame rate still need to be checked in a browser.
