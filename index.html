@@ -162,7 +162,7 @@ html[lang="en"] .setting output{white-space:nowrap}
   <div class="overlay" id="overlay"><div class="dialog"><h2 id="overlay-title"></h2><p id="overlay-copy"></p><button class="primary" id="start" type="button">开始对战</button><div class="keys" id="keys"><span><kbd>WASD / 左杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准 · 点击连发</span><span><kbd>R</kbd>重开</span><span><kbd>Space</kbd>暂停</span></div><p id="controller-help" style="font-size:12px;margin-bottom:0">左摇杆可搭配鼠标。触屏用左侧摇杆移动，点击场地射击。</p></div></div>
   <div class="toast" id="toast" aria-live="polite"></div>
  </section>
- <p class="notes" id="view-help">点击战场锁定鼠标；左右转向，上下调距离，Esc 释放并暂停。</p>
+ <p class="notes" id="view-help">点击开始或继续时锁定鼠标；左右转向，上下调距离，Esc 释放并暂停。</p>
  <details class="settings" id="settings">
   <summary>说明与设置</summary>
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
@@ -271,10 +271,16 @@ html[lang="en"] .setting output{white-space:nowrap}
      <p class="setting-help">没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。</p>
     </div>
     <div class="setting">
-     <label for="band">杀伤路段长度<output id="band-value">200</output></label>
-     <input id="band" type="range" min="50" max="800" step="10" value="200">
-     <div class="range-bounds" aria-hidden="true"><span>50</span><span>800</span></div>
-     <p class="setting-help">从选定的变亮起点开始，子弹还能飞过多长的路程。弯曲弹道也按实际路程计算。</p>
+     <label for="bandBase">基础杀伤长度<output id="bandBase-value">100</output></label>
+     <input id="bandBase" type="range" min="0" max="800" step="10" value="100">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>800</span></div>
+     <p class="setting-help">杀伤长度中不随瞄准距离改变的部分。</p>
+    </div>
+    <div class="setting">
+     <label for="band">距离附加长度（每500距离）<output id="band-value">100</output></label>
+     <input id="band" type="range" min="0" max="800" step="10" value="100">
+     <div class="range-bounds" aria-hidden="true"><span>0</span><span>800</span></div>
+     <p class="setting-help">总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。</p>
     </div>
     <div class="setting">
      <label for="initialSpinSign">初始带旋方向<output id="initialSpinSign-value">+1</output></label>
@@ -464,12 +470,12 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 const DEFAULTS={
  maxHealth:10,actorRadius:15,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
  burstCount:3,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
- annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,band:200,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,
+ annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,
  radius:150,controlRadius:300,drag:.020,spinForce:5400,baseKnockback:24,impactScale:.26,
  difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true
 };
 const cfg={...DEFAULTS,view:'heading'};
-const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','bodyRepulsion','bodyRepulsionRange','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','band','initialSpinSign','launchSpinScale','annihilationChance','radius','controlRadius','drag','spinForce','receiverSpinScale'];
+const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','bodyRepulsion','bodyRepulsionRange','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','bandBase','band','initialSpinSign','launchSpinScale','annihilationChance','radius','controlRadius','drag','spinForce','receiverSpinScale'];
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
@@ -507,7 +513,7 @@ const ENGLISH={
  "视角": "View",
  "视角 · 原视角": "View · Original",
  "视角 · 跟随瞄准": "View · Follow aim",
- "点击战场锁定鼠标；左右转向，上下调距离，Esc 释放并暂停。": "Click the arena to capture the mouse; move sideways to turn, vertically to set range. Esc releases and pauses.",
+ "点击开始或继续时锁定鼠标；左右转向，上下调距离，Esc 释放并暂停。": "Click Start or Resume to capture the mouse; move sideways to turn, vertically to set range. Esc releases and pauses.",
  "鼠标锁定失败，请再次点击战场，或切回原视角。": "Mouse capture failed. Click the arena again or switch to Original view.",
  "模式与难度": "Mode and difficulty",
  "人机 · 入门": "Bot · Beginner",
@@ -584,8 +590,10 @@ const ENGLISH={
  "正向使初始带旋产生的偏转与发射时的横移同向，反向则相反。双方共用，仅影响新发射的子弹。": "Positive makes launch spin bend bullets in the direction of sideways movement at firing; negative reverses it. Shared by both sides. Applies only to newly fired bullets.",
  "持续推进加速度": "Forward acceleration",
  "没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。": "Speed gained each second without drag. With an initial speed of 800 and acceleration of 300, speed reaches 1100 after one second.",
- "杀伤路段长度": "Damaging path length",
- "从选定的变亮起点开始，子弹还能飞过多长的路程。弯曲弹道也按实际路程计算。": "How far a bullet can travel beyond the selected brightening point. Curved paths are measured along their actual route.",
+ "基础杀伤长度": "Base damage length",
+ "杀伤长度中不随瞄准距离改变的部分。": "The part of damage length that stays constant at any aim range.",
+ "距离附加长度（每500距离）": "Added damage length per 500 range",
+ "总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。": "Total length = base + added length × aim range / 500. Curved paths use actual travel distance.",
  "接收场半径": "Receiving field radius",
  "控弹场半径": "Control field radius",
  "只偏转自己的亮弹，不减速；偏转强度共用。0 可关闭。显示力场时，虚线表示控弹场。": "Deflects your own bright bullets without slowing them, using the shared deflection strength. Set to 0 to disable. The control field appears dashed when fields are shown.",
@@ -1421,12 +1429,13 @@ function stepBullet(b,dt){
  }
 }
 function muzzleDistance(actor,aim=actor.aim||0){const shape=bodyShape(actor),angle=aim-shape.angle;return shape.rx===shape.ry?shape.rx:1/Math.hypot(Math.cos(angle)/shape.rx,Math.sin(angle)/shape.ry);}
-// Aim selects the START of a fixed, fully damaging path interval.
+// Aim selects the START; interval length has fixed and range-proportional parts.
 // Projectile speed does not shift or extend either endpoint.
+function shotBand(range){return cfg.bandBase+cfg.band*Math.max(MIN_ACTIVATION_RANGE,range)/500;}
 function shotRangePlan(actor,range,aim=actor.aim||0){
  const offset=muzzleDistance(actor,aim)+3;
  const fieldStart=Math.max(0,Math.max(MIN_ACTIVATION_RANGE,range)-offset);
- const intervalEnd=fieldStart+cfg.band;
+ const intervalEnd=fieldStart+shotBand(range);
  return{fieldStart,intervalEnd,start:offset+fieldStart,end:offset+intervalEnd};
 }
 function shotSpin(actor,aim){return cfg.launchSpinScale*cfg.initialSpinSign*(Math.cos(aim)*(actor.vy||0)-Math.sin(aim)*(actor.vx||0))/ACTOR.speed;}
@@ -1667,6 +1676,7 @@ function botLearn(bot,observation){
    const prev=bot.tracks.get(b.id),speed=Math.hypot(b.vx,b.vy),source=frame.target;
    let spin=prev?prev.spin:0,confidence=prev?prev.confidence:0,used=prev?prev.used:0,expired=prev?prev.expired:false;
    let armedAt=prev?.armedAt??null;
+   let observedPath=prev?.observedPath??(source?Math.hypot(b.x-source.x,b.y-source.y):MIN_ACTIVATION_RANGE),interval=prev?.interval;
    const fieldActive=b.solid||b.arming,previousActive=prev&&(prev.solid||prev.arming);
    const from=prev||source||b,mapAffected=mapFieldTouchesSegment(from.x,from.y,b.x,b.y);
    if(b.arming&&armedAt===null){
@@ -1680,11 +1690,13 @@ function botLearn(bot,observation){
     spin=cfg.launchSpinScale*cfg.initialSpinSign*(b.vx*source.vy-b.vy*source.vx)/Math.max(1,speed*ACTOR.speed);confidence=.55;
    }
    if(prev){const dt=frame.time-prev.time,oldSpeed=Math.hypot(prev.vx,prev.vy);
+    observedPath+=(speed+oldSpeed)*.5*dt;
     if(previousActive&&!fieldActive)expired=true;
-    // The fixed interval is consumed as soon as the opponent's field activates,
+    // The interval is consumed as soon as the opponent's field activates,
     // including the harmless preparation stage. Estimate that path from
     // public velocity samples; never read the projectile's range endpoints.
     if(fieldActive)used=previousActive?used+(speed+oldSpeed)*.5*dt:speed*dt*.5;
+    if(fieldActive&&interval===undefined)interval=shotBand(observedPath-used);
     if(fieldActive){
      const body=frame.self,mx=(b.x+prev.x)*.5,my=(b.y+prev.y)*.5,w=fieldWeight(mx,my,body),sw=b.solid&&prev.solid?fieldWeight(mx,my,source,cfg.controlRadius):0,totalWeight=w+sw;
      // Known map forces bend a visible track without revealing launch spin.
@@ -1699,10 +1711,11 @@ function botLearn(bot,observation){
    }else if(fieldActive){
     // A first active sighting has an unknown onset. Use a public-state
     // estimate instead of granting a fresh full interval to a live round.
-    used=b.arming?Math.min(cfg.band*.5,speed*(cfg.armingDelay??0)*.5):cfg.band*.65;
+    interval=shotBand((observedPath-(b.arming?0:.65)*cfg.bandBase)/(1+(b.arming?0:.65)*cfg.band/500));
+    used=b.arming?Math.min(interval*.5,speed*(cfg.armingDelay??0)*.5):interval*.65;
    }
    const spinLimit=1.6*Math.max(1,cfg.launchSpinScale);
-   bot.tracks.set(b.id,{...b,time:frame.time,spin:clamp(spin,-spinLimit,spinLimit),confidence,used,armedAt,expired});
+   bot.tracks.set(b.id,{...b,time:frame.time,spin:clamp(spin,-spinLimit,spinLimit),confidence,used,armedAt,expired,observedPath,interval});
   }
   bot.learnedAt=frame.time;
  }
@@ -1887,9 +1900,11 @@ function botObservedThreats(observation,actor,age,level,bot){
   // Ghost onset remains concealed; solid rounds are immediately dangerous.
   // Zero warm-up also applies to the AI forecasts.
   const armingDelay=cfg.armingDelay??0,fieldActive=visible.solid||visible.arming;
-  const hypotheses=fieldActive?[[0,1]]:[[Math.max(0,distance-cfg.band*.70),.55],[Math.max(0,distance-cfg.band*.12),.45]];
+  const observedPath=track.observedPath??MIN_ACTIVATION_RANGE,expectedBand=shotBand(observedPath+distance);
+  const hypotheses=fieldActive?[[0,1]]:[[Math.max(0,distance-expectedBand*.70),.55],[Math.max(0,distance-expectedBand*.12),.45]];
   for(const [before,probability] of hypotheses){
-   const b={...visible,before,sourceField:observation.target,sourceTime:0,left:fieldActive?Math.max(0,cfg.band-track.used):cfg.band,
+   const interval=fieldActive?(track.interval??shotBand(observedPath-track.used)):shotBand(observedPath+before);
+   const b={...visible,before,sourceField:observation.target,sourceTime:0,left:fieldActive?Math.max(0,interval-track.used):interval,
     warm:visible.solid?0:visible.arming?clamp(armingDelay-(observation.time-(track.armedAt??observation.time-armingDelay*.5)),0,armingDelay):armingDelay,
     spin:track.spin,weight:probability*(fieldActive?1:BOT_TUNING.ghostWeight),annProbability:probability};
    // Bring the delayed observation forward through our KNOWN movement. No
@@ -1918,10 +1933,10 @@ function botPracticePlan(bot,actor,target){
  const next=old?.kind==='reposition'?old.resume:old?sequence[old.kind]:distance>430?'approach':'orbit';
  const kind=forced||next;
  const profiles={
-  approach:{range:clamp(cfg.radius+cfg.band*.45,240,320),tangent:.35,duration:1.8},
-  orbit:{range:clamp(cfg.radius+cfg.band*.95,340,460),tangent:1,duration:2.1},
-  withdraw:{range:clamp(cfg.radius+cfg.band*1.9,500,620),tangent:.3,duration:1.5},
-  cross:{range:clamp(cfg.radius+cfg.band*1.2,310,420),tangent:1.15,duration:1.6},
+  approach:{range:clamp(cfg.radius+shotBand(500)*.45,240,320),tangent:.35,duration:1.8},
+  orbit:{range:clamp(cfg.radius+shotBand(500)*.95,340,460),tangent:1,duration:2.1},
+  withdraw:{range:clamp(cfg.radius+shotBand(500)*1.9,500,620),tangent:.3,duration:1.5},
+  cross:{range:clamp(cfg.radius+shotBand(500)*1.2,310,420),tangent:1.15,duration:1.6},
   reposition:{range:380,tangent:.45,duration:1.2}
  };
  const profile=profiles[kind];
@@ -1937,11 +1952,12 @@ function botMoveContext(actor,target,bot,level){
  const count=Math.ceil(level.horizon*22),dt=level.horizon/count,dodgeRadius=bodyShape(actor).rx;
  const predicted=botTargetAt(target,level.horizon);
  const current=unit(target.x-actor.x,target.y-actor.y),cross=Math.abs(current.x*actor.vy-current.y*actor.vx)/ACTOR.speed;
- // Reloading creates breathing room; ready shots and a target already moving
- // away encourage closing. A broad, state-dependent range replaces 430.
+ // Reloading shifts the comfortable range outward. Inside the range band,
+ // spacing encourages neither advancing nor retreating.
  const recharge=bot.recharging?95:0;
  const profile=bot.practice?BOT_PROFILES[0]:bot.profile||BOT_PROFILES[0];
- const preferred=bot.practice?bot.practice.range:clamp(cfg.radius*(1.15+.55*cross)+cfg.band*.35+recharge+BOT_TUNING.rangeBias+profile.rangeOffset,130,620);
+ const preferred=bot.practice?bot.practice.range:clamp(cfg.radius*(1.15+.55*cross)+shotBand(500)*.35+recharge+BOT_TUNING.rangeBias+profile.rangeOffset,130,620);
+ const minRange=preferred-(bot.practice?0:40),maxRange=preferred+(bot.practice?0:100);
  // The existing nine movement candidates only need a local wall-end goal.
  // Score their constrained displacement so pushing into a wall earns no gain.
  const obstruction=firstWallHit(actor.x,actor.y,target.x,target.y,dodgeRadius+3);
@@ -1954,33 +1970,21 @@ function botMoveContext(actor,target,bot,level){
   const length=point=>Math.hypot(point.x-actor.x,point.y-actor.y)+Math.hypot(target.x-point.x,target.y-point.y);
   waypoint=length(top)<=length(bottom)?top:bottom;
  }
- const radial=clamp((current.d-preferred)/170,-1,1);
+ const radial=clamp((current.d-clamp(current.d,minRange,maxRange))/170,-1,1);
  const tangent=bot.practice?bot.practice.side*bot.practice.tangent:0;
  const center=bot.practice?.kind==='reposition'?unit(W*.5-actor.x,H*.5-actor.y):{x:0,y:0};
  const desired=bot.practice?unit(current.x*radial-current.y*tangent+center.x*1.4,current.y*radial+current.x*tangent+center.y*1.4):unit(current.x*radial-current.y*bot.side*profile.tangent,current.y*radial+current.x*bot.side*profile.tangent);
- const closePass=clamp((2*MIN_ACTIVATION_RANGE-current.d)/MIN_ACTIVATION_RANGE,0,1);
- return{count,dt,dodgeRadius,predicted,profile,preferred,waypoint,desired,closePass};
+ return{count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired};
 }
 function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveContext(actor,target,bot,level)){
- const {count,dt,dodgeRadius,predicted,profile,preferred,waypoint,desired,closePass}=shared,states=[actor],carriers=[];let body=actor;
+ const {count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired}=shared,states=[actor],carriers=[];let body=actor;
  for(let i=0;i<count;i++){body=botBodyStep(body,direction,dt);states.push(body);}
- let risk=0,ghostPass=0;
- for(const incoming of threats){const b={...incoming};let worst=0,pass=0;
+ let risk=0;
+ for(const incoming of threats){const b={...incoming};let worst=0;
   for(let i=0;i<count&&b.left>0;i++){
    const old=states[i],next=states[i+1];
    const carrier=carriers[i]??=botBodyMidpoint(old,next);
    botForecastStep(b,dt,carrier);
-   // Reuse the ghost forecast: mildly favor advancing through a still-dark
-   // round soon. Onset hypotheses remain uncertain; bright risk still wins.
-   const ghost=b.forecastGhostWindow;
-   if(closePass>0&&!incoming.materialized&&!pass&&i*dt<.45&&ghost){
-    const ax=next.x-old.x,ay=next.y-old.y,span=ghost.to-ghost.from;
-    const rx=ghost.x0-old.x-ax*ghost.from,ry=ghost.y0-old.y-ay*ghost.from;
-    const dx=ghost.x1-ghost.x0-ax*span,dy=ghost.y1-ghost.y0-ay*span;
-    const q=clamp(-(rx*dx+ry*dy)/(dx*dx+dy*dy+1e-12),0,1),t=ghost.from+q*span;
-    const advance=(old.x+ax*t-actor.x)*incoming.vx+(old.y+ay*t-actor.y)*incoming.vy;
-    if((!ghost.ghostEndExclusive||q<1)&&advance<0&&(rx+q*dx)**2+(ry+q*dy)**2<(dodgeRadius+b.r)**2)pass=1;
-   }
    // A preparing bullet can already curve, but contact in that phase carries
    // zero damage risk. Test only this forecast step's damaging subsegment.
    const window=b.forecastWindow;if(!window)continue;
@@ -1993,14 +1997,13 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
    worst=Math.max(worst,(proximity*proximity*75+(clearance<0?180:0))/(.65+(i+window.lo+q*span)*dt));
   }
   risk+=worst*incoming.weight;
-  ghostPass+=pass*(incoming.annProbability??incoming.weight);
  }
  const offset=unit(predicted.x-body.x,predicted.y-body.y);
  // A wall end is a near-term steering goal. Reuse an earlier predicted body
  // so a full-horizon overshoot of that corner cannot make standing still win.
  const routeIndex=waypoint?Math.min(count,Math.ceil(.35/dt)):count,routeBody=states[routeIndex];
  const routeDistance=waypoint?Math.hypot(waypoint.x-routeBody.x,waypoint.y-routeBody.y)+Math.hypot(predicted.x-waypoint.x,predicted.y-waypoint.y):offset.d;
- const distanceCost=((routeDistance-preferred)/210)**2*2*BOT_TUNING.spacingWeight;
+ const distanceCost=(Math.max(minRange-routeDistance,0,routeDistance-maxRange)/210)**2*2*BOT_TUNING.spacingWeight;
  const inset=actorInset(routeBody);let wallDistance=Math.min(routeBody.x-inset,W-inset-routeBody.x,routeBody.y-inset,H-inset-routeBody.y);
  if(mapId==='ellipse'){
   const wall=WALLS[0],radial=Math.hypot((routeBody.x-wall.cx)/wall.rx,(routeBody.y-wall.cy)/wall.ry);
@@ -2011,9 +2014,9 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
  const change=Math.hypot(direction.x-bot.output.x,direction.y-bot.output.y);
  const requestedWall=firstWallHit(actor.x,actor.y,actor.x+direction.x*ACTOR.speed*.35,actor.y+direction.y*ACTOR.speed*.35,dodgeRadius+3);
  const wallPushCost=requestedWall?Math.max(0,-direction.x*requestedWall.nx-direction.y*requestedWall.ny)*2.2:0;
- return risk*BOT_TUNING.riskWeight*profile.riskScale+distanceCost+wallCost+wallPushCost+Math.max(0,(65-offset.d)/15)-alignment*1.6+change*(waypoint?.12:.6)-Math.min(1,ghostPass)*3*closePass;
+ return risk*BOT_TUNING.riskWeight*profile.riskScale+distanceCost+wallCost+wallPushCost+Math.max(0,(65-offset.d)/15)-alignment*1.6+change*(waypoint?.12:.6);
 }
-// Own shots select the start of a fixed effective interval.
+// Own shots select the start and proportional length of the effective interval.
 // Forecast with the same physics as gameplay.
 // Incoming sensory data remains limited to public motion and CURRENT phase.
 // Interception forecasts consume only delayed, sanitized public projectiles.
@@ -2179,8 +2182,8 @@ function botAim(actor,target,bot,level){
  // Range now selects the interval's start. Keep the candidate intervals
  // centered around the predicted target, as before the aiming UI change.
  const base=Math.atan2(prediction.y-actor.y,prediction.x-actor.x);
- const baseRange=Math.hypot(prediction.x-actor.x,prediction.y-actor.y)-cfg.band*.5;
- const span=Math.max(cfg.band*.75,Math.min(cfg.radius*.55,120),cfg.launchSpeed*preparation*.5);
+ const baseRange=(Math.hypot(prediction.x-actor.x,prediction.y-actor.y)-cfg.bandBase*.5)/(1+cfg.band/1000);
+ const span=Math.max(shotBand(baseRange)*.75,Math.min(cfg.radius*.55,120),cfg.launchSpeed*preparation*.5);
  let best=null;const targetCache=new Map(),sourceCache=new Map();
  // Every candidate shares the same target forecast during this decision.
  const targetAt=t=>{
@@ -2194,7 +2197,7 @@ function botAim(actor,target,bot,level){
   return body;
  };
  function consider(angle,range){const shot=botAimProbe(actor,target,angle,range,bot.annForecast,targetAt,sourceAt);if(!best||shot.score<best.score)best=shot;}
- // Changing range moves both fixed endpoints; search direction and range together.
+ // Changing range moves both endpoints; search direction and range together.
  const angles=[-.30,0,.30],ranges=[-1,0,1];
  for(const da of angles)for(const dr of ranges)consider(base+da,baseRange+dr*span);
  if(BOT_TUNING.annDefenseWeight>0){
@@ -2278,7 +2281,7 @@ function botControl(actor,target,projectiles,dt,options={}){
  // still tracks the observed opponent; no world-space burst target is locked.
  const aim=ready||actor.salvo?botAim(self,perceived,bot,level):{
   aim:Math.atan2(perceived.y-self.y,perceived.x-self.x)+bot.noiseAngle,
-  range:clamp(Math.hypot(perceived.x-self.x,perceived.y-self.y)-cfg.band*.5+bot.noiseRange,MIN_ACTIVATION_RANGE,1400)};
+  range:clamp((Math.hypot(perceived.x-self.x,perceived.y-self.y)-cfg.bandBase*.5)/(1+cfg.band/1000)+bot.noiseRange,MIN_ACTIVATION_RANGE,1400)};
  if(ready){if(bot.readySince===null)bot.readySince=bot.time;}else bot.readySince=null;
  bot.pendingShot=ready&&!bot.wallBlocked&&Math.hypot(perceived.x-self.x,perceived.y-self.y)<1350&&
   (bot.lastAimMiss<=BOT_TUNING.attackThreshold+level.rangeError*.3||bot.time-bot.readySince>=BOT_TUNING.maxHold||BOT_TUNING.annDefenseWeight>0&&bot.lastAnnDefense>.4);
@@ -2712,6 +2715,7 @@ window.addEventListener('gamepadconnected',e=>{if(e.gamepad.mapping==='standard'
 window.addEventListener('gamepaddisconnected',losePad);
 $('restart').addEventListener('click',()=>{reset(true);$('restart').blur();});
 $('start').addEventListener('click',()=>{startOrResume();$('start').blur();});$('pause').addEventListener('click',()=>{togglePause();$('pause').blur();});
+ for(const id of ['start','restart','pause'])$(id).addEventListener('click',e=>{if(state==='running'&&headingView()&&e.pointerType!=='touch'&&!e.sourceCapabilities?.firesTouchEvents)captureMouse();});
 // Touch browsers may require resume during pointerup. Only resume an already
 // prepared device here; mouse/keyboard starts still defer every audio API.
 for(const id of ['start','restart','pause','sound'])$(id).addEventListener('pointerup',e=>{
@@ -2755,6 +2759,7 @@ function restoreSettings(){
   const saved=JSON.parse(localStorage.getItem(SETTINGS_KEY));
   if(saved&&saved.version===1&&saved.values&&typeof saved.values==='object'&&!Array.isArray(saved.values)){
    for(const name of SETTING_NAMES)if(Object.hasOwn(saved.values,name)){
+    if(name==='band'&&!Object.hasOwn(saved.values,'bandBase'))continue;
     let value=saved.values[name];
     if(name==='actorAspect'&&Number.isFinite(value)&&Math.abs(value)<=100&&value%5===0)value=Math.sign(value)*Math.round(Math.abs(value)/10)*10;
     if(validSettingValue(name,value))cfg[name]=value;
