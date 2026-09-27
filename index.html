@@ -118,6 +118,11 @@ html[lang="en"] .setting output{white-space:nowrap}
   .tools button,.tools select{font-size:11px;padding:6px 7px}
   html[lang="en"] h1{font-size:18px}
 }
+.settings-group .settings-subtitle{margin:20px 0 0;font-size:12px;font-weight:500;color:var(--muted)}
+.settings-group .settings-grid{margin:12px 0 20px;gap:20px 28px;align-items:start}
+.setting{min-width:0}.setting label{align-items:baseline;line-height:1.5;gap:14px}
+.setting output{flex-shrink:0;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.setting-help{margin-top:8px}.field-visibility{margin-top:10px}
 </style>
 </head>
 <body>
@@ -168,80 +173,95 @@ html[lang="en"] .setting output{white-space:nowrap}
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
   <p class="notes">用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有两个随身场：接收场减速、偏转对方亮弹，控弹场只偏转自己的亮弹；射手开火时的横移与场主人当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。</p>
   <p class="notes">鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。</p>
-  <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。</p>
+  <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹。亮弹伤害从设定的最低值（默认显示为 30）随变亮后的累计路程线性增长，默认飞过 100 距离达到满伤 100。亮度、基础击退和命中音量随伤害增加，相对碰撞速度还会额外影响击退。</p>
+  <p class="notes">直拳可以消耗生命、击退对手；提前布置侧面的勾摆弹群，再用正面射击将对手推向它们，可以形成组合拳。子弹变亮后仍可被双方的场偏转，移动和换边能持续改变攻防。提高射速、搭配连发和装填节奏，可以尝试弹幕拳击。</p>
+  <p class="notes">面对难以躲开的亮弹，主动迎上去有时能在它充分充能前承受较低伤害；后退会争取躲避时间，也可能让子弹积累更多路程。迎击仍要留意后续弹群和侧面夹击，暗弹本身不造成伤害。</p>
+  <p class="notes">命中位置浮起的数字表示本次子弹伤害，按整数显示，伤害越高，淡出时间越长。生命和伤害的显示与调节栏刻度一致。头顶数字表示当前生命，可在下方关闭，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，调整会自动保存，展开设置时暂停。</p>
   <p class="notes">墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。回环地图中，子弹从对边继续飞行，人物不跨界，飞行路程继续累计。克莱因瓶的上下暖色长边会将子弹左右翻转，水平速度与自旋反向；左右正常回环，边框外人物像按相同规则显示。切换地图会重开本局。</p>
   <section class="settings-group" aria-labelledby="movement-settings">
    <h2 id="movement-settings">人物与移动</h2>
+   <h3 class="settings-subtitle">移动手感</h3>
    <div class="settings-grid field-grid">
-    <div class="setting">
-     <label for="maxHealth">双方生命值<output id="maxHealth-value">10</output></label>
-     <input id="maxHealth" type="range" min="5" max="50" step="1" value="10">
-     <div class="range-bounds" aria-hidden="true"><span>5</span><span>50</span></div>
-     <p class="setting-help">松开滑条后，保留双方剩余生命的比例；重开时恢复满血。</p>
-    </div>
-    <div class="setting">
-     <label for="actorRadius">人物大小<output id="actorRadius-value">15</output></label>
-     <input id="actorRadius" type="range" min="12" max="18" step="1" value="15">
-     <div class="range-bounds" aria-hidden="true"><span>12</span><span>18</span></div>
-     <p class="setting-help">同时改变人物外观和受击范围。</p>
-    </div>
-    <div class="setting">
-     <label for="actorAspect">椭圆比例<output id="actorAspect-value">1:1</output></label>
-     <input id="actorAspect" type="range" min="-300" max="300" step="10" value="0">
-     <div class="range-bounds" aria-hidden="true"><span>1:4</span><span>4:1</span></div>
-     <p class="setting-help">前后轴与左右轴的比例，中间为圆形；面积保持不变。</p>
-    </div>
     <div class="setting">
      <label for="moveSpeed">移动速度<output id="moveSpeed-value">235</output></label>
      <input id="moveSpeed" type="range" min="200" max="270" step="5" value="235">
-     <div class="range-bounds" aria-hidden="true"><span>200</span><span>270</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="moveSpeed-min">200</span><span id="moveSpeed-max">270</span></div>
      <p class="setting-help">人物移动的最高速度。</p>
     </div>
     <div class="setting">
      <label for="inertia">移动惯性<output id="inertia-value">450 ms</output></label>
      <input id="inertia" type="range" min="200" max="1200" step="50" value="450">
-     <div class="range-bounds" aria-hidden="true"><span>200</span><span>1200</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="inertia-min">200</span><span id="inertia-max">1200</span></div>
      <p class="setting-help">越大，加速、刹车和转向需要的时间越长，最高速度不变。</p>
+    </div>
+   </div>
+   <h3 class="settings-subtitle">人物属性</h3>
+   <div class="settings-grid field-grid">
+    <div class="setting">
+     <label for="maxHealth">双方生命值<output id="maxHealth-value">1000</output></label>
+     <input id="maxHealth" type="range" min="500" max="5000" step="100" value="1000">
+     <div class="range-bounds" aria-hidden="true"><span id="maxHealth-min">500</span><span id="maxHealth-max">5000</span></div>
+     <p class="setting-help">松开滑条后，保留双方剩余生命的比例；重开时恢复满血。</p>
+    </div>
+    <div class="setting">
+     <label for="actorRadius">人物大小<output id="actorRadius-value">15</output></label>
+     <input id="actorRadius" type="range" min="12" max="18" step="1" value="15">
+     <div class="range-bounds" aria-hidden="true"><span id="actorRadius-min">12</span><span id="actorRadius-max">18</span></div>
+     <p class="setting-help">同时改变人物外观和受击范围。</p>
+    </div>
+    <div class="setting">
+     <label for="actorAspect">椭圆比例<output id="actorAspect-value">1:1</output></label>
+     <input id="actorAspect" type="range" min="-300" max="300" step="10" value="0">
+     <div class="range-bounds" aria-hidden="true"><span id="actorAspect-min">-300</span><span id="actorAspect-max">300</span></div>
+     <p class="setting-help">前后轴与左右轴的比例，中间为圆形；面积保持不变。</p>
+    </div>
+   </div>
+   <label class="check field-visibility"><input id="showHealthNumbers" type="checkbox" checked>显示头顶生命数字</label>
+   <h3 class="settings-subtitle">人物间排斥</h3>
+   <div class="settings-grid field-grid">
+    <div class="setting">
+     <label for="bodyRepulsionRange">人物排斥距离<output id="bodyRepulsionRange-value">100</output></label>
+     <input id="bodyRepulsionRange" type="range" min="0" max="400" step="10" value="100">
+     <div class="range-bounds" aria-hidden="true"><span id="bodyRepulsionRange-min">0</span><span id="bodyRepulsionRange-max">400</span></div>
+     <p class="setting-help">按双方圆心距离计算，小于此距离才产生排斥。0 可关闭。</p>
     </div>
     <div class="setting">
      <label for="bodyRepulsion">人物排斥强度<output id="bodyRepulsion-value">300</output></label>
      <input id="bodyRepulsion" type="range" min="0" max="3000" step="25" value="300">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>3000</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="bodyRepulsion-min">0</span><span id="bodyRepulsion-max">3000</span></div>
      <p class="setting-help">范围内越近排斥越强，在范围边缘平滑归零。双方受力相反，0 可关闭。</p>
-    </div>
-    <div class="setting">
-     <label for="bodyRepulsionRange">人物排斥距离<output id="bodyRepulsionRange-value">100</output></label>
-     <input id="bodyRepulsionRange" type="range" min="0" max="400" step="10" value="100">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>400</span></div>
-     <p class="setting-help">按双方圆心距离计算，小于此距离才产生排斥。0 可关闭。</p>
     </div>
    </div>
   </section>
   <section class="settings-group" aria-labelledby="combat-settings">
    <h2 id="combat-settings">射击</h2>
+   <h3 class="settings-subtitle">连发与装填</h3>
    <div class="settings-grid field-grid">
     <div class="setting">
      <label for="burstCount">每组子弹数<output id="burstCount-value">3</output></label>
      <input id="burstCount" type="range" min="1" max="10" step="1" value="3">
-     <div class="range-bounds" aria-hidden="true"><span>1</span><span>10</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="burstCount-min">1</span><span id="burstCount-max">10</span></div>
      <p class="setting-help">每次点击自动打完一组；按住可连续射击。松开后会打完当前组，不再开启下一组。</p>
     </div>
     <div class="setting">
      <label for="fireRate">射速<output id="fireRate-value">6.25 发/秒</output></label>
      <input id="fireRate" type="range" min="2" max="12.5" step="0.25" value="6.25">
-     <div class="range-bounds" aria-hidden="true"><span>2 发/秒</span><span>12.5 发/秒</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="fireRate-min">2</span><span id="fireRate-max">12.5</span></div>
      <p class="setting-help">决定一组内相邻两发的间隔。例如 5 发/秒表示每隔 0.2 秒发射一发。</p>
     </div>
     <div class="setting">
      <label for="reloadTime">装填时间<output id="reloadTime-value">1.1 秒</output></label>
      <input id="reloadTime" type="range" min="0.3" max="3" step="0.1" value="1.1">
-     <div class="range-bounds" aria-hidden="true"><span>0.3 秒</span><span>3 秒</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="reloadTime-min">0.3</span><span id="reloadTime-max">3</span></div>
      <p class="setting-help">从最后一发射出后开始计算，装填完成后才能再开火。弹数、射速和装填时间的调整从下一组生效。</p>
     </div>
+   </div>
+   <h3 class="settings-subtitle">瞄准与开火</h3>
+   <div class="settings-grid field-grid">
     <div class="setting">
      <label for="padRange">手柄瞄准距离<output id="padRange-value">500</output></label>
      <input id="padRange" type="range" min="100" max="1200" step="10" value="500">
-     <div class="range-bounds" aria-hidden="true"><span>100</span><span>1200</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="padRange-min">100</span><span id="padRange-max">1200</span></div>
      <p class="setting-help">手柄瞄准时，人物到子弹变亮起点的距离，也可用 LB / RB 调节。鼠标或触屏直接选位置。</p>
     </div>
    </div>
@@ -251,37 +271,35 @@ html[lang="en"] .setting output{white-space:nowrap}
   </section>
   <section class="settings-group" aria-labelledby="projectile-settings">
    <h2 id="projectile-settings">子弹弹道</h2>
+   <h3 class="settings-subtitle">飞行与碰撞</h3>
    <div class="settings-grid field-grid">
-    <div class="setting">
-     <label for="bulletSize">子弹大小<output id="bulletSize-value">100%</output></label>
-     <input id="bulletSize" type="range" min="75" max="125" step="5" value="100">
-     <div class="range-bounds" aria-hidden="true"><span>75%</span><span>125%</span></div>
-     <p class="setting-help">影响子弹外观与碰撞大小，仅对新发射的子弹生效。</p>
-    </div>
     <div class="setting">
      <label for="launchSpeed">初始弹速<output id="launchSpeed-value">800</output></label>
      <input id="launchSpeed" type="range" min="400" max="1200" step="25" value="800">
-     <div class="range-bounds" aria-hidden="true"><span>400</span><span>1200</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="launchSpeed-min">400</span><span id="launchSpeed-max">1200</span></div>
      <p class="setting-help">子弹刚发射时每秒飞过的距离。</p>
     </div>
     <div class="setting">
      <label for="propulsion">持续推进加速度<output id="propulsion-value">300</output></label>
      <input id="propulsion" type="range" min="50" max="1200" step="50" value="300">
-     <div class="range-bounds" aria-hidden="true"><span>50</span><span>1200</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="propulsion-min">50</span><span id="propulsion-max">1200</span></div>
      <p class="setting-help">没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。</p>
     </div>
     <div class="setting">
-     <label for="bandBase">基础杀伤长度<output id="bandBase-value">100</output></label>
-     <input id="bandBase" type="range" min="0" max="800" step="10" value="100">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>800</span></div>
-     <p class="setting-help">杀伤长度中不随瞄准距离改变的部分。</p>
+     <label for="bulletSize">子弹大小<output id="bulletSize-value">100%</output></label>
+     <input id="bulletSize" type="range" min="75" max="125" step="5" value="100">
+     <div class="range-bounds" aria-hidden="true"><span id="bulletSize-min">75</span><span id="bulletSize-max">125</span></div>
+     <p class="setting-help">影响子弹外观与碰撞大小，仅对新发射的子弹生效。</p>
     </div>
     <div class="setting">
-     <label for="band">距离附加长度（每500距离）<output id="band-value">100</output></label>
-     <input id="band" type="range" min="0" max="800" step="10" value="100">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>800</span></div>
-     <p class="setting-help">总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。</p>
+     <label for="annihilationChance">相消概率<output id="annihilationChance-value">50%</output></label>
+     <input id="annihilationChance" type="range" min="0" max="100" step="5" value="50">
+     <div class="range-bounds" aria-hidden="true"><span id="annihilationChance-min">0</span><span id="annihilationChance-max">100</span></div>
+     <p class="setting-help">双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。</p>
     </div>
+   </div>
+   <h3 class="settings-subtitle">发射带旋</h3>
+   <div class="settings-grid field-grid">
     <div class="setting">
      <label for="initialSpinSign">初始带旋方向<output id="initialSpinSign-value">+1</output></label>
      <select id="initialSpinSign" aria-describedby="initialSpinSign-help">
@@ -293,66 +311,95 @@ html[lang="en"] .setting output{white-space:nowrap}
     <div class="setting">
      <label for="launchSpinScale">发射带旋系数<output id="launchSpinScale-value">1.0</output></label>
      <input id="launchSpinScale" type="range" min="0" max="4" step="0.1" value="1">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>4</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="launchSpinScale-min">0</span><span id="launchSpinScale-max">4</span></div>
      <p class="setting-help">单独调节发射时横移留下的旋转强度，0 表示不带旋。仅影响新发射的子弹，不改变接收者横移的作用。</p>
     </div>
+   </div>
+   <h3 class="settings-subtitle">激活后的伤害与路程</h3>
+   <div class="settings-grid field-grid">
     <div class="setting">
-     <label for="annihilationChance">相消概率<output id="annihilationChance-value">50%</output></label>
-     <input id="annihilationChance" type="range" min="0" max="100" step="5" value="50">
-     <div class="range-bounds" aria-hidden="true"><span>0%</span><span>100%</span></div>
-     <p class="setting-help">双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。</p>
+     <label for="bandBase">基础杀伤长度<output id="bandBase-value">100</output></label>
+     <input id="bandBase" type="range" min="0" max="800" step="10" value="100">
+     <div class="range-bounds" aria-hidden="true"><span id="bandBase-min">0</span><span id="bandBase-max">800</span></div>
+     <p class="setting-help">杀伤长度中不随瞄准距离改变的部分。</p>
+    </div>
+    <div class="setting">
+     <label for="band">距离附加长度（每 500 距离）<output id="band-value">100</output></label>
+     <input id="band" type="range" min="0" max="800" step="10" value="100">
+     <div class="range-bounds" aria-hidden="true"><span id="band-min">0</span><span id="band-max">800</span></div>
+     <p class="setting-help">总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。</p>
+    </div>
+    <div class="setting">
+     <label for="minimumDamage">亮弹最低伤害<output id="minimumDamage-value">30</output></label>
+     <input id="minimumDamage" type="range" min="0" max="100" step="1" value="30">
+     <div class="range-bounds" aria-hidden="true"><span id="minimumDamage-min">0</span><span id="minimumDamage-max">100</span></div>
+     <p class="setting-help">刚变亮时的伤害，随后按成长路程线性增加到 100。暗弹仍不造成伤害。</p>
+    </div>
+    <div class="setting">
+     <label for="damageRampDistance">满伤成长路程<output id="damageRampDistance-value">100</output></label>
+     <input id="damageRampDistance" type="range" min="0" max="400" step="1" value="100">
+     <div class="range-bounds" aria-hidden="true"><span id="damageRampDistance-min">0</span><span id="damageRampDistance-max">400</span></div>
+     <p class="setting-help">子弹变亮后，伤害从最低伤害连续增加，飞过此路程后达到 100；按实际累计路程计算。0 表示立即满伤。内部计算保留精度；亮度和基础击退随伤害增加，速度击退独立计算。</p>
     </div>
    </div>
   </section>
   <section class="settings-group" aria-labelledby="field-settings">
    <h2 id="field-settings">力场</h2>
+   <h3 class="settings-subtitle">作用范围</h3>
    <div class="settings-grid field-grid">
     <div class="setting">
      <label for="radius">接收场半径<output id="radius-value">150</output></label>
      <input id="radius" type="range" min="50" max="250" step="5" value="150">
-     <div class="range-bounds" aria-hidden="true"><span>50</span><span>250</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="radius-min">50</span><span id="radius-max">250</span></div>
      <p class="setting-help">人物周围能影响对方亮点子弹的范围。</p>
     </div>
     <div class="setting">
      <label for="controlRadius">控弹场半径<output id="controlRadius-value">300</output></label>
-     <input id="controlRadius" type="range" min="0" max="600" step="10" value="300">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>600</span></div>
+     <input id="controlRadius" type="range" min="0" max="1000" step="10" value="300">
+     <div class="range-bounds" aria-hidden="true"><span id="controlRadius-min">0</span><span id="controlRadius-max">1000</span></div>
      <p class="setting-help">只偏转自己的亮弹，不减速；偏转强度共用。0 可关闭。显示力场时，虚线表示控弹场。</p>
     </div>
+   </div>
+   <h3 class="settings-subtitle">双方场共用的偏转</h3>
+   <div class="settings-grid field-grid">
+    <div class="setting">
+     <label for="spinForce">共用偏转强度<output id="spinForce-value">5400</output></label>
+     <input id="spinForce" type="range" min="0" max="10800" step="50" value="5400">
+     <div class="range-bounds" aria-hidden="true"><span id="spinForce-min">0</span><span id="spinForce-max">10800</span></div>
+     <p class="setting-help">接收场和控弹场共用。越大，亮弹越容易转弯；场主人当前横移可加强或抵消发射时留下的自旋。</p>
+    </div>
+    <div class="setting">
+     <label for="receiverSpinScale">场主人横移系数<output id="receiverSpinScale-value">1.0</output></label>
+     <input id="receiverSpinScale" type="range" min="0" max="4" step="0.1" value="1">
+     <div class="range-bounds" aria-hidden="true"><span id="receiverSpinScale-min">0</span><span id="receiverSpinScale-max">4</span></div>
+     <p class="setting-help">同时调节接收场和控弹场主人横移产生的偏转，0 可关闭。实时生效，不改变发射时留下的自旋。</p>
+    </div>
+   </div>
+   <h3 class="settings-subtitle">接收场减速</h3>
+   <div class="settings-grid field-grid">
     <div class="setting">
      <label for="drag">阻力系数<output id="drag-value">0.020</output></label>
      <input id="drag" type="range" min="0" max="0.040" step="0.001" value="0.020">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>0.040</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="drag-min">0</span><span id="drag-max">0.040</span></div>
      <p class="setting-help">越大，场内子弹减速越明显；设为 0 则不减速。弹速越高，阻力越强；人物顺着来弹方向后退时，阻力会减弱。子弹始终有推进力。</p>
-    </div>
-    <div class="setting">
-     <label for="spinForce">偏转强度<output id="spinForce-value">5400</output></label>
-     <input id="spinForce" type="range" min="0" max="10800" step="50" value="5400">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>10800</span></div>
-     <p class="setting-help">越大，子弹越容易转弯。发射时的横移给子弹留下自旋，对方的横移会加强或抵消这个效果。</p>
-    </div>
-    <div class="setting">
-     <label for="receiverSpinScale">接收横移偏转系数<output id="receiverSpinScale-value">1.0</output></label>
-     <input id="receiverSpinScale" type="range" min="0" max="4" step="0.1" value="1">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>4</span></div>
-     <p class="setting-help">单独调节接收者当前横移产生的偏转，0 可关闭。实时生效，不改变子弹发射时已经携带的旋转。</p>
     </div>
    </div>
    <label class="check field-visibility"><input id="showField" type="checkbox">显示力场圈</label>
   </section>
   <section class="settings-group" aria-labelledby="impact-settings">
    <h2 id="impact-settings">命中与击退</h2>
+   <h3 class="settings-subtitle">充能与动量</h3>
    <div class="settings-grid field-grid">
     <div class="setting">
      <label for="baseKnockback">基础击退距离<output id="baseKnockback-value">24</output></label>
      <input id="baseKnockback" type="range" min="0" max="60" step="2" value="24">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>60</span></div>
-     <p class="setting-help">每次命中附带的基础位移，与弹速无关。沿受击位置向内推开人物，设为 0 可关闭。</p>
+     <div class="range-bounds" aria-hidden="true"><span id="baseKnockback-min">0</span><span id="baseKnockback-max">60</span></div>
+     <p class="setting-help">满伤命中的基础位移，按实际伤害比例缩放，与弹速无关。沿受击位置向内推开人物，设为 0 可关闭。</p>
     </div>
     <div class="setting">
      <label for="impactScale">动量击退系数<output id="impactScale-value">0.26</output></label>
      <input id="impactScale" type="range" min="0" max="0.50" step="0.01" value="0.26">
-     <div class="range-bounds" aria-hidden="true"><span>0</span><span>0.50</span></div>
+     <div class="range-bounds" aria-hidden="true"><span id="impactScale-min">0</span><span id="impactScale-max">0.50</span></div>
      <p class="setting-help">根据命中时的相对速度增加击退。数值越大，高速正面命中推得越远；设为 0 则只保留基础击退。</p>
     </div>
    </div>
@@ -471,11 +518,11 @@ const DEFAULTS={
  maxHealth:10,actorRadius:15,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
  burstCount:3,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,
- radius:150,controlRadius:300,drag:.020,spinForce:5400,baseKnockback:24,impactScale:.26,
- difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true
+ radius:150,controlRadius:300,drag:.020,spinForce:5400,minimumDamage:.30,damageRampDistance:100,baseKnockback:24,impactScale:.26,
+ difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true,showHealthNumbers:true
 };
 const cfg={...DEFAULTS,view:'heading'};
-const SETTING_NAMES=['maxHealth','actorRadius','actorAspect','moveSpeed','inertia','bodyRepulsion','bodyRepulsionRange','burstCount','fireRate','reloadTime','padRange','baseKnockback','impactScale','bulletSize','launchSpeed','propulsion','bandBase','band','initialSpinSign','launchSpinScale','annihilationChance','radius','controlRadius','drag','spinForce','receiverSpinScale'];
+const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","actorAspect","bodyRepulsionRange","bodyRepulsion","burstCount","fireRate","reloadTime","padRange","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","bandBase","band","minimumDamage","damageRampDistance","radius","controlRadius","spinForce","receiverSpinScale","drag","baseKnockback","impactScale"];
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
@@ -483,7 +530,7 @@ const keys=new Set(),mouse={x:850,y:375,down:false,press:null};
 const touch={move:null,aim:null,target:null};
 const TOUCH_STICK={x:125,get y(){return H-115;},radius:65,hitRadius:86};
 let inputMode='mouse',moveSource='keyboard',aimSource='mouse',gamepadName='',padPrev=[],rightPrev={x:0,y:0,m:0},rightAnchor={x:0,y:0,m:0},seed=3947;
-let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],effects=[],elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
+let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],effects=[],damageNumbers=[],damageNumberId=0,elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
 let ending=null,defeatedEnemy=null;
 let pointerLockPending=false,pointerWasLocked=false;
 const mouseLook={x:0,y:0};let pointerDistanceScale=1;
@@ -498,6 +545,29 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 
 // === 03 · Text and language switching ===
 const ENGLISH={
+ "移动手感": "Movement response",
+ "人物属性": "Character properties",
+ "人物间排斥": "Character repulsion",
+ "连发与装填": "Burst and reload",
+ "瞄准与开火": "Aim and firing",
+ "飞行与碰撞": "Flight and collisions",
+ "发射带旋": "Launch spin",
+ "激活后的伤害与路程": "Damage and travel after activation",
+ "作用范围": "Field ranges",
+ "双方场共用的偏转": "Shared field deflection",
+ "接收场减速": "Receiving-field braking",
+ "充能与动量": "Charge and momentum",
+ "共用偏转强度": "Shared deflection strength",
+ "场主人横移系数": "Field-owner movement scale",
+ "同时调节接收场和控弹场主人横移产生的偏转，0 可关闭。实时生效，不改变发射时留下的自旋。": "Scales sideways-motion deflection for the owners of both receiving and control fields. Set to 0 to disable. Applies immediately without changing stored launch spin.",
+ "接收场和控弹场共用。越大，亮弹越容易转弯；场主人当前横移可加强或抵消发射时留下的自旋。": "Shared by receiving and control fields. Higher values bend bright bullets more strongly. Current owner motion can reinforce or cancel stored launch spin.",
+ "直拳可以消耗生命、击退对手；提前布置侧面的勾摆弹群，再用正面射击将对手推向它们，可以形成组合拳。子弹变亮后仍可被双方的场偏转，移动和换边能持续改变攻防。提高射速、搭配连发和装填节奏，可以尝试弹幕拳击。": "Straight shots can chip health and push opponents. Set up curved groups to the side, then use frontal shots to push opponents toward them for combinations. Both fields can still bend bright bullets; movement and switching sides keep shaping the exchange. Try higher fire rates with bursts and reload windows for bullet-barrage boxing.",
+ "面对难以躲开的亮弹，主动迎上去有时能在它充分充能前承受较低伤害；后退会争取躲避时间，也可能让子弹积累更多路程。迎击仍要留意后续弹群和侧面夹击，暗弹本身不造成伤害。": "Against a bright bullet that is hard to dodge, moving toward it can sometimes reduce damage by making contact before full charge. Retreating buys dodging time but may allow more charge to accumulate. Watch for follow-up groups and attacks from the side when advancing. Dim bullets themselves remain harmless.",
+ "命中位置浮起的数字表示本次子弹伤害，按整数显示，伤害越高，淡出时间越长。生命和伤害的显示与调节栏刻度一致。头顶数字表示当前生命，可在下方关闭，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，调整会自动保存，展开设置时暂停。": "Floating numbers at contact show the damage of that hit, rounded to whole numbers and a fade duration proportional to damage. Health and damage displays use the same units as their sliders. The number above each character shows current health and can be hidden in settings. The inner triangle darkens when firing starts and gradually brightens during reload. Settings below apply to both sides and save automatically. Opening settings pauses the game.",
+ "亮弹最低伤害": "Minimum bright-bullet damage",
+ "刚变亮时的伤害，随后按成长路程线性增加到 100。暗弹仍不造成伤害。": "Damage at activation, then growing linearly to 100 over the growth distance. Dim bullets remain harmless.",
+ "满伤成长路程": "Distance to full damage",
+ "子弹变亮后，伤害从最低伤害连续增加，飞过此路程后达到 100；按实际累计路程计算。0 表示立即满伤。内部计算保留精度；亮度和基础击退随伤害增加，速度击退独立计算。": "After activation, damage grows continuously from minimum damage to 100 over this accumulated flight distance. Set to 0 for immediate full damage. Health and damage retain fractions. Brightness and base knockback grow with damage; velocity-based knockback is separate.",
  "近场": "Near Field",
  "键盘 + 鼠标": "Keyboard + mouse",
  "地图": "Map",
@@ -545,7 +615,7 @@ const ENGLISH={
  "亮点：可命中": "Bright: can hit",
  "用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有两个随身场：接收场减速、偏转对方亮弹，控弹场只偏转自己的亮弹；射手开火时的横移与场主人当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。": "Move with WASD or the left stick, aim with the mouse, and click to fire. Bullets start dim and become damaging when they turn bright. Each character carries two fields: a receiving field that slows and deflects opposing bright bullets, and a control field that only deflects their own bright bullets. The shooter's sideways movement at launch and the field owner's current sideways movement can reinforce or cancel the deflection. Dim bullets are unaffected by character fields.",
  "鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。": "The mouse sets where your bullets turn bright; the nearby line marks the following damaging path. Your opponent's chosen starting point is hidden. Brightening starts at least 100 units from the shooter's center. A bullet still inside the opponent at that point stays dim until it leaves. All distances follow the actual flight path. Delayed brightening does not extend the damaging path; the bullet disappears when that path ends.",
- "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹；每次命中造成一点伤害并推开对手。头顶短条表示生命，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，展开设置时暂停。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets have a chance to cancel each other on contact; otherwise both pass through; bright bullets pass through other bullets. Each hit deals one point of damage and knocks the target back. The bar above a character shows health. The inner triangle darkens when firing starts and gradually brightens during reload. Settings apply to both sides; opening them pauses the game.",
+ "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹。亮弹伤害从设定的最低值（默认显示为 30）随变亮后的累计路程线性增长，默认飞过 100 距离达到满伤 100。亮度、基础击退和命中音量随伤害增加，相对碰撞速度还会额外影响击退。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets may cancel each other; otherwise they pass through. Bright bullets pass through other bullets. Bright-bullet damage grows linearly from the configured minimum (displayed as 30 by default) with accumulated travel after activation, reaching full damage of 100 after 100 distance by default. Brightness, base knockback and impact volume grow with damage; relative contact speed adds separate knockback.",
  "墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。回环地图中，子弹从对边继续飞行，人物不跨界，飞行路程继续累计。克莱因瓶的上下暖色长边会将子弹左右翻转，水平速度与自旋反向；左右正常回环，边框外人物像按相同规则显示。切换地图会重开本局。": "Walls block characters; dark walls absorb bullets and bright-edged walls reflect them. Map fields affect all bullet trajectories, but not characters. On wrap maps, bullets continue from the opposite edge while characters stay inside. Travel distance keeps accumulating. On Klein bottle, crossing the warm-colored top or bottom edge flips the bullet horizontally, reversing horizontal velocity and spin; left and right wrap normally. Character images outside follow the same mapping. Changing maps starts a new round.",
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
@@ -582,9 +652,7 @@ const ENGLISH={
  "发射带旋系数": "Launch spin multiplier",
  "相消概率": "Cancellation chance",
  "双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。": "When opposing dim bullets collide, they disappear together with this probability; otherwise they pass through. Both sides use the same rule. With the probability unchanged, the same pair always gives the same outcome. The bot cannot foresee the random outcome.",
- "接收横移偏转系数": "Receiver movement deflection multiplier",
  "单独调节发射时横移留下的旋转强度，0 表示不带旋。仅影响新发射的子弹，不改变接收者横移的作用。": "Independently scales spin from sideways movement at firing; 0 gives no launch spin. Affects newly fired bullets only, without changing the receiver's movement contribution.",
- "单独调节接收者当前横移产生的偏转，0 可关闭。实时生效，不改变子弹发射时已经携带的旋转。": "Independently scales deflection from the receiver's current sideways movement; 0 disables it. Takes effect immediately without changing existing launch spin.",
  "正向（+）": "Positive (+)",
  "反向（−）": "Negative (−)",
  "正向使初始带旋产生的偏转与发射时的横移同向，反向则相反。双方共用，仅影响新发射的子弹。": "Positive makes launch spin bend bullets in the direction of sideways movement at firing; negative reverses it. Shared by both sides. Applies only to newly fired bullets.",
@@ -592,7 +660,7 @@ const ENGLISH={
  "没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。": "Speed gained each second without drag. With an initial speed of 800 and acceleration of 300, speed reaches 1100 after one second.",
  "基础杀伤长度": "Base damage length",
  "杀伤长度中不随瞄准距离改变的部分。": "The part of damage length that stays constant at any aim range.",
- "距离附加长度（每500距离）": "Added damage length per 500 range",
+ "距离附加长度（每 500 距离）": "Added damage length per 500 range",
  "总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。": "Total length = base + added length × aim range / 500. Curved paths use actual travel distance.",
  "接收场半径": "Receiving field radius",
  "控弹场半径": "Control field radius",
@@ -601,9 +669,9 @@ const ENGLISH={
  "阻力系数": "Drag coefficient",
  "越大，场内子弹减速越明显；设为 0 则不减速。弹速越高，阻力越强；人物顺着来弹方向后退时，阻力会减弱。子弹始终有推进力。": "Higher values slow bullets more inside the field; 0 disables drag. Faster bullets experience stronger drag. Retreating in the direction of an incoming bullet reduces drag. Bullets always keep their forward thrust.",
  "偏转强度": "Deflection strength",
- "越大，子弹越容易转弯。发射时的横移给子弹留下自旋，对方的横移会加强或抵消这个效果。": "Higher values produce stronger curves. Sideways movement at launch gives a bullet spin; the opponent's sideways movement can reinforce or counter it.",
  "显示力场圈": "Show field circles",
  "持续开火（无需按住）": "Continuous fire (no button held)",
+ "显示头顶生命数字": "Show overhead health numbers",
  "显示距离线": "Show range indicator",
  "移动惯性": "Movement inertia",
  "人物排斥强度": "Character repulsion",
@@ -615,7 +683,7 @@ const ENGLISH={
  "手柄瞄准时，人物到子弹变亮起点的距离，也可用 LB / RB 调节。鼠标或触屏直接选位置。": "The distance to the brightening point when aiming with a controller. LB / RB also adjusts it. Mouse and touch input select the position directly.",
  "左摇杆可搭配鼠标。纯手柄用右摇杆瞄准、RT 射击；触屏用左侧摇杆移动，点击场地射击。": "You can use the left stick with a mouse. With a controller alone, aim with the right stick and fire with RT. On touchscreens, move with the left joystick and tap the arena to fire.",
  "基础击退距离": "Base knockback distance",
- "每次命中附带的基础位移，与弹速无关。沿受击位置向内推开人物，设为 0 可关闭。": "The base displacement from each hit, independent of bullet speed. It pushes the character inward from the point of impact. Set to 0 to disable.",
+ "满伤命中的基础位移，按实际伤害比例缩放，与弹速无关。沿受击位置向内推开人物，设为 0 可关闭。": "The base displacement at full damage, scaled by actual damage and independent of bullet speed. It pushes the character inward from the point of impact. Set to 0 to disable.",
  "动量击退系数": "Momentum knockback",
  "根据命中时的相对速度增加击退。数值越大，高速正面命中推得越远；设为 0 则只保留基础击退。": "Adds knockback based on relative impact speed. Higher values make fast, direct hits push farther. At 0, only base knockback remains.",
  "顶部可选择五档人机难度、固定靶练习或躲避靶练习。躲避靶只移动躲弹，不还击；两种练习靶被击破后都会重生。难度影响人机的反应、预判和开火时机；生命、武器和力场参数始终与玩家相同。人机也看不到你的子弹何时变亮。": "Choose from five bot difficulties, stationary target practice or evasive target practice at the top. Evasive targets move and dodge without firing back. Both practice targets respawn when defeated. Difficulty changes the bot's reactions, prediction and firing decisions. Health, weapon and field settings remain the same as yours. Bots cannot see when your bullets will turn bright either.",
@@ -657,7 +725,8 @@ let language='zh',staticTranslations=[],attributeTranslations=[],lastAnnouncemen
 let overlayContent={title:'',copy:'',button:'开始对战',values:{}};
 try{if(localStorage.getItem('near-field-language')==='en')language='en';}catch{}
 function tr(text,values={}){return(language==='en'?(ENGLISH[text]??text):text).replace(/\{(\w+)\}/g,(_,key)=>String(values[key]??''));}
-function formatSetting(name,value){if(name==='annihilationChance')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='initialSpinSign'?(value===1?'+1':'−1'):name==='drag'?value.toFixed(3):name==='impactScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value}):name==='reloadTime'?tr('{value} 秒',{value:value.toFixed(1)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':name==='padRange'?String(Math.round(value)):String(value);}
+function settingScale(name){return name==='inertia'?1000:name==='maxHealth'||name==='minimumDamage'?100:1;}
+function formatSetting(name,value){if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='initialSpinSign'?(value===1?'+1':'−1'):name==='drag'?value.toFixed(3):name==='impactScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='reloadTime'?tr('{value} 秒',{value:value.toFixed(1)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':name==='padRange'?String(Math.round(value)):String(value);}
 function refreshOverlayText(){const {title,copy,button,values}=overlayContent;$('overlay-title').textContent=tr(title,values);$('overlay-copy').textContent=tr(copy,values);$('start').textContent=tr(button);}
 function applyLanguage(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=tr('近场');
@@ -666,7 +735,8 @@ function applyLanguage(){
  $('language').setAttribute('aria-label',language==='en'?'切换为中文':'Switch to English');
  $('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('pause').textContent=tr(state==='paused'?'继续':'暂停');
  for(const name of SETTING_NAMES){
-  const value=name==='inertia'?cfg.inertia*1000:cfg[name];$(''+name+'-value').textContent=formatSetting(name,value);
+  const value=cfg[name]*settingScale(name);$(''+name+'-value').textContent=formatSetting(name,value);
+  if(name!=='initialSpinSign'){const lo=$(name+'-min'),hi=$(name+'-max');if(lo&&hi){lo.textContent=formatSetting(name,Number($(name).min));hi.textContent=formatSetting(name,Number($(name).max));}}
  }
  refreshInput();refreshOverlayText();updateHud(true);
  if(lastAnnouncement)$('announce').textContent=tr(lastAnnouncement.text,lastAnnouncement.values);
@@ -811,13 +881,15 @@ function playShotSound(actor){
   space.shotVoices++;counted=true;source.start(audioCtx.currentTime);audioPlayed++;
  }catch{try{source?.stop();}catch{}cleanup();}
 }
+// For hit/hurt, strength is contact damage; other cues keep their existing scale.
 function playSound(kind,strength=1,x=W/2){
+ if((kind==='hit'||kind==='hurt')&&strength<=0)return;
  // Impact sounds keep priority over the quieter, separately limited shots.
  if(!['hit','hurt','intercept','kill'].includes(kind)||!cfg.sound||!audioCtx||audioCtx.state!=='running'||impactAudio?.context!==audioCtx||audioVoices>=12)return;
  let nodes=[],sources=[],counted=false,cleaned=false,remaining=0;
  const cleanup=()=>{if(cleaned)return;cleaned=true;if(counted){audioVoices=Math.max(0,audioVoices-1);counted=false;}for(const node of nodes)try{node.disconnect();}catch{}};
  try{
-  const space=impactAudio,now=audioCtx.currentTime,scale=clamp(.7+strength*.35,.7,1.26);
+  const space=impactAudio,now=audioCtx.currentTime,scale=kind==='hit'||kind==='hurt'?clamp(strength,0,1):clamp(.7+strength*.35,.7,1.26);
   const voice=audioCtx.createGain(),pan=audioCtx.createStereoPanner();nodes.push(voice,pan);
   voice.gain.value=1/Math.sqrt(1+audioVoices*.16);
   pan.pan.value=kind==='hurt'?0:clamp((x/W-.5)*1.4,-.8,.8);
@@ -1047,7 +1119,7 @@ function reset(run=false){
  seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);cameraAngle=p.aim+Math.PI/2;
  if(headingView())p.range=VIEW_H*(.8-.5);
  ending=null;defeatedEnemy=null;
- bullets=[];bulletFades=[];effects=[];elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
+ bullets=[];bulletFades=[];effects=[];damageNumbers=[];damageNumberId=0;elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);state=run?'running':'ready';
  $('pause').disabled=!run;$('pause').textContent=tr('暂停');$('overlay').hidden=run;updateHud(true);
  if(run){$('settings').open=false;announce('游戏开始');deferAudioUnlock();}
@@ -1065,7 +1137,7 @@ function togglePause(){if(state==='running')pause();else if(state==='paused')res
 function finish(won){
  if(state!=='running')return;
  flushSettings();
- const values={secs:elapsed.toFixed(1),hp:won?p.hp:enemy?.hp||0,maxHp:won?p.maxHp:enemy?.maxHp??cfg.maxHealth,shots};
+ const values={secs:elapsed.toFixed(1),hp:formatHealth(won?p.hp:enemy?.hp||0),maxHp:formatHealth(won?p.maxHp:enemy?.maxHp??cfg.maxHealth),shots};
  // Freeze the result now; the remaining movement is purely visual.
  ending={age:0,duration:.8,result:won===null?'draw':won?'won':'lost',values,
   title:won===null?'同时倒下':won?'这一局，你赢了':'再来一局',
@@ -1079,6 +1151,7 @@ function updateEnding(dt){
  ending.age=Math.min(ending.duration,ending.age+dt);
  for(const actor of ending.actors){if(actor)moveActor(actor,0,0,.16,dt);}
  if(ending.actors[0]&&ending.actors[1])separateActors(ending.actors[0],ending.actors[1]);
+ updateDamageNumbers(dt);
  for(const e of effects)e.age+=dt;effects=effects.filter(e=>e.age<e.life);
  for(const fade of bulletFades){fade.px=fade.x;fade.py=fade.y;fade.age+=dt;fade.x+=fade.vx*dt;fade.y+=fade.vy*dt;}bulletFades=bulletFades.filter(fade=>fade.age<fade.life);
  if(ending.age>=ending.duration-1e-9){ending.age=ending.duration;state=ending.result;showOverlay(ending.title,ending.copy,'再来一局',ending.values);announce(ending.announcement);}
@@ -1299,8 +1372,8 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
  b.damageCarrierStart=b.freshSpawn&&carrier?{x:carrier.x,y:carrier.y,team:carrier.team}:null;b.freshSpawn=false;
  const twoPhase=Number.isFinite(b.fieldStart);
  if(twoPhase)b.armedAge=Math.max(0,b.armedAge||0);
- function recordDamage(from,to,x0,y0,x1,y1){
-  const segment={from:dt>0?from/dt:0,to:dt>0?to/dt:0,x0,y0,x1,y1,vx:b.vx,vy:b.vy};
+ function recordDamage(from,to,x0,y0,x1,y1,travel0=b.travel){
+  const segment={from:dt>0?from/dt:0,to:dt>0?to/dt:0,x0,y0,x1,y1,travel0,travel1:b.travel,vx:b.vx,vy:b.vy};
   b.damageSegments.push(segment);
   if(!b.damageWindow)b.damageWindow=[segment.from,segment.to];else b.damageWindow[1]=segment.to;
  }
@@ -1392,10 +1465,10 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
   }
   let motionSegment=null;
   if(advanced>0){
-   motionSegment={from:elapsed/dt,to:(elapsed+advanced)/dt,x0:initial.x,y0:initial.y,x1:b.x,y1:b.y,phase:damaging?'solid':fieldActive?'arming':'ghost',solid:damaging,ghostEndExclusive:false};
+   motionSegment={from:elapsed/dt,to:(elapsed+advanced)/dt,x0:initial.x,y0:initial.y,x1:b.x,y1:b.y,travel0:initial.travel,travel1:b.travel,phase:damaging?'solid':fieldActive?'arming':'ghost',solid:damaging,ghostEndExclusive:false};
    b.motionSegments.push(motionSegment);
   }
-  if(damaging)recordDamage(elapsed,elapsed+advanced,initial.x,initial.y,b.x,b.y);
+  if(damaging)recordDamage(elapsed,elapsed+advanced,initial.x,initial.y,b.x,b.y,initial.travel);
   if(twoPhase&&fieldActive)b.armedAge+=advanced;
   remaining=Math.max(0,remaining-advanced);
   if(Number.isFinite(end)&&b.travel>=end&&!b.endPoint)b.endPoint={x:b.x,y:b.y,t:(dt-remaining)/dt};
@@ -1473,7 +1546,7 @@ function projectilePhase(b){
  const expired=Number.isFinite(end)&&d>=end,arming=fieldActive&&!solid&&!expired;
  // Appearance carries the current phase only; no preview of the remaining
  // distance or time to activation, even within the last simulation step.
- return{phase:expired?'expired':solid?'solid':arming?'arming':'ghost',solid:solid&&!expired,arming,fieldActive:fieldActive&&!expired,alpha:solid&&!expired?1:arming?.64:.30};
+ return{phase:expired?'expired':solid?'solid':arming?'arming':'ghost',solid:solid&&!expired,arming,fieldActive:fieldActive&&!expired,alpha:solid&&!expired?.30+.70*projectileDamage(b,d):arming?.64:.30};
 }
 function activeWindow(b){
  if(Array.isArray(b.damageSegments))return b.damageWindow;
@@ -1515,7 +1588,8 @@ function collisionEvent(b,a,shapeCache=null){
   if(Math.hypot(lx,ly)<1e-8){lx=-co*b.dx-si*b.dy;ly=si*b.dx-co*b.dy;}
   const normal=unit(lx/(rx*rx),ly/(ry*ry)),nx=co*normal.x-si*normal.y,ny=si*normal.x+co*normal.y;
   const scale=1/Math.hypot(lx/shape.rx,ly/shape.ry),ax=origin.x+(a.x-origin.x)*t,ay=origin.y+(a.y-origin.y)*t;
-  return{t,nx,ny,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,vx:segment.vx??b.vx,vy:segment.vy??b.vy};
+  const travel=Number.isFinite(segment.travel0)?segment.travel0+(segment.travel1-segment.travel0)*localTime:(b.prevTravel??b.travel??0)+((b.travel??0)-(b.prevTravel??b.travel??0))*t;
+  return{t,nx,ny,travel,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,vx:segment.vx??b.vx,vy:segment.vy??b.vy};
  }
  return null;
 }
@@ -1582,11 +1656,12 @@ function projectilePairEvent(a,b){
 
 function effect(x,y,kind,strength=1,angle=0){effects.push({x,y,age:0,life:kind==='kill'?.65:kind==='intercept'?.18:.24,kind,strength,angle});if(effects.length>90)effects.shift();}
 function applyImpact(a,b,contact){
- // A speed-independent blast and the normal momentum contribution add.
+ // Charge scales only the base blast; relative-speed knockback stays separate.
  // Exponential decay integrates to impulse * decay, so baseKnockback is
  // the isolated, unobstructed travel of the base component, not a teleport.
  const closing=Math.max(0,-(((contact.vx??b.vx)-a.vx)*contact.nx+((contact.vy??b.vy)-a.vy)*contact.ny));
- const impulse=cfg.baseKnockback/IMPACT.decay+closing*cfg.impactScale,strength=clamp(impulse/320,0,1.6);
+ const damage=projectileDamage(b,contact.travel??b.travel);
+ const impulse=cfg.baseKnockback*damage/IMPACT.decay+closing*cfg.impactScale,strength=clamp(impulse/320,0,1.6);
  // The contact normal points out of the body; push away from the hit face.
  a.ivx-=contact.nx*impulse;a.ivy-=contact.ny*impulse;const magnitude=Math.hypot(a.ivx,a.ivy);if(magnitude>IMPACT.maxSpeed){a.ivx*=IMPACT.maxSpeed/magnitude;a.ivy*=IMPACT.maxSpeed/magnitude;}
  a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy;
@@ -1594,10 +1669,24 @@ function applyImpact(a,b,contact){
  a.qx-=xx*.025*strength;a.qy-=xy*.025*strength;a.qvx-=xx*8*strength;a.qvy-=xy*8*strength;
  a.hitFlash=.16;a.hitArc=.3;a.hitAngle=Math.atan2(contact.ny,contact.nx);return strength;
 }
+function projectileDamage(b,travel=b.travel||0){
+ const start=Number.isFinite(b.damageStart)?b.damageStart:b.solidStart;
+ const charge=cfg.damageRampDistance<=0||!Number.isFinite(start)?1:clamp((travel-start)/cfg.damageRampDistance,0,1);
+ return cfg.minimumDamage+(1-cfg.minimumDamage)*charge;
+}
+function showDamageNumber(x,y,damage,team){
+ if(damage<=0)return;
+ const text=String(formatHealth(damage));
+ damageNumbers.push({x,y,text,team,offset:((damageNumberId++%5)-2)*11,age:0,life:damage});
+ if(damageNumbers.length>40)damageNumbers.shift();
+}
+function updateDamageNumbers(dt){for(const n of damageNumbers)n.age+=dt;damageNumbers=damageNumbers.filter(n=>n.age<n.life);}
+// Combat math retains normalized units; displays and sliders use 100x units.
+function formatHealth(value){return Math.round(value*100);}
 function resolveHit(b,a,contact){
- b.dead=true;if(a.hp<=0)return;const own=a.team===0,strength=applyImpact(a,b,contact);effect(contact.x,contact.y,own?'hit':'spark',strength,a.hitAngle);playSound(own?'hurt':'hit',strength,contact.x);
- if(own){hits++;if(!isPracticeMode())a.hp=Math.max(0,a.hp-1);}
- else{a.hp=Math.max(0,a.hp-1);if(a.hp===0){effect(a.x,a.y,'kill');playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
+ b.dead=true;if(a.hp<=0)return;const damage=projectileDamage(b,contact.travel??b.travel),own=a.team===0,strength=applyImpact(a,b,contact);effect(contact.x,contact.y,own?'hit':'spark',strength,a.hitAngle);playSound(own?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
+ if(own){hits++;if(!isPracticeMode())a.hp=Math.max(0,a.hp-damage);}
+ else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){effect(a.x,a.y,'kill');playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
  updateHud(true);
 }
 
@@ -1728,8 +1817,8 @@ function botForecastActiveStep(b,dt,body,source=null){
  let remaining=dt,wallContacts=0,windowStopped=false;b.forecastWindow=null;b.warm=Math.max(0,b.warm||0);
  while(remaining>1e-6&&b.left>0){
   if(b.left<=1e-7){b.left=0;break;}
-  const speed=Math.max(1e-6,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
   const active=b.before<=1e-5,damaging=active&&b.warm<=1e-7;
+  const speed=Math.max(1e-6,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
   const w=active?fieldWeight(b.x,b.y,body):0,inside=active&&brakingWeight(b.x,b.y,body);
   const sourceWeight=damaging?fieldWeight(b.x,b.y,source,cfg.controlRadius):0;
   const rate=cfg.spinForce*((b.spin+receiverSpin(body,nx,ny))*w+(b.spin+receiverSpin(source,nx,ny))*sourceWeight)/Math.hypot(speed,6);
@@ -2155,6 +2244,8 @@ function botAimProbe(actor,target,angle,range,annForecast=null,targetAt=null,sou
    const q=clamp(-(rx*rvx+ry*rvy)/(rvx*rvx+rvy*rvy+1e-9),0,1),miss=Math.hypot(rx+rvx*q,ry+rvy*q),time=segment.from+span*q;
    if(miss<best.miss)best={miss,travel:old.travel+ds*time,time:t+dt*time};
   }
+  const contact=collisionEvent(b,{...after,px:before.x,py:before.y});
+  if(contact){best={miss:0,travel:contact.travel,time:t+dt*contact.t};break;}
   // Continue after a first pass: a solid shot can hook back. Once its selected
   // damaging interval ends, a later harmless pass cannot improve this shot.
   if(b.probeTruncated||b.wallAbsorbed||Number.isFinite(projectileEnd(b))&&b.travel>=projectileEnd(b)||b.x<10||b.x>W-10||b.y<10||b.y>H-10)break;
@@ -2165,7 +2256,7 @@ function botAimProbe(actor,target,angle,range,annForecast=null,targetAt=null,sou
  const phaseOffset=Number.isFinite(b.damageStart)?Math.abs(best.travel-(b.damageStart+projectileEnd(b))*.5):0;
  const ann=annForecast?botAnnihilationScore(best,annForecast,annContacts):{blocked:0,defense:0,score:0};
  return{...best,angle,range,wallBlocked:b.wallAbsorbed&&best.miss>bodyShape(target).rx+b.r,annBlocked:ann.blocked,annDefense:ann.defense,
-  score:Math.max(0,best.miss-hitTolerance)+phaseOffset*.08+best.time*.06+ann.score};
+  damage:projectileDamage(b,best.travel),score:Math.max(0,best.miss-hitTolerance)+phaseOffset*.08+best.time*.06+ann.score+30*(1-projectileDamage(b,best.travel))};
 }
 function botFlightTime(distance){
  // Solve distance = v0*t + a*t*t/2 for the nonnegative time without
@@ -2416,8 +2507,9 @@ function simulate(dt,control){
  for(const b of bullets)if(b.ended&&!b.dead){
   const distance=b.travel-b.prevTravel,t=distance>1e-10?clamp((projectileEnd(b)-b.prevTravel)/distance,0,1):1;
   // Keep the final bright dot and let it gently drift while fading; no trail.
-  bulletFades.push({x:b.endPoint?.x??b.px+(b.x-b.px)*t,y:b.endPoint?.y??b.py+(b.y-b.py)*t,vx:b.vx*.12,vy:b.vy*.12,r:b.r,team:b.team,fadeSolid:!Number.isFinite(b.fieldStart)||Number.isFinite(b.damageStart),age:0,life:.14});
+  bulletFades.push({x:b.endPoint?.x??b.px+(b.x-b.px)*t,y:b.endPoint?.y??b.py+(b.y-b.py)*t,vx:b.vx*.12,vy:b.vy*.12,r:b.r,team:b.team,fadeSolid:!Number.isFinite(b.fieldStart)||Number.isFinite(b.damageStart),fadeDamage:projectileDamage(b,projectileEnd(b)),age:0,life:.14});
  }
+ updateDamageNumbers(dt);
  bullets=bullets.filter(b=>!b.dead&&!b.expired);for(const effect of effects)effect.age+=dt;effects=effects.filter(effect=>effect.age<effect.life);
  if(!practice){if(p.hp<=0)finish(enemy===null?null:false);else if(enemy===null)finish(true);}updateHud();
 }
@@ -2428,7 +2520,7 @@ function updateHud(force=false){
  setHudText('weapon',p.salvo?tr('{weapon}中',{weapon}):p.cd>0?tr('装填 {secs}s',{secs:p.cd.toFixed(1)}):tr('{weapon}就绪',{weapon}));
  setHudText('score',practice?tr('练习 · 击破 {kills}',{kills}):tr('人机对战'));setHudText('intercepts',tr('已发 {shots}',{shots}));
  setHudText('time',`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`);
- setHudText('health',tr('你的生命 {hp} / {maxHp}，对手生命 {enemyHp} / {enemyMaxHp}',{hp:p.hp,maxHp:p.maxHp,enemyHp:enemy?.hp||0,enemyMaxHp:enemy?.maxHp??cfg.maxHealth}));
+ setHudText('health',tr('你的生命 {hp} / {maxHp}，对手生命 {enemyHp} / {enemyMaxHp}',{hp:formatHealth(p.hp),maxHp:formatHealth(p.maxHp),enemyHp:formatHealth(enemy?.hp||0),enemyMaxHp:formatHealth(enemy?.maxHp??cfg.maxHealth)}));
 }
 
 // === 12 · Canvas drawing ===
@@ -2557,13 +2649,13 @@ function drawLoopImages(a,gray,drawing,view=null){
 
 let healthDrawScale=1;
 function drawHealth(a,team){
- // A short, unboxed line: faint missing health and a quieter filled portion.
- const scale=healthDrawScale,width=32*scale;
+ if(!cfg.showHealthNumbers)return;
+ // Reserve the maximum body extent to keep the label steady during deformation.
+ const scale=healthDrawScale;
  const reservedRadius=a.r*Math.sqrt(1+Math.abs(cfg.actorAspect)/100)*Math.exp(.29);
- const x=0,y=-reservedRadius-7*scale,health=clamp(a.hp/a.maxHp,0,1);
- ctx.save();ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());ctx.strokeStyle=team===0?C.player:C.enemy;ctx.lineWidth=1.5*scale;ctx.lineCap='round';
- ctx.globalAlpha=.12;ctx.beginPath();ctx.moveTo(x-width/2,y);ctx.lineTo(x+width/2,y);ctx.stroke();
- if(health>0){ctx.globalAlpha=a.hitFlash>0?.85:.6;ctx.beginPath();ctx.moveTo(x-width/2,y);ctx.lineTo(x-width/2+width*health,y);ctx.stroke();}
+ ctx.save();ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());
+ ctx.globalAlpha=.7;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${11*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+ ctx.fillText(String(formatHealth(a.hp)),0,-reservedRadius-7*scale);
  ctx.restore();
 }
 function drawTouch(){
@@ -2584,17 +2676,20 @@ function bulletGlow(radius,color){
  glow={image,extent:size/(2*scale)};bulletGlowCache.set(key,glow);return glow;
 }
 function drawBullet(b,fade=null,alpha=1){
- const phase=fade===null?projectilePhase(b):{solid:b.fadeSolid!==false,alpha:fade*(b.fadeSolid===false?.64:1)};
- let x=b.x,y=b.y,solid=phase.solid,opacity=phase.alpha;
+ const phase=fade===null?projectilePhase(b):{solid:b.fadeSolid!==false,arming:false};
+ let x=b.x,y=b.y,solid=phase.solid,arming=phase.arming,travel=b.travel||0;
  if(alpha<1&&fade===null&&b.motionSegments?.length){
-  // Interpolate within a swept segment, never across a wrap or reflection.
-  for(let i=b.motionSegments.length-1;i>=0;i--){const s=b.motionSegments[i];if(alpha<s.from||alpha>=s.to)continue;const t=clamp((alpha-s.from)/(s.to-s.from),0,1);x=s.x0+(s.x1-s.x0)*t;y=s.y0+(s.y1-s.y0)*t;solid=s.solid;opacity=solid?1:s.phase==='arming'?.64:.30;break;}
+  // Position and charge use the same segment, including wraps and reflections.
+  for(let i=b.motionSegments.length-1;i>=0;i--){const s=b.motionSegments[i];if(alpha<s.from||alpha>=s.to)continue;const t=clamp((alpha-s.from)/(s.to-s.from),0,1);x=s.x0+(s.x1-s.x0)*t;y=s.y0+(s.y1-s.y0)*t;solid=s.solid;arming=s.phase==='arming';travel=Number.isFinite(s.travel0)?s.travel0+(s.travel1-s.travel0)*t:(b.prevTravel??travel)+(travel-(b.prevTravel??travel))*alpha;break;}
  }else if(alpha<1){x=(b.px??x)+(x-(b.px??x))*alpha;y=(b.py??y)+(y-(b.py??y))*alpha;}
+ const charge=solid?(fade===null?projectileDamage(b,travel):b.fadeDamage??projectileDamage(b)):0;
+ const fadeScale=fade===null?1:clamp(fade,0,1),opacity=solid?.30+.70*charge:arming?.64:.30;
  const palette=BULLET_COLORS[b.team===0?0:1],color=solid?palette.solid:palette.ghost;
- ctx.save();ctx.globalAlpha=opacity;
- if(solid){const glow=bulletGlow(b.r,color),r=glow.extent;ctx.drawImage(glow.image,x-r,y-r,r*2,r*2);}
- ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();
- if(solid){ctx.fillStyle=palette.core;circle(x,y,b.r*.58);ctx.fill();}
+ ctx.save();
+ // Reuse the full-strength glow image; charge changes alpha, never cache keys.
+ if(solid&&charge>0){ctx.globalAlpha=fadeScale*charge;const glow=bulletGlow(b.r,color),r=glow.extent;ctx.drawImage(glow.image,x-r,y-r,r*2,r*2);}
+ ctx.globalAlpha=fadeScale*opacity;ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();
+ if(solid&&charge>0){ctx.globalAlpha=fadeScale*charge;ctx.fillStyle=palette.core;circle(x,y,b.r*.58);ctx.fill();}
  ctx.restore();
 }
 function drawWalls(){
@@ -2636,6 +2731,14 @@ function render(alpha=1){
   const {start}=shotRangePlan(visualPlayer,visualPlayer.range),aimPoint=headingView()?null:aimSource==='mouse'?mouse:aimSource==='touch'?touch.target:null;
   const x=aimPoint?.x??visualPlayer.x+Math.cos(visualPlayer.aim)*start,y=aimPoint?.y??visualPlayer.y+Math.sin(visualPlayer.aim)*start;
   ctx.strokeStyle='rgba(200,216,208,.75)';ctx.lineWidth=AIM_STROKE;circle(x,y,ACTOR.shotRadius+AIM_STROKE/2);ctx.stroke();
+ }
+ // Counter-rotate labels so they stay upright in the heading view.
+ for(const n of damageNumbers){
+  const t=clamp((n.age-(1-alpha)*STEP)/n.life,0,1);
+  ctx.save();ctx.translate(n.x,n.y);if(view)ctx.rotate(heading);
+  ctx.globalAlpha=.70*(1-t);ctx.font='500 10px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.lineWidth=2;ctx.lineJoin='round';ctx.strokeStyle=C.bg;ctx.fillStyle=n.team===0?C.enemy:C.player;
+  const y=-12-t*24;ctx.strokeText(n.text,n.offset,y);ctx.fillText(n.text,n.offset,y);ctx.restore();
  }
  ctx.setTransform(sx,0,0,sy,ox*sx,oy*sy);if(!ending)drawTouch();
 }
@@ -2749,7 +2852,7 @@ let settingsDirty=false,padRangeDirty=false,restoringDefaults=false;
 function validSettingValue(name,value){
  if(typeof value!=='number'||!Number.isFinite(value))return false;
  if(name==='initialSpinSign')return value===1||value===-1;
- const input=$(name),displayValue=name==='inertia'?value*1000:value,min=Number(input.min),max=Number(input.max),step=Number(input.step);
+ const input=$(name),displayValue=value*settingScale(name),min=Number(input.min),max=Number(input.max),step=Number(input.step);
  if(!Number.isFinite(min)||!Number.isFinite(max)||displayValue<min-1e-8||displayValue>max+1e-8)return false;
  // Shoulder buttons adjust this distance continuously between slider ticks.
  return name==='padRange'||step>0&&Math.abs((displayValue-min)/step-Math.round((displayValue-min)/step))<1e-7;
@@ -2764,7 +2867,7 @@ function restoreSettings(){
     if(name==='actorAspect'&&Number.isFinite(value)&&Math.abs(value)<=100&&value%5===0)value=Math.sign(value)*Math.round(Math.abs(value)/10)*10;
     if(validSettingValue(name,value))cfg[name]=value;
    }
-   for(const name of ['sound','showField','showRange','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+   for(const name of ['sound','showField','showRange','showHealthNumbers','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
    if(saved.view==='world'||saved.view==='heading')cfg.view=saved.view;
    if(typeof saved.difficulty==='string'&&Object.hasOwn(BOT_LEVELS,saved.difficulty))cfg.difficulty=saved.difficulty;
    if(typeof saved.mode==='string'&&(Object.hasOwn(BOT_LEVELS,saved.mode)||saved.mode==='practice'||saved.mode==='practice-dodge')){
@@ -2773,35 +2876,35 @@ function restoreSettings(){
    if(typeof saved.map==='string'&&Object.hasOwn(MAPS,saved.map))setMap(saved.map);
   }
  }catch{}
- for(const name of SETTING_NAMES)$(name).value=name==='inertia'?cfg[name]*1000:cfg[name];
- $('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
+ for(const name of SETTING_NAMES)$(name).value=cfg[name]*settingScale(name);
+ $('showHealthNumbers').checked=cfg.showHealthNumbers;$('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
  $('map').value=mapId;$('view').value=cfg.view;$('view-help').hidden=!headingView();syncDifficultyControl();
 }
 function saveSettings(){
  if(restoringDefaults)return;
  const values={};for(const name of SETTING_NAMES)values[name]=validSettingValue(name,cfg[name])?cfg[name]:DEFAULTS[name];
- try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view}));}catch{}
+ try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,showHealthNumbers:cfg.showHealthNumbers,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view}));}catch{}
  settingsDirty=padRangeDirty=false;
 }
 function flushSettings(){if(settingsDirty)saveSettings();}
 for(const name of SETTING_NAMES)$(name).addEventListener('input',()=>{
  stopStartupPreparation();
- const value=Number($(name).value);cfg[name]=(name==='inertia')?value/1000:value;
+ const value=Number($(name).value);cfg[name]=value/settingScale(name);
  $(name+'-value').textContent=formatSetting(name,value);
  if(name==='actorRadius'||name==='actorAspect')resizeActors();
  if(name!=='padRange'&&enemy)enemy.bot=null;updateHud(true);render();
 });
-// Commit health once per slider gesture, so repeated input events cannot
-// accumulate integer rounding while the thumb is being dragged.
+// Commit health once per slider gesture, preserving fractional health ratios.
 $('maxHealth').addEventListener('change',()=>{
- const value=cfg.maxHealth;for(const actor of [p,enemy]){if(!actor)continue;const fraction=actor.hp/actor.maxHp;actor.maxHp=value;actor.hp=fraction>0?Math.max(1,Math.min(value,Math.round(value*fraction))):0;}
+ const value=cfg.maxHealth;for(const actor of [p,enemy]){if(!actor)continue;const fraction=actor.hp/actor.maxHp;actor.maxHp=value;actor.hp=fraction>0?Math.min(value,value*fraction):0;}
  updateHud(true);render();
 });
 $('showField').addEventListener('change',()=>{cfg.showField=$('showField').checked;saveSettings();render();});
+$('showHealthNumbers').addEventListener('change',()=>{cfg.showHealthNumbers=$('showHealthNumbers').checked;saveSettings();render();});
 $('showRange').addEventListener('change',()=>{cfg.showRange=$('showRange').checked;saveSettings();render();});
 $('continuousFire').addEventListener('change',()=>{cfg.continuousFire=$('continuousFire').checked;saveSettings();});
 $('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?.6:0;saveSettings();$('sound').blur();});
-$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,name==='inertia'?DEFAULTS[name]*1000:DEFAULTS[name]])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
+$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();render();});
 for(const name of SETTING_NAMES){$(name).addEventListener('input',()=>{settingsDirty=true;});$(name).addEventListener('change',saveSettings);}
 window.addEventListener('pagehide',flushSettings);
