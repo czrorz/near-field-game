@@ -134,12 +134,11 @@ html[lang="en"] .setting output{white-space:nowrap}
    <label class="sr-only" for="map">地图</label>
    <select id="map">
     <option value="open">地图 · 空场</option>
+    <option value="hill">地图 · 缓丘</option>
     <option value="loop">地图 · 弹道回环</option>
-    <option value="klein">地图 · 克莱因瓶</option>
     <option value="four" selected>地图 · 四墙</option>
-    <option value="barrier">地图 · 星球</option>
     <option value="ellipse">地图 · 椭圆反射场</option>
-    <option value="vortices">地图 · 双旋涡</option>
+    <option value="peaks">地图 · 三柱</option>
     <option value="crossflow">地图 · 横流带</option>
     <option value="maze">地图 · 吸收迷宫</option>
    </select>
@@ -167,18 +166,15 @@ html[lang="en"] .setting output{white-space:nowrap}
   <div class="overlay" id="overlay"><div class="dialog"><h2 id="overlay-title"></h2><p id="overlay-copy"></p><button class="primary" id="start" type="button">开始对战</button><div class="keys" id="keys"><span><kbd>WASD / 左杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准 · 点击连发</span><span><kbd>R</kbd>重开</span><span><kbd>Space</kbd>暂停</span></div><p id="controller-help" style="font-size:12px;margin-bottom:0">左摇杆可搭配鼠标。触屏用左侧摇杆移动，点击场地射击。</p></div></div>
   <div class="toast" id="toast" aria-live="polite"></div>
  </section>
- <p class="notes" id="view-help">点击开始或继续时锁定鼠标；左右转向，上下调距离，Esc 释放并暂停。</p>
  <details class="settings" id="settings">
   <summary>说明与设置</summary>
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
-  <p class="notes">用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有两个随身场：接收场减速、偏转对方亮弹，控弹场只偏转自己的亮弹；射手开火时的横移与场主人当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。</p>
-  <p class="notes">鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。</p>
-  <p class="notes">点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹。亮弹爆炸伤从设定的最低值（默认显示为 0）随变亮后的累计路程线性增长，默认飞过 150 距离达到满伤 100。内部亮度与光晕、基础击退随爆炸伤增加；命中音量随总伤害增加，相对碰撞速度还会额外影响击退。</p>
-  <p class="notes">亮弹命中造成爆炸伤与动量伤之和。激活后外圈亮起，内部亮度始终按爆炸伤比例变化，包括激活瞬间；半透明光晕随充能变亮，子弹和光晕大小固定。动量伤取决于相对撞击速度和接触角度，暗弹仍无伤害。</p>
-  <p class="notes">直拳可以消耗生命、击退对手；提前布置侧面的勾摆弹群，再用正面射击将对手推向它们，可以形成组合拳。子弹变亮后仍可被双方的场偏转，移动和换边能持续改变攻防。提高射速、搭配连发和装填节奏，可以尝试弹幕拳击。</p>
-  <p class="notes">面对难以躲开的亮弹，主动迎上去有时能在它充分充能前承受较低伤害；后退会争取躲避时间，也可能让子弹积累更多路程。迎击仍要留意后续弹群和侧面夹击，暗弹本身不造成伤害。</p>
-  <p class="notes">命中位置浮起的数字表示本次子弹伤害，按整数显示，伤害越高，淡出时间越长。生命和伤害的显示与调节栏刻度一致。头顶数字表示当前生命，可在下方关闭，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，调整会自动保存，展开设置时暂停。</p>
-  <p class="notes">墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。回环地图中，子弹从对边继续飞行，人物不跨界，飞行路程继续累计。克莱因瓶的上下暖色长边会将子弹左右翻转，水平速度与自旋反向；左右正常回环，边框外人物像按相同规则显示。切换地图会重开本局。</p>
+  <p class="notes">WASD 移动，鼠标瞄准，点击发射一组，按住持续射击；空格暂停，R 重开。</p>
+  <p class="notes">瞄准距离决定变亮路程，最小 100；距离线表示杀伤路段，走完后子弹消失。路程按实际弹道计算；在对手体内时延迟变亮，不延长路段。</p>
+  <p class="notes">接收场减速、偏转敌方亮弹；控弹场只偏转己方亮弹。暗弹不受人物力场影响，亮弹穿过其他子弹。</p>
+  <p class="notes">发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在人物场内按自旋偏转，场主人相对子弹方向的横移可加强或抵消偏转。</p>
+  <p class="notes">暗弹无伤害；亮弹伤害 = 爆炸伤 + 动量伤。内部亮度表示爆炸伤；头顶数字为剩余生命，浮字为命中伤害，人物内三角表示装填进度。</p>
+  <p class="notes">参数双方共用，自动保存；展开设置暂停。</p>
   <section class="settings-group" aria-labelledby="movement-settings">
    <h2 id="movement-settings">人物与移动</h2>
    <h3 class="settings-subtitle">移动手感</h3>
@@ -187,13 +183,13 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="moveSpeed">移动速度<output id="moveSpeed-value">235</output></label>
      <input id="moveSpeed" type="range" min="200" max="270" step="5" value="235">
      <div class="range-bounds" aria-hidden="true"><span id="moveSpeed-min">200</span><span id="moveSpeed-max">270</span></div>
-     <p class="setting-help">人物移动的最高速度。</p>
+
     </div>
     <div class="setting">
      <label for="inertia">移动惯性<output id="inertia-value">450 ms</output></label>
      <input id="inertia" type="range" min="200" max="1200" step="50" value="450">
      <div class="range-bounds" aria-hidden="true"><span id="inertia-min">200</span><span id="inertia-max">1200</span></div>
-     <p class="setting-help">越大，加速、刹车和转向需要的时间越长，最高速度不变。</p>
+     <p class="setting-help">越大，加速、刹车和转向越慢。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">人物属性</h3>
@@ -202,19 +198,19 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="maxHealth">双方生命值<output id="maxHealth-value">1000</output></label>
      <input id="maxHealth" type="range" min="500" max="5000" step="100" value="1000">
      <div class="range-bounds" aria-hidden="true"><span id="maxHealth-min">500</span><span id="maxHealth-max">5000</span></div>
-     <p class="setting-help">松开滑条后，保留双方剩余生命的比例；重开时恢复满血。</p>
+     <p class="setting-help">调整时保留剩余生命比例。</p>
     </div>
     <div class="setting">
      <label for="actorRadius">人物大小<output id="actorRadius-value">15</output></label>
      <input id="actorRadius" type="range" min="12" max="18" step="1" value="15">
      <div class="range-bounds" aria-hidden="true"><span id="actorRadius-min">12</span><span id="actorRadius-max">18</span></div>
-     <p class="setting-help">同时改变人物外观和受击范围。</p>
+     <p class="setting-help">同时改变受击范围。</p>
     </div>
     <div class="setting">
      <label for="actorAspect">椭圆比例<output id="actorAspect-value">1:1</output></label>
      <input id="actorAspect" type="range" min="-300" max="300" step="10" value="0">
      <div class="range-bounds" aria-hidden="true"><span id="actorAspect-min">-300</span><span id="actorAspect-max">300</span></div>
-     <p class="setting-help">前后轴与左右轴的比例，中间为圆形；面积保持不变。</p>
+     <p class="setting-help">前后轴与左右轴之比，面积不变。</p>
     </div>
    </div>
    <label class="check field-visibility"><input id="showHealthNumbers" type="checkbox" checked>显示头顶生命数字</label>
@@ -224,13 +220,13 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="bodyRepulsionRange">人物排斥距离<output id="bodyRepulsionRange-value">100</output></label>
      <input id="bodyRepulsionRange" type="range" min="0" max="400" step="10" value="100">
      <div class="range-bounds" aria-hidden="true"><span id="bodyRepulsionRange-min">0</span><span id="bodyRepulsionRange-max">400</span></div>
-     <p class="setting-help">按双方圆心距离计算，小于此距离才产生排斥。0 可关闭。</p>
+     <p class="setting-help">圆心距离小于此值时排斥。</p>
     </div>
     <div class="setting">
      <label for="bodyRepulsion">人物排斥强度<output id="bodyRepulsion-value">300</output></label>
      <input id="bodyRepulsion" type="range" min="0" max="3000" step="25" value="300">
      <div class="range-bounds" aria-hidden="true"><span id="bodyRepulsion-min">0</span><span id="bodyRepulsion-max">3000</span></div>
-     <p class="setting-help">范围内越近排斥越强，在范围边缘平滑归零。双方受力相反，0 可关闭。</p>
+     <p class="setting-help">越近越强，0 关闭。</p>
     </div>
    </div>
   </section>
@@ -242,19 +238,19 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="burstCount">每组子弹数<output id="burstCount-value">3</output></label>
      <input id="burstCount" type="range" min="1" max="10" step="1" value="3">
      <div class="range-bounds" aria-hidden="true"><span id="burstCount-min">1</span><span id="burstCount-max">10</span></div>
-     <p class="setting-help">每次点击自动打完一组；按住可连续射击。松开后会打完当前组，不再开启下一组。</p>
+     <p class="setting-help">松开后仍会打完当前组。</p>
     </div>
     <div class="setting">
      <label for="fireRate">射速<output id="fireRate-value">6.25 发/秒</output></label>
      <input id="fireRate" type="range" min="2" max="12.5" step="0.25" value="6.25">
      <div class="range-bounds" aria-hidden="true"><span id="fireRate-min">2</span><span id="fireRate-max">12.5</span></div>
-     <p class="setting-help">决定一组内相邻两发的间隔。例如 5 发/秒表示每隔 0.2 秒发射一发。</p>
+     <p class="setting-help">连发期间每秒发射数，不含装填时间。</p>
     </div>
     <div class="setting">
      <label for="reloadTime">装填时间<output id="reloadTime-value">1.1 秒</output></label>
      <input id="reloadTime" type="range" min="0.3" max="3" step="0.1" value="1.1">
      <div class="range-bounds" aria-hidden="true"><span id="reloadTime-min">0.3</span><span id="reloadTime-max">3</span></div>
-     <p class="setting-help">从最后一发射出后开始计算，装填完成后才能再开火。弹数、射速和装填时间的调整从下一组生效。</p>
+     <p class="setting-help">最后一发后的装填时间；弹数、射速与装填调整从下一组生效。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">瞄准与开火</h3>
@@ -263,12 +259,12 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="padRange">手柄瞄准距离<output id="padRange-value">500</output></label>
      <input id="padRange" type="range" min="100" max="1200" step="10" value="500">
      <div class="range-bounds" aria-hidden="true"><span id="padRange-min">100</span><span id="padRange-max">1200</span></div>
-     <p class="setting-help">手柄瞄准时，人物到子弹变亮起点的距离，也可用 LB / RB 调节。鼠标或触屏直接选位置。</p>
+     <p class="setting-help">手柄用 LB / RB 调节变亮距离。</p>
     </div>
    </div>
    <label class="check field-visibility"><input id="continuousFire" type="checkbox">持续开火（无需按住）</label>
    <label class="check field-visibility"><input id="showRange" type="checkbox" checked>显示距离线</label>
-   <p class="notes">左摇杆可搭配鼠标。纯手柄用右摇杆瞄准、RT 射击；触屏用左侧摇杆移动，点击场地射击。</p>
+   <p class="notes">手柄：左杆移动，右杆瞄准，RT 射击。触屏：左杆移动，点击射击。</p>
   </section>
   <section class="settings-group" aria-labelledby="projectile-settings">
    <h2 id="projectile-settings">子弹弹道</h2>
@@ -278,25 +274,25 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="launchSpeed">初始弹速<output id="launchSpeed-value">800</output></label>
      <input id="launchSpeed" type="range" min="400" max="1200" step="25" value="800">
      <div class="range-bounds" aria-hidden="true"><span id="launchSpeed-min">400</span><span id="launchSpeed-max">1200</span></div>
-     <p class="setting-help">子弹刚发射时每秒飞过的距离。</p>
+
     </div>
     <div class="setting">
      <label for="propulsion">持续推进加速度<output id="propulsion-value">300</output></label>
      <input id="propulsion" type="range" min="50" max="1200" step="50" value="300">
      <div class="range-bounds" aria-hidden="true"><span id="propulsion-min">50</span><span id="propulsion-max">1200</span></div>
-     <p class="setting-help">没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。</p>
+     <p class="setting-help">无阻力和外力时，每秒增加的弹速。</p>
     </div>
     <div class="setting">
      <label for="bulletSize">子弹大小<output id="bulletSize-value">100%</output></label>
      <input id="bulletSize" type="range" min="75" max="125" step="5" value="100">
      <div class="range-bounds" aria-hidden="true"><span id="bulletSize-min">75</span><span id="bulletSize-max">125</span></div>
-     <p class="setting-help">影响子弹外观与碰撞大小，仅对新发射的子弹生效。</p>
+     <p class="setting-help">同时改变碰撞大小，新弹生效。</p>
     </div>
     <div class="setting">
      <label for="annihilationChance">相消概率<output id="annihilationChance-value">50%</output></label>
      <input id="annihilationChance" type="range" min="0" max="100" step="5" value="50">
      <div class="range-bounds" aria-hidden="true"><span id="annihilationChance-min">0</span><span id="annihilationChance-max">100</span></div>
-     <p class="setting-help">双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。</p>
+     <p class="setting-help">双方暗弹碰撞后一起消失的概率。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">发射带旋</h3>
@@ -307,13 +303,13 @@ html[lang="en"] .setting output{white-space:nowrap}
       <option value="1" selected>正向（+）</option>
       <option value="-1">反向（−）</option>
      </select>
-     <p class="setting-help" id="initialSpinSign-help">正向使初始带旋产生的偏转与发射时的横移同向，反向则相反。双方共用，仅影响新发射的子弹。</p>
+     <p class="setting-help" id="initialSpinSign-help">正向与发射时横移同向，反向相反；仅影响新弹自旋。</p>
     </div>
     <div class="setting">
      <label for="launchSpinScale">发射带旋系数<output id="launchSpinScale-value">1.0</output></label>
      <input id="launchSpinScale" type="range" min="0" max="4" step="0.1" value="1">
      <div class="range-bounds" aria-hidden="true"><span id="launchSpinScale-min">0</span><span id="launchSpinScale-max">4</span></div>
-     <p class="setting-help">单独调节发射时横移留下的旋转强度，0 表示不带旋。仅影响新发射的子弹，不改变接收者横移的作用。</p>
+     <p class="setting-help">缩放新弹的发射自旋，0 关闭发射带旋。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">激活后的伤害与路程</h3>
@@ -322,25 +318,25 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="bandBase">基础杀伤长度<output id="bandBase-value">100</output></label>
      <input id="bandBase" type="range" min="0" max="800" step="10" value="100">
      <div class="range-bounds" aria-hidden="true"><span id="bandBase-min">0</span><span id="bandBase-max">800</span></div>
-     <p class="setting-help">杀伤长度中不随瞄准距离改变的部分。</p>
+     <p class="setting-help">不随瞄准距离变化的杀伤路程。</p>
     </div>
     <div class="setting">
      <label for="band">距离附加长度（每 500 距离）<output id="band-value">100</output></label>
      <input id="band" type="range" min="0" max="800" step="10" value="100">
      <div class="range-bounds" aria-hidden="true"><span id="band-min">0</span><span id="band-max">800</span></div>
-     <p class="setting-help">总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。</p>
+     <p class="setting-help">总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。</p>
     </div>
     <div class="setting">
      <label for="minimumDamage">最低爆炸伤<output id="minimumDamage-value">0</output></label>
      <input id="minimumDamage" type="range" min="0" max="100" step="1" value="0">
      <div class="range-bounds" aria-hidden="true"><span id="minimumDamage-min">0</span><span id="minimumDamage-max">100</span></div>
-     <p class="setting-help">刚变亮时的爆炸伤，随后按成长路程线性增加到 100。暗弹仍不造成伤害。</p>
+     <p class="setting-help">刚变亮时的爆炸伤。</p>
     </div>
     <div class="setting">
      <label for="damageRampDistance">满伤成长路程<output id="damageRampDistance-value">150</output></label>
      <input id="damageRampDistance" type="range" min="0" max="400" step="1" value="150">
      <div class="range-bounds" aria-hidden="true"><span id="damageRampDistance-min">0</span><span id="damageRampDistance-max">400</span></div>
-     <p class="setting-help">子弹变亮后，伤害从最低伤害连续增加，飞过此路程后达到 100；按实际累计路程计算。0 表示立即满伤。内部计算保留精度；亮度和基础击退随伤害增加，速度击退独立计算。</p>
+     <p class="setting-help">变亮后按路程从最低爆炸伤线性增至 100；0 立即满伤。</p>
     </div>
    </div>
   </section>
@@ -352,13 +348,13 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="radius">接收场半径<output id="radius-value">150</output></label>
      <input id="radius" type="range" min="50" max="250" step="5" value="150">
      <div class="range-bounds" aria-hidden="true"><span id="radius-min">50</span><span id="radius-max">250</span></div>
-     <p class="setting-help">人物周围能影响对方亮点子弹的范围。</p>
+     <p class="setting-help">影响敌方亮弹的范围。</p>
     </div>
     <div class="setting">
      <label for="controlRadius">控弹场半径<output id="controlRadius-value">300</output></label>
      <input id="controlRadius" type="range" min="0" max="1000" step="10" value="300">
      <div class="range-bounds" aria-hidden="true"><span id="controlRadius-min">0</span><span id="controlRadius-max">1000</span></div>
-     <p class="setting-help">只偏转自己的亮弹，不减速；偏转强度共用。0 可关闭。显示力场时，虚线表示控弹场。</p>
+     <p class="setting-help">偏转己方亮弹，不减速；虚线表示。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">双方场共用的偏转</h3>
@@ -367,13 +363,13 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="spinForce">共用偏转强度<output id="spinForce-value">5400</output></label>
      <input id="spinForce" type="range" min="0" max="10800" step="50" value="5400">
      <div class="range-bounds" aria-hidden="true"><span id="spinForce-min">0</span><span id="spinForce-max">10800</span></div>
-     <p class="setting-help">接收场和控弹场共用。越大，亮弹越容易转弯；场主人当前横移可加强或抵消发射时留下的自旋。</p>
+     <p class="setting-help">两个场共用，越大越易转弯。</p>
     </div>
     <div class="setting">
      <label for="receiverSpinScale">场主人横移系数<output id="receiverSpinScale-value">1.0</output></label>
      <input id="receiverSpinScale" type="range" min="0" max="4" step="0.1" value="1">
      <div class="range-bounds" aria-hidden="true"><span id="receiverSpinScale-min">0</span><span id="receiverSpinScale-max">4</span></div>
-     <p class="setting-help">同时调节接收场和控弹场主人横移产生的偏转，0 可关闭。实时生效，不改变发射时留下的自旋。</p>
+     <p class="setting-help">缩放场主人当前横移的偏转作用，不改变子弹自旋；0 关闭。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">接收场减速</h3>
@@ -382,7 +378,7 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="drag">阻力系数<output id="drag-value">0.020</output></label>
      <input id="drag" type="range" min="0" max="0.040" step="0.001" value="0.020">
      <div class="range-bounds" aria-hidden="true"><span id="drag-min">0</span><span id="drag-max">0.040</span></div>
-     <p class="setting-help">越大，场内子弹减速越明显；设为 0 则不减速。弹速越高，阻力越强；人物顺着来弹方向后退时，阻力会减弱。子弹始终有推进力。</p>
+     <p class="setting-help">弹速越高阻力越强；顺着来弹后退可减弱阻力，0 关闭。</p>
     </div>
    </div>
    <label class="check field-visibility"><input id="showField" type="checkbox">显示力场圈</label>
@@ -395,29 +391,29 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="momentumDamageScale">动量伤系数<output id="momentumDamageScale-value">0.0500</output></label>
      <input id="momentumDamageScale" type="range" min="0" max="0.1" step="0.0005" value="0.05">
      <div class="range-bounds" aria-hidden="true"><span id="momentumDamageScale-min">0</span><span id="momentumDamageScale-max">0.1</span></div>
-     <p class="setting-help">动量伤 = 系数 × 撞入身体表面的相对速度，最高不超过上限；擦中和低速接触附加伤较少，与击退参数独立。</p>
+     <p class="setting-help">动量伤 = 系数 × 相对撞入速度，受上限限制；擦中较弱，0 关闭。</p>
     </div>
     <div class="setting">
      <label for="momentumDamageCap">动量伤上限<output id="momentumDamageCap-value">20</output></label>
      <input id="momentumDamageCap" type="range" min="0" max="100" step="1" value="20">
      <div class="range-bounds" aria-hidden="true"><span id="momentumDamageCap-min">0</span><span id="momentumDamageCap-max">100</span></div>
-     <p class="setting-help">仅限制动量附加伤，不限制爆炸伤；系数或上限设为 0 即关闭动量伤。</p>
+     <p class="setting-help">仅限制动量伤，0 关闭。</p>
     </div>
     <div class="setting">
      <label for="baseKnockback">基础击退距离<output id="baseKnockback-value">24</output></label>
      <input id="baseKnockback" type="range" min="0" max="60" step="2" value="24">
      <div class="range-bounds" aria-hidden="true"><span id="baseKnockback-min">0</span><span id="baseKnockback-max">60</span></div>
-     <p class="setting-help">满伤命中的基础位移，按实际伤害比例缩放，与弹速无关。沿受击位置向内推开人物，设为 0 可关闭。</p>
+     <p class="setting-help">爆炸伤为 100 时的基础击退距离，随爆炸伤等比例缩放。</p>
     </div>
     <div class="setting">
      <label for="impactScale">动量击退系数<output id="impactScale-value">0.26</output></label>
      <input id="impactScale" type="range" min="0" max="0.50" step="0.01" value="0.26">
      <div class="range-bounds" aria-hidden="true"><span id="impactScale-min">0</span><span id="impactScale-max">0.50</span></div>
-     <p class="setting-help">根据命中时的相对速度增加击退。数值越大，高速正面命中推得越远；设为 0 则只保留基础击退。</p>
+     <p class="setting-help">相对撞入速度带来的额外击退，与动量伤系数独立。</p>
     </div>
    </div>
   </section>
-  <p class="notes">顶部可选择五档人机难度、固定靶练习或躲避靶练习。躲避靶只移动躲弹，不还击；两种练习靶被击破后都会重生。难度影响人机的反应、预判和开火时机；生命、武器和力场参数始终与玩家相同。人机也看不到你的子弹何时变亮。</p>
+  
   <div class="hud"><div class="hud-left"><span class="sr-only" id="health"></span><span id="score">人机对战</span></div><div class="hud-right"><span id="weapon">3 连发就绪</span><span id="intercepts">已发 0</span><span id="time">00:00</span></div></div>
   <div class="settings-foot"><button type="button" id="defaults">恢复默认</button></div>
  </details>
@@ -446,8 +442,13 @@ const AIM_STROKE=1.8;
 const C={bg:'#20282a',edge:'#414f50',player:'#b2ceca',enemy:'#d2b49b'};
 const MAPS={
  open:{walls:[]},
+ hill:{walls:[],terrain:{potential:110000,actorScale:.35,peaks:[{x:600,y:375,rx:240,ry:170}]}},
+ peaks:{walls:[],terrain:{potential:50000,actorScale:2.2,peaks:[
+  {kind:'pillar',x:430,y:245,radius:52,falloff:80},
+  {kind:'pillar',x:735,y:365,radius:70,falloff:90},
+  {kind:'pillar',x:520,y:555,radius:40,falloff:65}
+ ]}},
  loop:{width:840,height:525,wrap:true,walls:[]},
- klein:{width:840,height:525,wrap:true,twist:true,walls:[]},
  four:{walls:[
  {x:446,y0:158,y1:305,r:7,type:'absorb'},
  {x:754,y0:158,y1:305,r:7,type:'reflect'},
@@ -466,24 +467,33 @@ const MAPS={
  {x:650,y0:315,y1:475,r:8,type:'absorb'},
  {horizontal:true,x0:625,x1:730,y:650,r:8,type:'absorb'}
  ]},
- barrier:{walls:[{x:600,y0:375,y1:375,r:120,type:'absorb'}],field:{x:600,y:375,radius:300,core:120,strength:4500}},
  ellipse:{walls:[{kind:'ellipse',cx:600,cy:375,rx:560,ry:326,r:1,type:'reflect',boundary:true}]},
  crossflow:{walls:[],fields:[
   {kind:'crossflow',x0:380,x1:540,y0:24,y1:726,ax:0,ay:1,strength:3000,feather:32},
   {kind:'crossflow',x0:660,x1:820,y0:24,y1:726,ax:0,ay:-1,strength:3000,feather:32}
- ]},
- vortices:{walls:[],fields:[
-  {kind:'vortex',x:440,y:375,radius:210,core:75,strength:5000,spin:1},
-  {kind:'vortex',x:760,y:375,radius:210,core:75,strength:5000,spin:-1}
  ]}
 };
 let mapId='four',WALLS=MAPS.four.walls,mapFields=[];
 function setMap(id){if(!Object.hasOwn(MAPS,id))return false;mapId=id;const map=MAPS[id],width=map.width||VIEW_W,height=map.height||VIEW_H;mouse.x+=(width-W)/2;mouse.y+=(height-H)/2;W=width;H=height;WALLS=map.walls;mapFields=map.fields||(map.field?[map.field]:[]);return true;}
 const mapAccelerationScratch={x:0,y:0};
+function peakHeight(x,y,p){
+ if(p.kind==='pillar'){const d=Math.max(0,Math.hypot(x-p.x,y-p.y)-p.radius)/p.falloff;return Math.exp(-.5*d*d);}
+ return Math.exp(-.5*(((x-p.x)/p.rx)**2+((y-p.y)/p.ry)**2));
+}
+function terrainHeight(x,y,t=MAPS[mapId].terrain){let h=0;if(t)for(const p of t.peaks)h+=peakHeight(x,y,p);return h;}
+function terrainAcceleration(x,y,out){
+ out.x=out.y=0;const t=MAPS[mapId].terrain;if(!t)return out;
+ for(const p of t.peaks){
+  if(p.kind==='pillar'){
+   const dx=x-p.x,dy=y-p.y,r=Math.hypot(dx,dy),d=r-p.radius;
+   if(d>0){const force=t.potential*peakHeight(x,y,p)*d/(p.falloff*p.falloff*r);out.x+=force*dx;out.y+=force*dy;}
+  }else{const potential=t.potential*peakHeight(x,y,p);out.x+=potential*(x-p.x)/(p.rx*p.rx);out.y+=potential*(y-p.y)/(p.ry*p.ry);}
+ }return out;
+}
 // Fixed, bounded acceleration fields. The reusable result is copied by each
 // caller before another query; RK4 and bot forecasts allocate no extra vectors.
 function mapAcceleration(x,y,out=mapAccelerationScratch){
- out.x=out.y=0;
+ terrainAcceleration(x,y,out);
  for(const field of mapFields){
   if(field.kind==='crossflow'){
    const edge=Math.min(x-field.x0,field.x1-x,y-field.y0,field.y1-y);
@@ -500,7 +510,12 @@ function mapAcceleration(x,y,out=mapAccelerationScratch){
  return out;
 }
 function mapForceBound(x,y,reach=0){
- let bound=0;for(const field of mapFields){
+ const terrain=MAPS[mapId].terrain;
+ let bound=0;if(terrain)for(const p of terrain.peaks){
+  if(p.kind==='pillar'){
+   bound+=Math.abs(terrain.potential)*Math.exp(-.5)/p.falloff;
+  }else bound+=Math.abs(terrain.potential)*Math.exp(-.5)/Math.min(p.rx,p.ry);
+ }for(const field of mapFields){
   if(field.kind==='crossflow'){
    const dx=Math.max(field.x0-x,0,x-field.x1),dy=Math.max(field.y0-y,0,y-field.y1);
    if(dx*dx+dy*dy<=reach*reach)bound+=field.strength;
@@ -509,6 +524,7 @@ function mapForceBound(x,y,reach=0){
  return bound;
 }
 function mapFieldTouchesSegment(x0,y0,x1,y1){
+ if(MAPS[mapId].terrain)return true;
  const dx=x1-x0,dy=y1-y0,length2=dx*dx+dy*dy;
  for(const field of mapFields){
   if(field.kind==='crossflow'){
@@ -558,6 +574,41 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 
 // === 03 · Text and language switching ===
 const ENGLISH={
+ "暗弹无伤害；亮弹伤害 = 爆炸伤 + 动量伤。内部亮度表示爆炸伤；头顶数字为剩余生命，浮字为命中伤害，人物内三角表示装填进度。": "Dim bullets are harmless; bright-bullet damage = explosion + momentum damage. Interior brightness shows explosion damage. Overhead numbers show remaining health, floating numbers show hit damage, and the character triangle shows reload progress.",
+ "WASD 移动，鼠标瞄准，点击发射一组，按住持续射击；空格暂停，R 重开。": "WASD moves, the mouse aims, click fires a burst, hold keeps firing; Space pauses, R restarts.",
+ "瞄准距离决定变亮路程，最小 100；距离线表示杀伤路段，走完后子弹消失。路程按实际弹道计算；在对手体内时延迟变亮，不延长路段。": "Aim range sets travel before activation, with a minimum of 100. The range line marks the damaging path; bullets disappear at its end. Distance follows the actual trajectory. Activation is delayed inside an opponent without extending the path.",
+ "接收场减速、偏转敌方亮弹；控弹场只偏转己方亮弹。暗弹不受人物力场影响，亮弹穿过其他子弹。": "Receiving fields slow and deflect enemy bright bullets; control fields only deflect your own. Dim bullets ignore character fields; bright bullets pass through other bullets.",
+ "发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在人物场内按自旋偏转，场主人相对子弹方向的横移可加强或抵消偏转。": "Launch spin: faster movement perpendicular to the firing direction gives new bullets more spin, fixed at launch. In character fields, bright bullets bend according to spin; the field owner's movement transverse to the bullet direction can reinforce or cancel the deflection.",
+ "参数双方共用，自动保存；展开设置暂停。": "Settings apply to both sides and save automatically. Opening settings pauses play.",
+ "越大，加速、刹车和转向越慢。": "Higher values slow acceleration, braking and turns.",
+ "调整时保留剩余生命比例。": "Preserves the remaining health percentage.",
+ "同时改变受击范围。": "Also changes the hitbox.",
+ "前后轴与左右轴之比，面积不变。": "Forward-to-sideways axis ratio; area stays constant.",
+ "圆心距离小于此值时排斥。": "Repulsion acts below this center-to-center distance.",
+ "越近越强，0 关闭。": "Stronger at close range; 0 disables it.",
+ "松开后仍会打完当前组。": "Releasing finishes the current burst.",
+ "连发期间每秒发射数，不含装填时间。": "Rounds per second within a burst, excluding reload time.",
+ "最后一发后的装填时间；弹数、射速与装填调整从下一组生效。": "Reload time after the last shot; burst size, fire rate and reload changes apply to the next burst.",
+ "手柄用 LB / RB 调节变亮距离。": "Use LB / RB to adjust the activation range.",
+ "无阻力和外力时，每秒增加的弹速。": "Speed gained per second without drag or external forces.",
+ "同时改变碰撞大小，新弹生效。": "Also changes the hitbox; applies to new bullets.",
+ "双方暗弹碰撞后一起消失的概率。": "Chance that opposing dim bullets cancel on contact.",
+ "正向与发射时横移同向，反向相反；仅影响新弹自旋。": "Positive follows sideways launch movement; negative opposes it. Affects new bullet spin only.",
+ "缩放新弹的发射自旋，0 关闭发射带旋。": "Scales launch spin on new bullets; 0 disables launch spin.",
+ "不随瞄准距离变化的杀伤路程。": "Damaging travel independent of aim range.",
+ "总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。": "Total length = base + added length × aim range / 500.",
+ "刚变亮时的爆炸伤。": "Explosion damage at activation.",
+ "变亮后按路程从最低爆炸伤线性增至 100；0 立即满伤。": "Explosion damage rises linearly from its minimum to 100 over this travel after activation; 0 gives full damage immediately.",
+ "影响敌方亮弹的范围。": "Range affecting enemy bright bullets.",
+ "偏转己方亮弹，不减速；虚线表示。": "Bends your bright bullets without slowing them; shown dashed.",
+ "两个场共用，越大越易转弯。": "Shared by both fields; higher values bend bullets more.",
+ "缩放场主人当前横移的偏转作用，不改变子弹自旋；0 关闭。": "Scales deflection from the field owner's current movement without changing bullet spin; 0 disables this contribution.",
+ "弹速越高阻力越强；顺着来弹后退可减弱阻力，0 关闭。": "Faster bullets face more drag. Moving with incoming bullets reduces drag; 0 disables it.",
+ "动量伤 = 系数 × 相对撞入速度，受上限限制；擦中较弱，0 关闭。": "Momentum damage = coefficient × relative inward speed, capped by its limit. Glancing hits add less; 0 disables it.",
+ "仅限制动量伤，0 关闭。": "Caps momentum damage only; 0 disables it.",
+ "爆炸伤为 100 时的基础击退距离，随爆炸伤等比例缩放。": "Base knockback distance at 100 explosion damage, scaled proportionally to explosion damage.",
+ "相对撞入速度带来的额外击退，与动量伤系数独立。": "Extra knockback from relative inward speed, independent of the momentum damage coefficient.",
+ "手柄：左杆移动，右杆瞄准，RT 射击。触屏：左杆移动，点击射击。": "Controller: left stick moves, right stick aims, RT fires. Touch: left stick moves, tap to fire.",
  "移动手感": "Movement response",
  "人物属性": "Character properties",
  "人物间排斥": "Character repulsion",
@@ -571,37 +622,25 @@ const ENGLISH={
  "接收场减速": "Receiving-field braking",
  "动量伤系数": "Momentum damage coefficient",
  "动量伤上限": "Momentum damage cap",
- "动量伤 = 系数 × 撞入身体表面的相对速度，最高不超过上限；擦中和低速接触附加伤较少，与击退参数独立。": "Momentum damage = coefficient × relative inward contact speed, capped at the limit. Glancing and slow contacts add less damage; knockback settings are independent.",
- "仅限制动量附加伤，不限制爆炸伤；系数或上限设为 0 即关闭动量伤。": "Caps only added momentum damage, not explosion damage. Set either coefficient or cap to 0 to disable momentum damage.",
- "亮弹命中造成爆炸伤与动量伤之和。激活后外圈亮起，内部亮度始终按爆炸伤比例变化，包括激活瞬间；半透明光晕随充能变亮，子弹和光晕大小固定。动量伤取决于相对撞击速度和接触角度，暗弹仍无伤害。": "Bright hits deal explosion plus momentum damage. Activation lights the outline; interior brightness always follows explosion damage, including at activation. The translucent glow brightens with charge; bullet and glow sizes stay fixed. Momentum damage depends on relative contact speed and angle. Dim bullets remain harmless.",
  "充能与动量": "Charge and momentum",
  "共用偏转强度": "Shared deflection strength",
  "场主人横移系数": "Field-owner movement scale",
- "同时调节接收场和控弹场主人横移产生的偏转，0 可关闭。实时生效，不改变发射时留下的自旋。": "Scales sideways-motion deflection for the owners of both receiving and control fields. Set to 0 to disable. Applies immediately without changing stored launch spin.",
- "接收场和控弹场共用。越大，亮弹越容易转弯；场主人当前横移可加强或抵消发射时留下的自旋。": "Shared by receiving and control fields. Higher values bend bright bullets more strongly. Current owner motion can reinforce or cancel stored launch spin.",
- "直拳可以消耗生命、击退对手；提前布置侧面的勾摆弹群，再用正面射击将对手推向它们，可以形成组合拳。子弹变亮后仍可被双方的场偏转，移动和换边能持续改变攻防。提高射速、搭配连发和装填节奏，可以尝试弹幕拳击。": "Straight shots can chip health and push opponents. Set up curved groups to the side, then use frontal shots to push opponents toward them for combinations. Both fields can still bend bright bullets; movement and switching sides keep shaping the exchange. Try higher fire rates with bursts and reload windows for bullet-barrage boxing.",
- "面对难以躲开的亮弹，主动迎上去有时能在它充分充能前承受较低伤害；后退会争取躲避时间，也可能让子弹积累更多路程。迎击仍要留意后续弹群和侧面夹击，暗弹本身不造成伤害。": "Against a bright bullet that is hard to dodge, moving toward it can sometimes reduce damage by making contact before full charge. Retreating buys dodging time but may allow more charge to accumulate. Watch for follow-up groups and attacks from the side when advancing. Dim bullets themselves remain harmless.",
- "命中位置浮起的数字表示本次子弹伤害，按整数显示，伤害越高，淡出时间越长。生命和伤害的显示与调节栏刻度一致。头顶数字表示当前生命，可在下方关闭，人物内的三角在开火时变暗、装填时逐渐变亮。下方参数双方共用，调整会自动保存，展开设置时暂停。": "Floating numbers at contact show the damage of that hit, rounded to whole numbers and a fade duration proportional to damage. Health and damage displays use the same units as their sliders. The number above each character shows current health and can be hidden in settings. The inner triangle darkens when firing starts and gradually brightens during reload. Settings below apply to both sides and save automatically. Opening settings pauses the game.",
  "最低爆炸伤": "Minimum explosion damage",
- "刚变亮时的爆炸伤，随后按成长路程线性增加到 100。暗弹仍不造成伤害。": "Explosion damage at activation, then growing linearly to 100 over the growth distance. Dim bullets remain harmless.",
  "满伤成长路程": "Distance to full damage",
- "子弹变亮后，伤害从最低伤害连续增加，飞过此路程后达到 100；按实际累计路程计算。0 表示立即满伤。内部计算保留精度；亮度和基础击退随伤害增加，速度击退独立计算。": "After activation, damage grows continuously from minimum damage to 100 over this accumulated flight distance. Set to 0 for immediate full damage. Health and damage retain fractions. Brightness and base knockback grow with damage; velocity-based knockback is separate.",
  "近场": "Near Field",
  "键盘 + 鼠标": "Keyboard + mouse",
  "地图": "Map",
+ "地图 · 缓丘": "Map · Gentle hill",
  "地图 · 空场": "Map · Open field",
  "地图 · 弹道回环": "Map · Bullet loop",
- "地图 · 克莱因瓶": "Map · Klein bottle",
  "地图 · 四墙": "Map · Four walls",
- "地图 · 星球": "Map · Planet",
  "地图 · 椭圆反射场": "Map · Ellipse arena",
- "地图 · 双旋涡": "Map · Twin vortices",
+ "地图 · 三柱": "Map · Three pillars",
  "地图 · 横流带": "Map · Crossflow",
  "地图 · 吸收迷宫": "Map · Absorbing maze",
  "视角": "View",
  "视角 · 原视角": "View · Original",
  "视角 · 跟随瞄准": "View · Follow aim",
- "点击开始或继续时锁定鼠标；左右转向，上下调距离，Esc 释放并暂停。": "Click Start or Resume to capture the mouse; move sideways to turn, vertically to set range. Esc releases and pauses.",
  "鼠标锁定失败，请再次点击战场，或切回原视角。": "Mouse capture failed. Click the arena again or switch to Original view.",
  "模式与难度": "Mode and difficulty",
  "人机 · 入门": "Bot · Beginner",
@@ -631,61 +670,39 @@ const ENGLISH={
  "对手": "Opponent",
  "暗点：无伤害": "Dim: harmless",
  "亮点：可命中": "Bright: can hit",
- "用 WASD 或左摇杆移动，鼠标瞄准，点击射击。子弹先暗后亮，只有亮弹能造成伤害。每个人物都有两个随身场：接收场减速、偏转对方亮弹，控弹场只偏转自己的亮弹；射手开火时的横移与场主人当前的横移可以加强或抵消偏转。暗弹不受人物力场影响。": "Move with WASD or the left stick, aim with the mouse, and click to fire. Bullets start dim and become damaging when they turn bright. Each character carries two fields: a receiving field that slows and deflects opposing bright bullets, and a control field that only deflects their own bright bullets. The shooter's sideways movement at launch and the field owner's current sideways movement can reinforce or cancel the deflection. Dim bullets are unaffected by character fields.",
- "鼠标位置决定子弹变亮的起点，旁边的线段表示之后的杀伤路段；你看不到对方选定的起点。变亮起点距人物中心至少 100；若届时仍在对手体内，子弹会保持暗态直到离开。所有距离按实际飞行路程计算，推迟变亮不会延长杀伤路段；路段走完后，子弹消失。": "The mouse sets where your bullets turn bright; the nearby line marks the following damaging path. Your opponent's chosen starting point is hidden. Brightening starts at least 100 units from the shooter's center. A bullet still inside the opponent at that point stays dim until it leaves. All distances follow the actual flight path. Delayed brightening does not extend the damaging path; the bullet disappears when that path ends.",
- "点击发射一组子弹，按住则在装填后继续射击，连发期间仍可移动和瞄准。双方暗弹相碰有概率一起消失，否则互相穿过；亮弹穿过其他子弹。亮弹爆炸伤从设定的最低值（默认显示为 0）随变亮后的累计路程线性增长，默认飞过 150 距离达到满伤 100。内部亮度与光晕、基础击退随爆炸伤增加；命中音量随总伤害增加，相对碰撞速度还会额外影响击退。": "Click to fire a burst, or hold to keep firing after each reload. You can move and aim throughout a burst. Opposing dim bullets may cancel each other; otherwise they pass through. Bright bullets pass through other bullets. Bright-bullet explosion damage grows linearly from the configured minimum (displayed as 0 by default) with accumulated travel after activation, reaching full damage of 100 after 150 distance by default. Interior and glow brightness and base knockback grow with explosion damage; impact volume follows total damage. Relative contact speed adds separate knockback.",
- "墙体阻挡人物，深色墙吸收子弹，亮边墙反弹子弹。地图力场影响所有子弹的轨迹，不影响人物。回环地图中，子弹从对边继续飞行，人物不跨界，飞行路程继续累计。克莱因瓶的上下暖色长边会将子弹左右翻转，水平速度与自旋反向；左右正常回环，边框外人物像按相同规则显示。切换地图会重开本局。": "Walls block characters; dark walls absorb bullets and bright-edged walls reflect them. Map fields affect all bullet trajectories, but not characters. On wrap maps, bullets continue from the opposite edge while characters stay inside. Travel distance keeps accumulating. On Klein bottle, crossing the warm-colored top or bottom edge flips the bullet horizontally, reversing horizontal velocity and spin; left and right wrap normally. Character images outside follow the same mapping. Changing maps starts a new round.",
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
  "椭圆比例": "Ellipse ratio",
- "前后轴与左右轴的比例，中间为圆形；面积保持不变。": "Forward-to-sideways axis ratio. The center is a circle; area stays constant.",
- "同时改变人物外观和受击范围。": "Changes both the character's appearance and hitbox.",
  "移动速度": "Movement speed",
- "人物移动的最高速度。": "The character's maximum movement speed.",
  "射击": "Firing",
  "双方生命值": "Health on both sides",
- "松开滑条后，保留双方剩余生命的比例；重开时恢复满血。": "Releasing the slider preserves each side's remaining health percentage. Restarting restores full health.",
  "每组子弹数": "Bullets per burst",
- "每次点击自动打完一组；按住可连续射击。松开后会打完当前组，不再开启下一组。": "Each click fires a complete burst. Hold to keep firing. Releasing finishes the current burst without starting another.",
  "射速": "Fire rate",
  "6.25 发/秒": "6.25 rounds/s",
  "2 发/秒": "2 rounds/s",
  "12.5 发/秒": "12.5 rounds/s",
  "{value} 发/秒": "{value} rounds/s",
- "决定一组内相邻两发的间隔。例如 5 发/秒表示每隔 0.2 秒发射一发。": "Sets the interval between rounds within a burst. For example, 5 rounds/s means one round every 0.2 seconds.",
  "装填时间": "Reload time",
  "1.1 秒": "1.1 s",
  "0.3 秒": "0.3 s",
  "3 秒": "3 s",
  "{value} 秒": "{value} s",
- "从最后一发射出后开始计算，装填完成后才能再开火。弹数、射速和装填时间的调整从下一组生效。": "Reloading starts after the last round. You can fire again when it finishes. Changes to burst size, fire rate and reload time take effect with the next burst.",
  "子弹弹道": "Bullet trajectory",
  "子弹大小": "Bullet size",
- "影响子弹外观与碰撞大小，仅对新发射的子弹生效。": "Changes bullet appearance and collision size. Applies only to newly fired bullets.",
  "力场": "Field",
  "命中与击退": "Hits & knockback",
  "初始弹速": "Initial bullet speed",
- "子弹刚发射时每秒飞过的距离。": "Distance per second immediately after launch.",
  "初始带旋方向": "Initial spin direction",
  "发射带旋系数": "Launch spin multiplier",
  "相消概率": "Cancellation chance",
- "双方暗弹碰撞时，以此概率一起消失，否则互相穿过。双方规则相同；概率不变时，同一对子弹再次相遇的结果不变。人机无法预知随机结果。": "When opposing dim bullets collide, they disappear together with this probability; otherwise they pass through. Both sides use the same rule. With the probability unchanged, the same pair always gives the same outcome. The bot cannot foresee the random outcome.",
- "单独调节发射时横移留下的旋转强度，0 表示不带旋。仅影响新发射的子弹，不改变接收者横移的作用。": "Independently scales spin from sideways movement at firing; 0 gives no launch spin. Affects newly fired bullets only, without changing the receiver's movement contribution.",
  "正向（+）": "Positive (+)",
  "反向（−）": "Negative (−)",
- "正向使初始带旋产生的偏转与发射时的横移同向，反向则相反。双方共用，仅影响新发射的子弹。": "Positive makes launch spin bend bullets in the direction of sideways movement at firing; negative reverses it. Shared by both sides. Applies only to newly fired bullets.",
  "持续推进加速度": "Forward acceleration",
- "没有阻力时，每秒增加的弹速。例如初速 800、加速度 300，飞行一秒后弹速为 1100。": "Speed gained each second without drag. With an initial speed of 800 and acceleration of 300, speed reaches 1100 after one second.",
  "基础杀伤长度": "Base damage length",
- "杀伤长度中不随瞄准距离改变的部分。": "The part of damage length that stays constant at any aim range.",
  "距离附加长度（每 500 距离）": "Added damage length per 500 range",
- "总长度 = 基础长度 + 附加长度 × 瞄准距离 ÷ 500。弯曲弹道按实际路程计算。": "Total length = base + added length × aim range / 500. Curved paths use actual travel distance.",
  "接收场半径": "Receiving field radius",
  "控弹场半径": "Control field radius",
- "只偏转自己的亮弹，不减速；偏转强度共用。0 可关闭。显示力场时，虚线表示控弹场。": "Deflects your own bright bullets without slowing them, using the shared deflection strength. Set to 0 to disable. The control field appears dashed when fields are shown.",
- "人物周围能影响对方亮点子弹的范围。": "The area around a character that affects opposing bright bullets.",
  "阻力系数": "Drag coefficient",
- "越大，场内子弹减速越明显；设为 0 则不减速。弹速越高，阻力越强；人物顺着来弹方向后退时，阻力会减弱。子弹始终有推进力。": "Higher values slow bullets more inside the field; 0 disables drag. Faster bullets experience stronger drag. Retreating in the direction of an incoming bullet reduces drag. Bullets always keep their forward thrust.",
  "偏转强度": "Deflection strength",
  "显示力场圈": "Show field circles",
  "持续开火（无需按住）": "Continuous fire (no button held)",
@@ -693,18 +710,10 @@ const ENGLISH={
  "显示距离线": "Show range indicator",
  "移动惯性": "Movement inertia",
  "人物排斥强度": "Character repulsion",
- "范围内越近排斥越强，在范围边缘平滑归零。双方受力相反，0 可关闭。": "Repulsion strengthens up close and smoothly reaches zero at the range boundary. Both characters receive opposite forces. Set to 0 to disable.",
  "人物排斥距离": "Character repulsion range",
- "按双方圆心距离计算，小于此距离才产生排斥。0 可关闭。": "Repulsion acts only when the distance between character centers is below this value. Set to 0 to disable.",
- "越大，加速、刹车和转向需要的时间越长，最高速度不变。": "Higher values make acceleration, braking and turns take longer. Top speed stays the same.",
  "手柄瞄准距离": "Controller aim distance",
- "手柄瞄准时，人物到子弹变亮起点的距离，也可用 LB / RB 调节。鼠标或触屏直接选位置。": "The distance to the brightening point when aiming with a controller. LB / RB also adjusts it. Mouse and touch input select the position directly.",
- "左摇杆可搭配鼠标。纯手柄用右摇杆瞄准、RT 射击；触屏用左侧摇杆移动，点击场地射击。": "You can use the left stick with a mouse. With a controller alone, aim with the right stick and fire with RT. On touchscreens, move with the left joystick and tap the arena to fire.",
  "基础击退距离": "Base knockback distance",
- "满伤命中的基础位移，按实际伤害比例缩放，与弹速无关。沿受击位置向内推开人物，设为 0 可关闭。": "The base displacement at full damage, scaled by actual damage and independent of bullet speed. It pushes the character inward from the point of impact. Set to 0 to disable.",
  "动量击退系数": "Momentum knockback",
- "根据命中时的相对速度增加击退。数值越大，高速正面命中推得越远；设为 0 则只保留基础击退。": "Adds knockback based on relative impact speed. Higher values make fast, direct hits push farther. At 0, only base knockback remains.",
- "顶部可选择五档人机难度、固定靶练习或躲避靶练习。躲避靶只移动躲弹，不还击；两种练习靶被击破后都会重生。难度影响人机的反应、预判和开火时机；生命、武器和力场参数始终与玩家相同。人机也看不到你的子弹何时变亮。": "Choose from five bot difficulties, stationary target practice or evasive target practice at the top. Evasive targets move and dodge without firing back. Both practice targets respawn when defeated. Difficulty changes the bot's reactions, prediction and firing decisions. Health, weapon and field settings remain the same as yours. Bots cannot see when your bullets will turn bright either.",
  "人机对战": "Bot duel",
  "恢复默认": "Restore defaults",
  "双摇杆手柄": "Controller",
@@ -1016,7 +1025,6 @@ function loopBoundaryHit(x0,y0,x1,y1){
 function respondProjectileWall(b,hit,epsilon=1e-5){
  if(hit.wall.type==='wrap'){
   b.x+=hit.nx*(W-48-epsilon);b.y+=hit.ny*(H-48-epsilon);
-  if(MAPS[mapId].twist&&hit.ny){b.x=W-b.x;b.vx=-b.vx;b.spin=-(b.spin||0);const speed=Math.hypot(b.vx,b.vy);if(speed>1e-8){b.dx=b.vx/speed;b.dy=b.vy/speed;}}
   return;
  }
  const dot=b.vx*hit.nx+b.vy*hit.ny;
@@ -1095,6 +1103,8 @@ function applyActorRepulsion(a,b,dt){
 }
 function moveActor(a,targetX,targetY,inertia,dt,minX,minY,maxX,maxY){
  a.px=a.x;a.py=a.y;let dx,dy;
+ const terrain=MAPS[mapId].terrain;
+ if(terrain&&inertia>0){const force=terrainAcceleration(a.x,a.y,mapAccelerationScratch);targetX+=force.x*terrain.actorScale*inertia;targetY+=force.y*terrain.actorScale*inertia;}
  if(inertia>0){const retain=Math.exp(-dt/inertia);dx=targetX*dt+(a.mvx-targetX)*inertia*(1-retain);dy=targetY*dt+(a.mvy-targetY)*inertia*(1-retain);a.mvx=targetX+(a.mvx-targetX)*retain;a.mvy=targetY+(a.mvy-targetY)*retain;}
  else{a.mvx=targetX;a.mvy=targetY;dx=targetX*dt;dy=targetY*dt;}
  const retention=Math.exp(-dt/IMPACT.decay);dx+=a.ivx*IMPACT.decay*(1-retention);dy+=a.ivy*IMPACT.decay*(1-retention);a.ivx*=retention;a.ivy*=retention;
@@ -1757,7 +1767,8 @@ function botBullet(b){
   phase,solid:phase==='solid',arming:phase==='arming'};
 }
 function botBodyStep(body,input,dt){
- const a={...body},tau=cfg.inertia||0,tx=input.x*ACTOR.speed,ty=input.y*ACTOR.speed;
+ const a={...body},tau=cfg.inertia||0;let tx=input.x*ACTOR.speed,ty=input.y*ACTOR.speed;
+ const terrain=MAPS[mapId].terrain;if(terrain&&tau>0){const f=terrainAcceleration(a.x,a.y,mapAccelerationScratch);tx+=f.x*terrain.actorScale*tau;ty+=f.y*terrain.actorScale*tau;}
  let dx,dy;
  if(tau>0){const z=Math.exp(-dt/tau);dx=tx*dt+(a.mvx-tx)*tau*(1-z);dy=ty*dt+(a.mvy-ty)*tau*(1-z);a.mvx=tx+(a.mvx-tx)*z;a.mvy=ty+(a.mvy-ty)*z;}
  else{a.mvx=tx;a.mvy=ty;dx=tx*dt;dy=ty*dt;}
@@ -1911,7 +1922,7 @@ function botForecastStep(b,dt,body){
   const freeState=h=>{
     const speed=Math.max(1e-9,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
     const travel=speed*h+.5*cfg.propulsion*h*h,newSpeed=speed+cfg.propulsion*h;
-    if(!mapFields.length)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
+    if(!mapFields.length&&!MAPS[mapId].terrain)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
     const midX=b.x+nx*travel*.5,midY=b.y+ny*travel*.5,mapForce=mapAcceleration(midX,midY),ax=mapForce.x,ay=mapForce.y;
     if(ax===0&&ay===0)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
     const driftX=nx*(speed+newSpeed)*.5+ax*h*.5,driftY=ny*(speed+newSpeed)*.5+ay*h*.5;
@@ -2550,6 +2561,37 @@ let mapDrawingCache=null;
 function mapDrawing(){
  if(mapDrawingCache?.id===mapId)return mapDrawingCache;
  const drawing={id:mapId,fields:[],walls:[],edges:[],grid:new Path2D()};
+ const terrain=MAPS[mapId].terrain;
+ if(terrain){
+  // Cached shading and contours share the summed height, including saddle regions.
+  const image=document.createElement('canvas');image.width=W;image.height=H;const paint=image.getContext('2d');
+  const shade=document.createElement('canvas');shade.width=Math.ceil(W/4);shade.height=Math.ceil(H/4);
+  const shadeCtx=shade.getContext('2d'),pixels=shadeCtx.createImageData(shade.width,shade.height);
+  for(let y=0;y<shade.height;y++)for(let x=0;x<shade.width;x++){
+   const h=terrainHeight((x+.5)*W/shade.width,(y+.5)*H/shade.height,terrain),i=(y*shade.width+x)*4;
+   pixels.data[i]=Math.round(32+18*h);pixels.data[i+1]=Math.round(40+22*h);pixels.data[i+2]=Math.round(42+18*h);pixels.data[i+3]=255;
+  }
+  shadeCtx.putImageData(pixels,0,0);paint.imageSmoothingEnabled=true;paint.drawImage(shade,0,0,W,H);
+  const step=8,cols=Math.ceil(W/step),rows=Math.ceil(H/step),heights=new Float32Array((cols+1)*(rows+1));
+  for(let y=0;y<=rows;y++)for(let x=0;x<=cols;x++)heights[y*(cols+1)+x]=terrainHeight(Math.min(W,x*step),Math.min(H,y*step),terrain);
+  paint.lineWidth=.45;paint.strokeStyle='rgba(145,173,166,.10)';paint.beginPath();
+  function contourTriangle(a,b,c){
+   const low=Math.min(a.h,b.h,c.h),high=Math.max(a.h,b.h,c.h);
+   for(let n=Math.max(1,Math.ceil(low/.04));n*.04<high;n++){
+    const level=n*.04,points=[];
+    for(const [p,q] of [[a,b],[b,c],[c,a]])if((p.h<level)!==(q.h<level)){
+     const t=(level-p.h)/(q.h-p.h);points.push({x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t});
+    }
+    if(points.length===2){paint.moveTo(points[0].x,points[0].y);paint.lineTo(points[1].x,points[1].y);}
+   }
+  }
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+   const point=(xx,yy)=>({x:Math.min(W,xx*step),y:Math.min(H,yy*step),h:heights[yy*(cols+1)+xx]});
+   const a=point(x,y),b=point(x+1,y),c=point(x+1,y+1),d=point(x,y+1);contourTriangle(a,b,c);contourTriangle(a,c,d);
+  }
+  paint.stroke();
+  drawing.terrain=image;
+ }
  for(let x=W/2%60;x<W-24;x+=60)for(let y=H/2%60;y<H-24;y+=60){if(x<24||y<24)continue;drawing.grid.moveTo(x+1.15,y);drawing.grid.arc(x,y,1.15,0,TAU);}
  for(const [x0,y0,x1,y1] of [[24,24,W-24,24],[24,H-24,W-24,H-24],[24,24,24,H-24],[W-24,24,W-24,H-24]]){const path=new Path2D();path.moveTo(x0,y0);path.lineTo(x1,y1);drawing.edges.push(path);}
  for(const field of mapFields){
@@ -2660,10 +2702,10 @@ function drawLoopImages(a,gray,drawing,view=null){
  const ox=(VIEW_W-W)/2,oy=(VIEW_H-H)/2,r=drawing.shape.rx+3;
  for(let iy=-1;iy<=1;iy++)for(let ix=-1;ix<=1;ix++){
   if(!ix&&!iy)continue;
-  const flip=MAPS[mapId].twist&&iy!==0,dx=ix*(W-48),dy=iy*(H-48),x=(flip?W-a.x:a.x)+dx,y=a.y+dy;
+  const dx=ix*(W-48),dy=iy*(H-48),x=a.x+dx,y=a.y+dy;
   if(view){const dx=x-view.x,dy=y-view.y,sx=VIEW_W*.5+view.co*dx+view.si*dy,sy=VIEW_H*.8-view.si*dx+view.co*dy;if(sx+r<0||sx-r>VIEW_W||sy+r<0||sy-r>VIEW_H)continue;}
   else if(x+r< -ox||x-r>W+ox||y+r< -oy||y-r>H+oy)continue;
-  ctx.save();ctx.translate(dx+(flip?W:0),dy);if(flip)ctx.scale(-1,1);ctx.globalAlpha=.4;
+  ctx.save();ctx.translate(dx,dy);ctx.globalAlpha=.4;
   drawActor(a,a.team,gray,true,drawing);ctx.restore();
  }
 }
@@ -2736,9 +2778,11 @@ function render(alpha=1){
  renderFrames++;const sx=canvas.width/VIEW_W,sy=canvas.height/VIEW_H,ox=(VIEW_W-W)/2,oy=(VIEW_H-H)/2;ctx.setTransform(sx,0,0,sy,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,VIEW_W,VIEW_H);
  const heading=cameraHeading(),view=headingView()?{x:visualPlayer.x,y:visualPlayer.y,co:Math.cos(heading),si:Math.sin(heading)}:null;
  if(view){ctx.translate(VIEW_W*.5,VIEW_H*.8);ctx.rotate(-heading);ctx.translate(-visualPlayer.x,-visualPlayer.y);}else ctx.translate(ox,oy);
+ // Keep terrain shading and contours inside the arena; draw the border separately.
+ if(MAPS[mapId].terrain)ctx.drawImage(mapDrawing().terrain,24,24,W-48,H-48,24,24,W-48,H-48);
  if(view){ctx.fillStyle='rgba(160,181,177,.24)';ctx.fill(mapDrawing().grid);}
  if(mapId!=='ellipse'){ctx.save();ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;ctx.lineWidth=MAPS[mapId].wrap?1.2:.75;if(MAPS[mapId].wrap)ctx.setLineDash([9,6]);
-  const edges=mapDrawing().edges;if(MAPS[mapId].twist)ctx.strokeStyle='#c0a88b';ctx.stroke(edges[0]);ctx.stroke(edges[1]);
+  const edges=mapDrawing().edges;ctx.stroke(edges[0]);ctx.stroke(edges[1]);
   ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;
   ctx.stroke(edges[2]);ctx.stroke(edges[3]);
   ctx.restore();}
@@ -2850,7 +2894,7 @@ for(const id of ['start','restart','pause','sound'])$(id).addEventListener('poin
 });
 $('view').addEventListener('change',()=>{
  cfg.view=$('view').value;cameraAngle=(ending?.actors[0]||p).aim+Math.PI/2;clearFireInput();keys.clear();Object.assign(mouse,headingAimPoint());
- if(!headingView())releaseMouse();$('view-help').hidden=!headingView();
+ if(!headingView())releaseMouse();
  saveSettings();render();$('view').blur();
 });
 $('mode').addEventListener('change',()=>{
@@ -2902,7 +2946,7 @@ function restoreSettings(){
  }catch{}
  for(const name of SETTING_NAMES)$(name).value=cfg[name]*settingScale(name);
  $('showHealthNumbers').checked=cfg.showHealthNumbers;$('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
- $('map').value=mapId;$('view').value=cfg.view;$('view-help').hidden=!headingView();syncDifficultyControl();
+ $('map').value=mapId;$('view').value=cfg.view;syncDifficultyControl();
 }
 function saveSettings(){
  if(restoringDefaults)return;
