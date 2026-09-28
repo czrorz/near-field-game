@@ -1,33 +1,33 @@
 # Near Field
 
-二维弹幕拳击。选择射击方向与变亮距离，通过移动和力场控制弹群。
+Bullet-hell boxing: aim in direction and distance, then shape bullet groups through movement and fields.
 
-用浏览器打开 `index.html`，无需安装或构建。
+Open `index.html` in a browser. No installation or build step is required.
 
-## 操作
+## Controls
 
-- WASD 移动，鼠标瞄准，点击发射一组，按住持续射击；空格暂停，R 重开。
-- 手柄：左杆移动，右杆瞄准，LB / RB 调距离，RT 射击。
-- 触屏：左侧摇杆移动，点击场地射击。
+- WASD to move, mouse to aim, click for a burst, hold to keep firing; Space to pause, R to restart.
+- Controller: left stick to move, right stick to aim, LB / RB to adjust range, RT to fire.
+- Touch: left joystick to move, tap the arena to fire.
 
-## 机制
+## Mechanics
 
-瞄准距离决定变亮路程，最小 100；距离线表示杀伤路段，走完后子弹消失。路程按实际弹道计算；在对手体内时延迟变亮，不延长路段。
+Aim range sets travel before activation, with a minimum of 100. The range line marks the damaging path; bullets disappear at its end. Distance follows the actual trajectory. Activation is delayed inside an opponent without extending the path.
 
-暗弹无伤害，不受人物场影响；双方暗弹相碰可概率相消，亮弹穿过其他子弹。亮弹伤害 = 爆炸伤 + 动量伤。爆炸伤随变亮后路程线性增长至 100，内部亮度表示爆炸伤；动量伤取决于相对撞入速度，擦中较弱。
+Dim bullets are harmless and ignore character fields. Opposing dim bullets may cancel on contact; bright bullets pass through other bullets. Bright-bullet damage = explosion damage + momentum damage. Explosion damage grows linearly with travel after activation, up to 100; interior brightness shows its strength. Momentum damage depends on relative inward contact speed, so glancing hits add less.
 
-接收场减速、偏转敌方亮弹；控弹场只偏转己方亮弹。发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在人物场内按自旋偏转，场主人相对子弹方向的横移可加强或抵消偏转。
+Receiving fields slow and deflect enemy bright bullets; control fields only deflect your own. Moving perpendicular to the firing direction gives new bullets spin: faster sideways movement gives more spin, fixed at launch. In character fields, bright bullets bend according to spin; the field owner’s movement transverse to the bullet direction can reinforce or cancel the deflection.
 
-参数双方共用，自动保存；展开设置暂停。
+Settings apply to both sides and save automatically. Opening settings pauses play.
 
-## 开发
+## Development
 
-代码、样式和音效均在 `index.html`。运行检查：
+Code, styles and synthesized sound are contained in `index.html`. Run checks with:
 
 ```sh
 node tests/check-game.cjs
 ```
 
-测试使用模拟浏览器环境；画面、声音和输入设备需在浏览器中验证。
+Tests use a mock browser environment. Visuals, sound and input devices require browser verification.
 
-玩法设计：czrorz · 代码：ChatGPT
+Concept and gameplay design by czrorz. Code written by ChatGPT.
