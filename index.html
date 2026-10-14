@@ -171,9 +171,9 @@ html[lang="en"] .setting output{white-space:nowrap}
   <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗点：无伤害</span><span><i class="dot solid"></i>亮点：可命中</span></div></div>
   <p class="notes">WASD 移动，鼠标瞄准，点击发射一组，按住持续射击；空格暂停，R 重开。</p>
   <p class="notes">瞄准距离决定变亮路程，最小 100；距离线表示杀伤路段，走完后子弹消失。路程按实际弹道计算；在对手体内时延迟变亮，不延长路段。</p>
-  <p class="notes">接收场减速、偏转敌方亮弹；控弹场只偏转己方亮弹。暗弹不受人物力场影响，亮弹穿过其他子弹。</p>
-  <p class="notes">发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在人物场内按自旋偏转，场主人相对子弹方向的横移可加强或抵消偏转。</p>
-  <p class="notes">暗弹无伤害；亮弹伤害 = 爆炸伤 + 动量伤。内部亮度表示爆炸伤；头顶数字为剩余生命，浮字为命中伤害，人物内三角表示装填进度。</p>
+  <p class="notes">接收场减速、偏转敌方亮弹；控弹场通过横向作用带动己方亮弹，不减速。暗弹不受随身场影响，亮弹穿过其他子弹。</p>
+  <p class="notes">发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在接收场内按自旋偏转；两种场均可通过场主人的横移带动子弹。</p>
+  <p class="notes">暗弹无伤害；亮弹伤害 = 爆炸伤 + 动量伤。内部亮度表示爆炸伤；头顶数字为剩余生命，浮字为命中伤害。</p>
   <p class="notes">参数双方共用，自动保存；展开设置暂停。</p>
   <section class="settings-group" aria-labelledby="movement-settings">
    <h2 id="movement-settings">人物与移动</h2>
@@ -181,15 +181,15 @@ html[lang="en"] .setting output{white-space:nowrap}
    <div class="settings-grid field-grid">
     <div class="setting">
      <label for="moveSpeed">移动速度<output id="moveSpeed-value">235</output></label>
-     <input id="moveSpeed" type="range" min="200" max="270" step="5" value="235">
-     <div class="range-bounds" aria-hidden="true"><span id="moveSpeed-min">200</span><span id="moveSpeed-max">270</span></div>
+     <input id="moveSpeed" type="range" min="100" max="400" step="5" value="235">
+     <div class="range-bounds" aria-hidden="true"><span id="moveSpeed-min">100</span><span id="moveSpeed-max">400</span></div>
 
     </div>
     <div class="setting">
      <label for="inertia">移动惯性<output id="inertia-value">450 ms</output></label>
-     <input id="inertia" type="range" min="200" max="1200" step="50" value="450">
-     <div class="range-bounds" aria-hidden="true"><span id="inertia-min">200</span><span id="inertia-max">1200</span></div>
-     <p class="setting-help">越大，加速、刹车和转向越慢。</p>
+     <input id="inertia" type="range" min="0" max="1000" step="10" value="450">
+     <div class="range-bounds" aria-hidden="true"><span id="inertia-min">0</span><span id="inertia-max">1000</span></div>
+     <p class="setting-help">越大，加速、刹车和转向越慢；缩小后按半径比例降低。</p>
     </div>
    </div>
    <h3 class="settings-subtitle">人物属性</h3>
@@ -202,9 +202,15 @@ html[lang="en"] .setting output{white-space:nowrap}
     </div>
     <div class="setting">
      <label for="actorRadius">人物大小<output id="actorRadius-value">15</output></label>
-     <input id="actorRadius" type="range" min="12" max="18" step="1" value="15">
-     <div class="range-bounds" aria-hidden="true"><span id="actorRadius-min">12</span><span id="actorRadius-max">18</span></div>
+     <input id="actorRadius" type="range" min="10" max="20" step="1" value="15">
+     <div class="range-bounds" aria-hidden="true"><span id="actorRadius-min">10</span><span id="actorRadius-max">20</span></div>
      <p class="setting-help">同时改变受击范围。</p>
+    </div>
+    <div class="setting">
+     <label for="minRadiusRatio">最小半径比例<output id="minRadiusRatio-value">70%</output></label>
+     <input id="minRadiusRatio" type="range" min="50" max="100" step="1" value="70">
+     <div class="range-bounds" aria-hidden="true"><span id="minRadiusRatio-min">50%</span><span id="minRadiusRatio-max">100%</span></div>
+     <p class="setting-help">生命越少，身体与受击范围越小；100% 不缩小。</p>
     </div>
     <div class="setting">
      <label for="actorAspect">椭圆比例<output id="actorAspect-value">1:1</output></label>
@@ -214,6 +220,7 @@ html[lang="en"] .setting output{white-space:nowrap}
     </div>
    </div>
    <label class="check field-visibility"><input id="showHealthNumbers" type="checkbox" checked>显示头顶生命数字</label>
+   <label class="check field-visibility"><input id="showDamageNumbers" type="checkbox" checked>显示命中伤害数字</label>
    <h3 class="settings-subtitle">人物间排斥</h3>
    <div class="settings-grid field-grid">
     <div class="setting">
@@ -341,8 +348,7 @@ html[lang="en"] .setting output{white-space:nowrap}
    </div>
   </section>
   <section class="settings-group" aria-labelledby="field-settings">
-   <h2 id="field-settings">力场</h2>
-   <h3 class="settings-subtitle">作用范围</h3>
+   <h2 id="field-settings">接收场</h2>
    <div class="settings-grid field-grid">
     <div class="setting">
      <label for="radius">接收场半径<output id="radius-value">150</output></label>
@@ -351,37 +357,43 @@ html[lang="en"] .setting output{white-space:nowrap}
      <p class="setting-help">影响敌方亮弹的范围。</p>
     </div>
     <div class="setting">
-     <label for="controlRadius">控弹场半径<output id="controlRadius-value">300</output></label>
-     <input id="controlRadius" type="range" min="0" max="1000" step="10" value="300">
-     <div class="range-bounds" aria-hidden="true"><span id="controlRadius-min">0</span><span id="controlRadius-max">1000</span></div>
-     <p class="setting-help">偏转己方亮弹，不减速；虚线表示。</p>
-    </div>
-   </div>
-   <h3 class="settings-subtitle">双方场共用的偏转</h3>
-   <div class="settings-grid field-grid">
-    <div class="setting">
-     <label for="spinForce">共用偏转强度<output id="spinForce-value">5400</output></label>
-     <input id="spinForce" type="range" min="0" max="10800" step="50" value="5400">
-     <div class="range-bounds" aria-hidden="true"><span id="spinForce-min">0</span><span id="spinForce-max">10800</span></div>
-     <p class="setting-help">两个场共用，越大越易转弯。</p>
-    </div>
-    <div class="setting">
-     <label for="receiverSpinScale">场主人横移系数<output id="receiverSpinScale-value">1.0</output></label>
-     <input id="receiverSpinScale" type="range" min="0" max="4" step="0.1" value="1">
-     <div class="range-bounds" aria-hidden="true"><span id="receiverSpinScale-min">0</span><span id="receiverSpinScale-max">4</span></div>
-     <p class="setting-help">缩放场主人当前横移的偏转作用，不改变子弹自旋；0 关闭。</p>
-    </div>
-   </div>
-   <h3 class="settings-subtitle">接收场减速</h3>
-   <div class="settings-grid field-grid">
-    <div class="setting">
      <label for="drag">阻力系数<output id="drag-value">0.020</output></label>
      <input id="drag" type="range" min="0" max="0.040" step="0.001" value="0.020">
      <div class="range-bounds" aria-hidden="true"><span id="drag-min">0</span><span id="drag-max">0.040</span></div>
-     <p class="setting-help">弹速越高阻力越强；顺着来弹后退可减弱阻力，0 关闭。</p>
+     <p class="setting-help">弹速越高阻力越强；顺着来弹后退减弱阻力，迎弹不增强；0 关闭。</p>
+    </div>
+
+    <div class="setting">
+     <label for="receiverSpinScale">横向系数<output id="receiverSpinScale-value">1.0</output></label>
+     <input id="receiverSpinScale" type="range" min="0" max="4" step="0.1" value="1">
+     <div class="range-bounds" aria-hidden="true"><span id="receiverSpinScale-min">0</span><span id="receiverSpinScale-max">4</span></div>
+     <p class="setting-help">按场主人垂直于弹道的移动带动子弹；0 关闭。</p>
+    </div>
+    <div class="setting">
+     <label for="spinForce">偏转强度<output id="spinForce-value">5400</output></label>
+     <input id="spinForce" type="range" min="0" max="10800" step="50" value="5400">
+     <div class="range-bounds" aria-hidden="true"><span id="spinForce-min">0</span><span id="spinForce-max">10800</span></div>
+     <p class="setting-help">调节子弹自旋引起的偏转；0 关闭。</p>
     </div>
    </div>
    <label class="check field-visibility"><input id="showField" type="checkbox">显示力场圈</label>
+  </section>
+  <section class="settings-group" aria-labelledby="control-field-settings">
+   <h2 id="control-field-settings">控弹场</h2>
+   <div class="settings-grid field-grid">
+    <div class="setting">
+     <label for="controlRadius">控弹场半径<output id="controlRadius-value">300</output></label>
+     <input id="controlRadius" type="range" min="0" max="1000" step="10" value="300">
+     <div class="range-bounds" aria-hidden="true"><span id="controlRadius-min">0</span><span id="controlRadius-max">1000</span></div>
+     <p class="setting-help">影响己方亮弹的范围；虚线表示。</p>
+    </div>
+    <div class="setting">
+     <label for="controlSpinScale">横向系数<output id="controlSpinScale-value">1.0</output></label>
+     <input id="controlSpinScale" type="range" min="0" max="4" step="0.1" value="1">
+     <div class="range-bounds" aria-hidden="true"><span id="controlSpinScale-min">0</span><span id="controlSpinScale-max">4</span></div>
+     <p class="setting-help">按场主人垂直于弹道的移动带动子弹；0 关闭。</p>
+    </div>
+   </div>
   </section>
   <section class="settings-group" aria-labelledby="impact-settings">
    <h2 id="impact-settings">命中与击退</h2>
@@ -400,16 +412,10 @@ html[lang="en"] .setting output{white-space:nowrap}
      <p class="setting-help">仅限制动量伤，0 关闭。</p>
     </div>
     <div class="setting">
-     <label for="baseKnockback">基础击退距离<output id="baseKnockback-value">24</output></label>
-     <input id="baseKnockback" type="range" min="0" max="60" step="2" value="24">
-     <div class="range-bounds" aria-hidden="true"><span id="baseKnockback-min">0</span><span id="baseKnockback-max">60</span></div>
-     <p class="setting-help">爆炸伤为 100 时的基础击退距离，随爆炸伤等比例缩放。</p>
-    </div>
-    <div class="setting">
-     <label for="impactScale">动量击退系数<output id="impactScale-value">0.26</output></label>
-     <input id="impactScale" type="range" min="0" max="0.50" step="0.01" value="0.26">
-     <div class="range-bounds" aria-hidden="true"><span id="impactScale-min">0</span><span id="impactScale-max">0.50</span></div>
-     <p class="setting-help">相对撞入速度带来的额外击退，与动量伤系数独立。</p>
+     <label for="knockbackScale">击退系数<output id="knockbackScale-value">0.24</output></label>
+     <input id="knockbackScale" type="range" min="0" max="1" step="0.01" value="0.24">
+     <div class="range-bounds" aria-hidden="true"><span id="knockbackScale-min">0</span><span id="knockbackScale-max">1</span></div>
+     <p class="setting-help">击退距离 = 系数 × 总伤害 ÷ 半径比例。</p>
     </div>
    </div>
   </section>
@@ -544,14 +550,14 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 
 // === 02 · Shared settings, runtime state and numeric helpers ===
 const DEFAULTS={
- maxHealth:10,actorRadius:15,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
+ maxHealth:10,actorRadius:15,minRadiusRatio:.7,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
  burstCount:3,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
- annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,
- radius:150,controlRadius:300,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,baseKnockback:24,impactScale:.26,
- difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true,showHealthNumbers:true
+ annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,controlSpinScale:1,
+ radius:150,controlRadius:300,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
+ difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true,showHealthNumbers:true,showDamageNumbers:true
 };
 const cfg={...DEFAULTS,view:'heading'};
-const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","actorAspect","bodyRepulsionRange","bodyRepulsion","burstCount","fireRate","reloadTime","padRange","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","bandBase","band","minimumDamage","damageRampDistance","radius","controlRadius","spinForce","receiverSpinScale","drag","momentumDamageScale","momentumDamageCap","baseKnockback","impactScale"];
+const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","burstCount","fireRate","reloadTime","padRange","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale"];
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
@@ -574,13 +580,14 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 
 // === 03 · Text and language switching ===
 const ENGLISH={
- "暗弹无伤害；亮弹伤害 = 爆炸伤 + 动量伤。内部亮度表示爆炸伤；头顶数字为剩余生命，浮字为命中伤害，人物内三角表示装填进度。": "Dim bullets are harmless; bright-bullet damage = explosion + momentum damage. Interior brightness shows explosion damage. Overhead numbers show remaining health, floating numbers show hit damage, and the character triangle shows reload progress.",
+ "显示命中伤害数字": "Show hit damage numbers",
+ "暗弹无伤害；亮弹伤害 = 爆炸伤 + 动量伤。内部亮度表示爆炸伤；头顶数字为剩余生命，浮字为命中伤害。": "Dim bullets are harmless; bright-bullet damage = explosion + momentum damage. Interior brightness shows explosion damage. Overhead numbers show remaining health; floating numbers show hit damage.",
  "WASD 移动，鼠标瞄准，点击发射一组，按住持续射击；空格暂停，R 重开。": "WASD moves, the mouse aims, click fires a burst, hold keeps firing; Space pauses, R restarts.",
  "瞄准距离决定变亮路程，最小 100；距离线表示杀伤路段，走完后子弹消失。路程按实际弹道计算；在对手体内时延迟变亮，不延长路段。": "Aim range sets travel before activation, with a minimum of 100. The range line marks the damaging path; bullets disappear at its end. Distance follows the actual trajectory. Activation is delayed inside an opponent without extending the path.",
- "接收场减速、偏转敌方亮弹；控弹场只偏转己方亮弹。暗弹不受人物力场影响，亮弹穿过其他子弹。": "Receiving fields slow and deflect enemy bright bullets; control fields only deflect your own. Dim bullets ignore character fields; bright bullets pass through other bullets.",
- "发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在人物场内按自旋偏转，场主人相对子弹方向的横移可加强或抵消偏转。": "Launch spin: faster movement perpendicular to the firing direction gives new bullets more spin, fixed at launch. In character fields, bright bullets bend according to spin; the field owner's movement transverse to the bullet direction can reinforce or cancel the deflection.",
+ "接收场减速、偏转敌方亮弹；控弹场通过横向作用带动己方亮弹，不减速。暗弹不受随身场影响，亮弹穿过其他子弹。": "Receiving fields slow and deflect enemy bright bullets; control fields carry your own bright bullets through lateral motion without slowing them. Dim bullets ignore carried fields; bright bullets pass through other bullets.",
+ "发射带旋：人物垂直于射击方向的移动越快，新弹自旋越强；自旋在发射时确定。亮弹在接收场内按自旋偏转；两种场均可通过场主人的横移带动子弹。": "Launch spin: faster movement perpendicular to the firing direction gives new bullets more spin, fixed at launch. In receiving fields, bright bullets bend according to spin; both fields can carry bullets with the owner's transverse movement.",
  "参数双方共用，自动保存；展开设置暂停。": "Settings apply to both sides and save automatically. Opening settings pauses play.",
- "越大，加速、刹车和转向越慢。": "Higher values slow acceleration, braking and turns.",
+ "越大，加速、刹车和转向越慢；缩小后按半径比例降低。": "Higher values slow acceleration, braking and turns; inertia scales with relative radius.",
  "调整时保留剩余生命比例。": "Preserves the remaining health percentage.",
  "同时改变受击范围。": "Also changes the hitbox.",
  "前后轴与左右轴之比，面积不变。": "Forward-to-sideways axis ratio; area stays constant.",
@@ -601,13 +608,12 @@ const ENGLISH={
  "变亮后按路程从最低爆炸伤线性增至 100；0 立即满伤。": "Explosion damage rises linearly from its minimum to 100 over this travel after activation; 0 gives full damage immediately.",
  "影响敌方亮弹的范围。": "Range affecting enemy bright bullets.",
  "偏转己方亮弹，不减速；虚线表示。": "Bends your bright bullets without slowing them; shown dashed.",
- "两个场共用，越大越易转弯。": "Shared by both fields; higher values bend bullets more.",
+ "越大越易转弯。": "Higher values bend bullets more.",
  "缩放场主人当前横移的偏转作用，不改变子弹自旋；0 关闭。": "Scales deflection from the field owner's current movement without changing bullet spin; 0 disables this contribution.",
- "弹速越高阻力越强；顺着来弹后退可减弱阻力，0 关闭。": "Faster bullets face more drag. Moving with incoming bullets reduces drag; 0 disables it.",
+ "弹速越高阻力越强；顺着来弹后退减弱阻力，迎弹不增强；0 关闭。": "Faster bullets face more drag. Retreating with incoming bullets reduces drag; approaching does not increase it. 0 disables it.",
  "动量伤 = 系数 × 相对撞入速度，受上限限制；擦中较弱，0 关闭。": "Momentum damage = coefficient × relative inward speed, capped by its limit. Glancing hits add less; 0 disables it.",
  "仅限制动量伤，0 关闭。": "Caps momentum damage only; 0 disables it.",
- "爆炸伤为 100 时的基础击退距离，随爆炸伤等比例缩放。": "Base knockback distance at 100 explosion damage, scaled proportionally to explosion damage.",
- "相对撞入速度带来的额外击退，与动量伤系数独立。": "Extra knockback from relative inward speed, independent of the momentum damage coefficient.",
+ "击退距离 = 系数 × 总伤害 ÷ 半径比例。": "Knockback distance = coefficient × total damage / relative radius.",
  "手柄：左杆移动，右杆瞄准，RT 射击。触屏：左杆移动，点击射击。": "Controller: left stick moves, right stick aims, RT fires. Touch: left stick moves, tap to fire.",
  "移动手感": "Movement response",
  "人物属性": "Character properties",
@@ -618,12 +624,12 @@ const ENGLISH={
  "发射带旋": "Launch spin",
  "激活后的伤害与路程": "Damage and travel after activation",
  "作用范围": "Field ranges",
- "双方场共用的偏转": "Shared field deflection",
+ "偏转": "Deflection",
  "接收场减速": "Receiving-field braking",
  "动量伤系数": "Momentum damage coefficient",
  "动量伤上限": "Momentum damage cap",
  "充能与动量": "Charge and momentum",
- "共用偏转强度": "Shared deflection strength",
+ "偏转强度": "Deflection strength",
  "场主人横移系数": "Field-owner movement scale",
  "最低爆炸伤": "Minimum explosion damage",
  "满伤成长路程": "Distance to full damage",
@@ -672,6 +678,8 @@ const ENGLISH={
  "亮点：可命中": "Bright: can hit",
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
+ "最小半径比例": "Minimum radius ratio",
+ "生命越少，身体与受击范围越小；100% 不缩小。": "Lower health shrinks the body and hitbox; 100% disables shrinking.",
  "椭圆比例": "Ellipse ratio",
  "移动速度": "Movement speed",
  "射击": "Firing",
@@ -689,6 +697,12 @@ const ENGLISH={
  "{value} 秒": "{value} s",
  "子弹弹道": "Bullet trajectory",
  "子弹大小": "Bullet size",
+ "接收场": "Receiving field",
+ "控弹场": "Control field",
+ "横向系数": "Lateral coefficient",
+ "按场主人垂直于弹道的移动带动子弹；0 关闭。": "Carries bullets with the owner’s movement perpendicular to their flight direction; 0 disables it.",
+ "影响己方亮弹的范围；虚线表示。": "Range affecting your own bright bullets; shown dashed.",
+ "调节子弹自旋引起的偏转；0 关闭。": "Controls deflection from bullet spin; 0 disables it.",
  "力场": "Field",
  "命中与击退": "Hits & knockback",
  "初始弹速": "Initial bullet speed",
@@ -712,8 +726,7 @@ const ENGLISH={
  "人物排斥强度": "Character repulsion",
  "人物排斥距离": "Character repulsion range",
  "手柄瞄准距离": "Controller aim distance",
- "基础击退距离": "Base knockback distance",
- "动量击退系数": "Momentum knockback",
+ "击退系数": "Knockback coefficient",
  "人机对战": "Bot duel",
  "恢复默认": "Restore defaults",
  "双摇杆手柄": "Controller",
@@ -752,8 +765,8 @@ let language='zh',staticTranslations=[],attributeTranslations=[],lastAnnouncemen
 let overlayContent={title:'',copy:'',button:'开始对战',values:{}};
 try{if(localStorage.getItem('near-field-language')==='en')language='en';}catch{}
 function tr(text,values={}){return(language==='en'?(ENGLISH[text]??text):text).replace(/\{(\w+)\}/g,(_,key)=>String(values[key]??''));}
-function settingScale(name){return name==='inertia'?1000:name==='maxHealth'||name==='minimumDamage'||name==='momentumDamageScale'||name==='momentumDamageCap'?100:1;}
-function formatSetting(name,value){if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='initialSpinSign'?(value===1?'+1':'−1'):name==='drag'?value.toFixed(3):name==='impactScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='reloadTime'?tr('{value} 秒',{value:value.toFixed(1)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':name==='padRange'?String(Math.round(value)):String(value);}
+function settingScale(name){return name==='inertia'?1000:name==='minRadiusRatio'||name==='maxHealth'||name==='minimumDamage'||name==='momentumDamageScale'||name==='momentumDamageCap'?100:1;}
+function formatSetting(name,value){if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance'||name==='minRadiusRatio')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale'||name==='controlSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='initialSpinSign'?(value===1?'+1':'−1'):name==='drag'?value.toFixed(3):name==='knockbackScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='reloadTime'?tr('{value} 秒',{value:value.toFixed(1)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':name==='padRange'?String(Math.round(value)):String(value);}
 function refreshOverlayText(){const {title,copy,button,values}=overlayContent;$('overlay-title').textContent=tr(title,values);$('overlay-copy').textContent=tr(copy,values);$('start').textContent=tr(button);}
 function applyLanguage(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=tr('近场');
@@ -910,14 +923,14 @@ function playShotSound(actor){
 }
 // For hit/hurt, strength is contact damage; other cues keep their existing scale.
 function playSound(kind,strength=1,x=W/2){
- if((kind==='hit'||kind==='hurt')&&strength<=0)return;
+ if(!Number.isFinite(strength)||((kind==='hit'||kind==='hurt')&&strength<=0))return;
  // Impact sounds keep priority over the quieter, separately limited shots.
  if(!['hit','hurt','intercept','kill'].includes(kind)||!cfg.sound||!audioCtx||audioCtx.state!=='running'||impactAudio?.context!==audioCtx||audioVoices>=12)return;
  let nodes=[],sources=[],counted=false,cleaned=false,remaining=0;
  const cleanup=()=>{if(cleaned)return;cleaned=true;if(counted){audioVoices=Math.max(0,audioVoices-1);counted=false;}for(const node of nodes)try{node.disconnect();}catch{}};
  try{
   const space=impactAudio,now=audioCtx.currentTime,scale=kind==='hit'||kind==='hurt'?Math.max(0,strength):clamp(.7+strength*.35,.7,1.26);
-  const voice=audioCtx.createGain(),pan=audioCtx.createStereoPanner();nodes.push(voice,pan);
+  const voice=audioCtx.createGain();nodes.push(voice);const pan=audioCtx.createStereoPanner();nodes.push(pan);
   voice.gain.value=1/Math.sqrt(1+audioVoices*.16);
   pan.pan.value=kind==='hurt'?0:clamp((x/W-.5)*1.4,-.8,.8);
   voice.connect(pan);pan.connect(audioMaster);
@@ -931,15 +944,19 @@ function playSound(kind,strength=1,x=W/2){
    gain.gain.exponentialRampToValueAtTime(volume*scale,now+attack);
    gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
   };
-  const tone=(type,from,to,volume,duration)=>{
-   const source=audioCtx.createOscillator(),gain=audioCtx.createGain();nodes.push(source,gain);
+  const tone=(type,from,to,volume,duration,attack=.002)=>{
+   if(volume<=0)return;
+   const source=audioCtx.createOscillator();nodes.push(source);sources.push({source,duration});
+   const gain=audioCtx.createGain();nodes.push(gain);
    source.type=type;source.frequency.setValueAtTime(from,now);source.frequency.exponentialRampToValueAtTime(to,now+duration);
-   envelope(gain,volume,.002,duration);source.connect(gain);gain.connect(voice);sources.push({source,duration});
+   envelope(gain,volume,attack,duration);source.connect(gain);gain.connect(voice);
   };
-  const transient=(frequency,volume,duration)=>{
-   const source=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();nodes.push(source,filter,gain);
+  const transient=(frequency,volume,duration,attack=.001)=>{
+   if(volume<=0)return;
+   const source=audioCtx.createBufferSource();nodes.push(source);sources.push({source,duration});
+   const filter=audioCtx.createBiquadFilter();nodes.push(filter);const gain=audioCtx.createGain();nodes.push(gain);
    source.buffer=space.noise;filter.type='bandpass';filter.frequency.value=frequency;filter.Q.value=.6;
-   envelope(gain,volume,.001,duration);source.connect(filter);filter.connect(gain);gain.connect(voice);sources.push({source,duration});
+   envelope(gain,volume,attack,duration);source.connect(filter);filter.connect(gain);gain.connect(voice);
   };
   if(kind==='hit'){
    transient(2350,.095,.027);
@@ -962,8 +979,8 @@ function playSound(kind,strength=1,x=W/2){
 }
 
 // === 05 · Actors, shape, movement and wall geometry ===
-function impactState(){return{mvx:0,mvy:0,ivx:0,ivy:0,qx:0,qy:0,qvx:0,qvy:0,hitFlash:0,hitArc:0,hitAngle:0};}
-function updateShape(a,dt){a.qvx+=(-676*a.qx-18*a.qvx)*dt;a.qvy+=(-676*a.qy-18*a.qvy)*dt;a.qx+=a.qvx*dt;a.qy+=a.qvy*dt;const amplitude=Math.hypot(a.qx,a.qy);if(amplitude>.29){a.qx*=.29/amplitude;a.qy*=.29/amplitude;}a.hitFlash=Math.max(0,a.hitFlash-dt);a.hitArc=Math.max(0,a.hitArc-dt);}
+function impactState(){return{mvx:0,mvy:0,ivx:0,ivy:0,qx:0,qy:0,qvx:0,qvy:0,hitFlash:0,hitArc:0,hitAngle:0,healthFlash:0};}
+function updateShape(a,dt){a.qvx+=(-676*a.qx-18*a.qvx)*dt;a.qvy+=(-676*a.qy-18*a.qvy)*dt;a.qx+=a.qvx*dt;a.qy+=a.qvy*dt;const amplitude=Math.hypot(a.qx,a.qy);if(amplitude>.29){a.qx*=.29/amplitude;a.qy*=.29/amplitude;}a.hitFlash=Math.max(0,a.hitFlash-dt);a.hitArc=Math.max(0,a.hitArc-dt);a.healthFlash=Math.max(0,(a.healthFlash||0)-dt*2.75);}
 let bodyAspectValue=0,bodyAspectAmount=0;
 function bodyShape(a){
  if(bodyAspectValue!==cfg.actorAspect){bodyAspectValue=cfg.actorAspect;bodyAspectAmount=Math.sign(bodyAspectValue)*Math.log1p(Math.abs(bodyAspectValue)/100)*.5;}
@@ -973,7 +990,9 @@ function bodyShape(a){
  const amplitude=Math.hypot(qx,qy),angle=.5*Math.atan2(qy,qx);
  return{angle,rx:a.r*Math.exp(amplitude),ry:a.r*Math.exp(-amplitude)};
 }
-function createActor(team,x,y){return{...impactState(),team,x,y,px:x,py:y,vx:0,vy:0,r:ACTOR.radius,hp:ACTOR.health,maxHp:ACTOR.health,aim:team===0?0:Math.PI,cd:0,reloadDuration:WEAPON.reload,salvo:null,salvoSeq:0,triggerHeld:false,triggerBlocked:false,fireBuffered:false,range:550,bot:null};}
+function createActor(team,x,y){return{...impactState(),hitMarks:[],shattered:false,team,x,y,px:x,py:y,vx:0,vy:0,r:ACTOR.radius,hp:ACTOR.health,maxHp:ACTOR.health,aim:team===0?0:Math.PI,cd:0,reloadDuration:WEAPON.reload,salvo:null,salvoSeq:0,triggerHeld:false,triggerBlocked:false,fireBuffered:false,range:550,bot:null};}
+function actorSizeRatio(a){return (a.r||ACTOR.radius)/ACTOR.radius;}
+function syncActorRadius(a){a.r=ACTOR.radius*(cfg.minRadiusRatio+(1-cfg.minRadiusRatio)*Math.sqrt(clamp(a.hp/a.maxHp,0,1)));}
 function actorInset(actor){return 27+bodyShape(actor).rx;}
 // Curve queries are analytic or bounded; maps never expand into many small walls.
 function curveClosest(wall,x,y){
@@ -1088,7 +1107,7 @@ function constrainActor(a){
 }
 function resizeActors(){
  const actors=[p,enemy,...(ending?.actors||[])].filter(Boolean);
- for(const actor of actors){actor.r=ACTOR.radius;constrainActor(actor);}
+ for(const actor of actors){syncActorRadius(actor);constrainActor(actor);}
  if(p&&enemy)separateActors(p,enemy);
  for(const actor of actors){actor.px=actor.x;actor.py=actor.y;}
 }
@@ -1102,6 +1121,7 @@ function applyActorRepulsion(a,b,dt){
  b.ivx-=ix;b.ivy-=iy;
 }
 function moveActor(a,targetX,targetY,inertia,dt,minX,minY,maxX,maxY){
+ inertia*=actorSizeRatio(a);
  a.px=a.x;a.py=a.y;let dx,dy;
  const terrain=MAPS[mapId].terrain;
  if(terrain&&inertia>0){const force=terrainAcceleration(a.x,a.y,mapAccelerationScratch);targetX+=force.x*terrain.actorScale*inertia;targetY+=force.y*terrain.actorScale*inertia;}
@@ -1177,7 +1197,7 @@ function finish(won){
 function updateEnding(dt){
  if(state!=='ending'||!ending)return;
  ending.age=Math.min(ending.duration,ending.age+dt);
- for(const actor of ending.actors){if(actor)moveActor(actor,0,0,.16,dt);}
+ for(const actor of ending.actors){if(actor){updateActorHitMarks(actor,dt);moveActor(actor,0,0,.16,dt);}}
  if(ending.actors[0]&&ending.actors[1])separateActors(ending.actors[0],ending.actors[1]);
  updateDamageNumbers(dt);
  for(const e of effects)e.age+=dt;effects=effects.filter(e=>e.age<e.life);
@@ -1254,7 +1274,8 @@ function brakingWeight(x,y,carrier=p){
 // current transverse motion. Receiver motion attracts the bullet along that
 // transverse direction, so opposite signed contributions cancel. Side force is perpendicular to
 // velocity. Fixed map fields add their own position-dependent acceleration.
-function receiverSpin(carrier,dx,dy){return carrier?cfg.receiverSpinScale*(dx*(carrier.vy||0)-dy*(carrier.vx||0))/ACTOR.speed:0;}
+const LATERAL_FORCE=5400;
+function receiverSpin(carrier,dx,dy,scale=cfg.receiverSpinScale){return carrier?scale*(dx*(carrier.vy||0)-dy*(carrier.vx||0))/ACTOR.speed:0;}
 function effectiveSpin(b,vx,vy,carrier=b.team===0?enemy:p){
  const speed=Math.hypot(vx,vy),dx=speed>1e-8?vx/speed:b.dx||0,dy=speed>1e-8?vy/speed:b.dy||0;
  return(b.spin||0)+receiverSpin(carrier,dx,dy);
@@ -1307,7 +1328,8 @@ function projectileBlockedExitTime(b,carrier,elapsed,dt,h){
  const Y=[(-si*x+co*y)/ry,(-si*vx+co*vy)/ry,(-si*ax+co*ay)/ry];
  const c=[X[0]**2+Y[0]**2-1,2*(X[0]*X[1]+Y[0]*Y[1]),X[1]**2+Y[1]**2+2*(X[0]*X[2]+Y[0]*Y[2]),2*(X[1]*X[2]+Y[1]*Y[2]),X[2]**2+Y[2]**2];
  const turns=projectilePolynomialRoots(c.slice(1).map((a,i)=>a*(i+1)),0,h);
- const curved=mapForceBound(b.x,b.y,(speed+cfg.propulsion*h)*h)>0;
+ const reach=(speed+cfg.propulsion*h)*h;
+ const curved=mapForceBound(b.x,b.y,reach)>0;
  // Only the rare activation-inside-body case needs these trajectory probes.
  // Preserve the polynomial fast path for maps without vector fields.
  const value=curved?t=>{
@@ -1362,9 +1384,9 @@ function bulletAcceleration(b,x,y,vx,vy,travel=b.travel||0,carrier=b.team===0?en
   const radius=i?cfg.controlRadius:cfg.radius;if(radius<=0)continue;
   const ox=x-body.x,oy=y-body.y,r2=(ox*ox+oy*oy)/(radius*radius);if(r2>=1)continue;
   if(!i){const retreat=Math.max(0,dx*(body.vx||0)+dy*(body.vy||0)),closing=Math.max(0,speed-retreat);forward-=cfg.drag*closing*closing;}
-  turn+=((b.spin||0)+receiverSpin(body,dx,dy))*(1-r2)**2;
+  turn+=((i?0:cfg.spinForce*(b.spin||0))+LATERAL_FORCE*receiverSpin(body,dx,dy,i?cfg.controlSpinScale:cfg.receiverSpinScale))*(1-r2)**2;
  }
- turn*=cfg.spinForce/Math.hypot(speed,6);
+ turn/=Math.hypot(speed,6);
  const mapForce=mapAcceleration(x,y);
  return{x:forward*dx-turn*vy+mapForce.x,y:forward*dy+turn*vx+mapForce.y};
 }
@@ -1432,9 +1454,9 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
   const activeCarrier=fieldActive&&carrier&&carrier.team!==b.team?carrier:null,activeSource=damaging&&cfg.controlRadius>0?source:null;
   const speed=Math.hypot(b.vx,b.vy),thrust=cfg.propulsion;
   const receiverSpeed=activeCarrier?Math.hypot(activeCarrier.vx||0,activeCarrier.vy||0):0;
-  const sourceSpeed=activeSource?Math.hypot(activeSource.vx||0,activeSource.vy||0):0,sourceMotion=cfg.receiverSpinScale*sourceSpeed/ACTOR.speed;
+  const sourceSpeed=activeSource?Math.hypot(activeSource.vx||0,activeSource.vy||0):0,sourceMotion=cfg.controlSpinScale*sourceSpeed/ACTOR.speed;
   const receiverMotion=cfg.receiverSpinScale*receiverSpeed/ACTOR.speed;
-  const sideForce=Math.abs(cfg.spinForce)*((activeCarrier?Math.abs(b.spin||0)+receiverMotion:0)+(activeSource?Math.abs(b.spin||0)+sourceMotion:0));
+  const sideForce=(activeCarrier?Math.abs(cfg.spinForce*(b.spin||0))+LATERAL_FORCE*receiverMotion:0)+(activeSource?LATERAL_FORCE*sourceMotion:0);
   // A conservative bound for each adaptive RK4 step. The lateral force does
   // no physical work, but is included here to bound intermediate stage speeds.
   const mapForce=mapForceBound(b.x,b.y,(speed+thrust*remaining)*remaining);
@@ -1444,7 +1466,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
   const near=receiverDistance<cfg.radius+possibleSpeed*remaining;
   const nearSource=activeSource&&Math.hypot(b.x-activeSource.x,b.y-activeSource.y)<cfg.controlRadius+possibleSpeed*remaining;
   const dragSlope=near?cfg.drag*(3*possibleSpeed+2*receiverSpeed):0;
-  const turning=Math.abs(cfg.spinForce)*((near?Math.abs(b.spin||0)+3*receiverMotion:0)+(nearSource?Math.abs(b.spin||0)+3*sourceMotion:0))/Math.hypot(speed,6);
+  const turning=((near?Math.abs(cfg.spinForce*(b.spin||0))+3*LATERAL_FORCE*receiverMotion:0)+(nearSource?3*LATERAL_FORCE*sourceMotion:0))/Math.hypot(speed,6);
   const slope=dragSlope+thrust/Math.max(speed,6)+turning+mapForce/Math.max(speed,60);
   let h=Math.min(remaining,.025,.4/Math.max(1,slope));
   if(twoPhase&&fieldActive&&!Number.isFinite(b.damageStart))h=Math.min(h,Math.max(0,(b.armingDelay??cfg.armingDelay??0)-b.armedAge));
@@ -1682,17 +1704,430 @@ function projectilePairEvent(a,b){
  return null;
 }
 
-function effect(x,y,kind,strength=1,angle=0){effects.push({x,y,age:0,life:kind==='kill'?.65:kind==='intercept'?.18:.24,kind,strength,angle});if(effects.length>90)effects.shift();}
+// Effects have a separate random stream and never affect gameplay randomness.
+const IMPACT_COLORS=['#f2d99c','#95d8c4','#9ebfe6','#c3a7df','#e7a28d','#ddd9cb',
+ '#c8df94','#e8b6d1','#9fdae2','#b9b6ef','#efc296','#c6e5dd'].map(hex=>{
+ const n=parseInt(hex.slice(1),16);return[n>>16,(n>>8)&255,n&255];
+});
+// Two hundred fixed silhouettes, uniformly spaced by area; hits only select a shape.
+const IMPACT_SHAPES=[
+ [-0.882884,-0.441441,0.833835,-0.49049,0.098098,0.882884],
+ [-1.434463,-1.338773,1.816969,-0.286944,-0.66945,1.625716],
+ [-2.505276,-0.501034,1.753621,-1.628363,1.377846,1.753621],
+ [-0.795406,-1.040033,1.101264,0.183544,-0.672945,0.856489],
+ [-2.257449,-0.95047,1.901073,1.069395,-0.35651,2.019865],
+ [-1.556262,-1.556262,2.593833,-0.648411,-0.259345,2.464114],
+ [-1.627331,-0.244092,1.383239,-0.569501,0.650961,0.895054],
+ [-1.020803,-2.154929,1.474431,1.474431,-1.814735,0.907367],
+ [-2.594543,-1.678834,2.899814,0.152585,0.152585,1.678834],
+ [-0.666511,-1.523455,1.61867,-0.856943,-1.047375,1.809102],
+ [-3.014748,-0.964771,3.014748,0.301475,-0.753751,1.055226],
+ [-0.333073,-1.332113,0.532809,1.065617,-0.599387,0.333073],
+ [-2.209732,-0.348898,1.511937,-1.163039,1.744489,0.814141],
+ [-2.013521,-2.013521,1.610776,-0.536959,0.268429,2.684695],
+ [-1.349156,0.074978,0.974415,-1.274179,0.749482,0.824459],
+ [-1.705542,-0.902916,1.103598,-1.40457,1.906122,0.601944,-0.802626,1.605149],
+ [-1.354652,-1.919076,1.919076,-0.564425,1.128851,1.693352,-2.031976,0.677326],
+ [-1.777508,-0.355502,1.155311,-0.799809,1.599757,0.444309,-0.977561,0.977561],
+ [-0.945247,-1.890494,1.470384,-1.155302,1.260329,1.365357,-1.470384,1.680439],
+ [-1.010201,-0.478571,0.90391,-0.212754,0.478571,0.531632,-0.850679,0.372108],
+ [-1.386216,-1.212966,0.606483,-1.47295,1.559575,0.779733,-0.433234,1.559575],
+ [-2.618183,-0.392732,2.225451,-0.785465,1.570931,0.65452,-1.963663,1.178198],
+ [-0.731319,-1.196717,1.130273,0.066443,0.332511,1.196717,-0.930796,0.332511],
+ [-1.729569,-1.056942,1.249151,-1.441257,1.537361,0.960837,-0.960837,1.153046],
+ [-0.975898,-2.439702,1.341849,-0.731902,0.731902,2.317661,-1.463804,1.097853],
+ [-1.297307,-0.534238,-0.152639,-1.297307,1.221115,-0.457918,0.992156,1.068476,-0.839517,1.221115],
+ [-2.174012,-0.217402,-0.760854,-1.304408,1.84786,-0.869605,1.521808,0.760854,-1.195656,1.195656],
+ [-1.403186,-1.511124,0.539687,-2.050811,1.834936,0.107937,0.43175,1.834936,-1.726999,0.755562],
+ [-1.558481,-0.519533,-0.259766,-1.125576,1.645109,-0.259766,0.86581,1.125576,-0.952438,1.212204],
+ [-1.132952,-1.750918,1.132952,-1.235932,1.853898,0.720947,-0.308941,1.853898,-1.750918,0.20596],
+ [0.792544,0.10868,-0.214029,1.016706,-0.841818,0.128945,-0.469698,-0.821692,0.461785,-0.736469],
+ [1.580623,1.262211,-1.313684,0.529225,-0.550239,-2.107454],
+ [1.380402,0.750638,-0.249328,2.45492,-1.159396,0.619532,-1.02308,-2.138712,0.758311,-1.737722],
+ [1.983504,0.251827,0.383925,0.819234,-1.311667,0.677447,-1.736012,-0.730235,-0.096013,-0.752548,1.078075,-1.078075],
+ [1.253513,0.426765,0.415614,1.58419,-0.840084,1.870157,-1.264662,-0.632277,-0.127352,-1.286963,0.761923,-0.853529],
+ [3.020325,0.527532,-0.515638,1.630171,-2.157703,-0.893546,0.475278,-1.387775],
+ [0.94563,0.673131,0.16778,1.683834,-0.791641,0.177692,-0.327659,-1.026503,0.688932,-1.018603],
+ [1.691517,0.910683,-0.455341,1.523634,-1.449857,-0.813953,0.915711,-1.508441],
+ [0.721632,0.255824,-0.536155,0.8826,-1.132977,-0.301663,0.629953,-0.755671],
+ [0.82088,0.844849,-1.766371,0.282434,0.22742,-1.766371],
+ [1.006967,0.266825,0.123412,2.450106,-1.259505,0.625411,-0.395951,-2.157456,0.605301,-1.497537],
+ [1.517184,0.731187,-0.99773,0.889221,-1.140601,-0.386182,0.716023,-1.048646],
+ [0.679874,0.921368,-0.355164,1.334868,-0.99343,-0.316417,0.51616,-2.050773],
+ [1.296752,0.339182,-0.407531,2.602171,-1.444972,0.450273,-0.547183,-1.350919,1.128638,-1.815473],
+ [1.298385,0.169173,0.641082,1.601248,-0.871461,0.61371,-1.467558,-0.491298,-0.119245,-0.863478,1.438539,-0.855368],
+ [0.820207,0.540164,-0.037471,2.039515,-1.444235,0.917256,-1.166372,-1.741925,1.214945,-1.761751],
+ [1.116569,0.257356,-0.767347,0.822248,-0.798651,-0.294323,0.491115,-0.489227],
+ [1.190698,0.846736,-1.673651,1.105154,0.061632,-2.051372],
+ [1.785164,2.068406,-2.470678,1.568556,0.994954,-1.630444],
+ [1.704627,0.425501,-0.340401,0.606048,-1.261058,-0.790383,0.487432,-0.97603],
+ [0.67127,0.950057,-1.052853,0.173193,0.162442,-2.2113],
+ [1.361175,0.476804,0.35204,2.156841,-1.521997,1.278032,-1.039631,-0.507299,-0.499055,-1.502627,1.305747,-1.316872],
+ [1.09188,1.325607,-1.448447,0.060628,0.624137,-1.467024],
+ [1.300848,1.262505,-1.08447,0.944781,-0.306751,-2.924843],
+ [1.073973,0.574169,-0.191361,2.001724,-1.672095,1.002202,-1.143064,-1.690686,1.584327,-1.504601],
+ [1.586153,1.323664,-1.256623,1.044019,0.743258,-1.697141],
+ [1.075674,0.474258,0.095424,1.462551,-1.210878,0.238451,-0.712709,-2.620428,0.728686,-1.255945],
+ [1.29778,0.393807,-0.665757,1.071155,-1.472095,-0.261399,0.23242,-0.744666],
+ [1.383692,0.439411,-0.650463,1.646913,-1.022533,-0.959456,1.000713,-1.498937],
+ [1.364085,0.947939,-0.545634,1.38336,-1.421909,-0.300396,1.168469,-2.549061],
+ [0.496718,0.6366,-0.343056,1.389209,-0.50521,-0.184266,0.215031,-1.192925],
+ [1.430835,1.05127,0.023025,1.260657,-1.762071,0.06896,-0.93626,-1.405531,0.724593,-0.894884],
+ [2.646008,0.461696,1.001818,1.772753,-1.613772,0.746966,-2.687422,-0.485664,-0.450775,-1.204337,1.302335,-0.653366],
+ [1.752237,0.561391,-1.185221,0.953886,-1.350179,-0.352697,0.451278,-0.893135],
+ [1.581754,1.680345,-2.845224,0.517992,0.131419,-1.331651],
+ [0.997284,0.220909,0.422505,0.989262,-0.774444,0.713979,-1.099196,-0.306628,-0.337826,-1.047794,0.687684,-0.414482],
+ [2.113546,0.821987,0.159329,1.372886,-0.716979,0.632225,-1.930432,-0.296638,-0.720303,-1.298311,1.372886,-0.805056],
+ [1.643041,2.135175,-2.606123,1.582138,-0.465623,-1.277932],
+ [0.653555,0.844211,-0.79942,0.358831,0.400459,-1.225522],
+ [1.563796,0.487209,0.125196,1.490589,-1.242207,0.878183,-1.868088,-0.423655,-0.687523,-1.773763,1.234464,-0.928262],
+ [2.213695,1.46995,-0.391549,1.997177,-2.388726,-0.378431,0.365314,-1.522497],
+ [1.189355,0.272248,0.264082,1.658511,-1.028535,0.296878,-0.538042,-0.907097,1.34517,-0.964524],
+ [2.736611,0.690898,-1.288966,0.956953,0.744531,-2.031055],
+ [0.477919,0.262377,-0.22585,0.79852,-1.109901,-0.30505,0.428916,-0.5309],
+ [1.156793,1.13474,-1.465231,0.05722,0.577243,-1.430064],
+ [1.717207,0.684706,0.347688,1.489906,-1.118076,1.275861,-0.962985,-0.510861,-0.323653,-1.872405,1.003078,-0.989713],
+ [0.463679,0.335814,0.136862,0.969243,-0.833708,0.831201,-0.686669,-0.378878,-0.012684,-0.949037,0.794478,-0.949037],
+ [1.041094,0.578829,0.160816,1.577666,-0.916433,1.38269,-1.328456,-0.200965,-0.186879,-1.579663,1.308382,-1.045086],
+ [1.345151,0.307962,0.369988,2.093634,-0.90463,0.853277,-2.611108,-0.258775,-0.968744,-1.935399,1.522643,-0.831855],
+ [0.99776,0.581049,0.158048,1.406505,-1.385685,0.643374,-0.389602,-0.686414,0.729594,-1.368216],
+ [1.775069,0.358315,-0.033113,1.188914,-2.189331,0.793335,-1.02325,-1.068817,1.495435,-1.714971],
+ [1.573861,1.655926,-0.766415,1.302886,-1.300104,-1.259071,1.174223,-2.348446],
+ [0.702081,0.765541,-0.579324,1.156639,-1.003014,-0.243647,0.872074,-1.420673],
+ [2.048089,0.297804,0.261354,1.924437,-1.174947,0.751534,-1.152635,-0.37879,-0.204639,-2.16348,1.63481,-1.243842],
+ [1.062209,0.6774,-0.842341,0.769773,0.216464,-1.049366],
+ [1.537009,0.69275,0.418308,1.586182,-1.039181,0.679571,-1.618411,-0.821443,-0.388073,-0.974835,1.167874,-0.791208],
+ [2.013444,0.449272,0.81541,2.113299,-1.204362,0.667658,-1.362428,-0.569912,-0.6282,-1.231397,2.190261,-1.37071],
+ [0.988259,0.668704,-0.052043,0.802531,-0.856005,0.092077,-0.36116,-0.800958,0.453238,-0.826265],
+ [1.902686,0.646002,-0.105585,1.405034,-1.211397,0.163361,-0.736451,-1.201431,0.701255,-0.917347],
+ [1.528017,0.399663,-0.002893,1.97467,-1.04904,0.473091,-0.728791,-1.79549,1.028489,-2.450755],
+ [1.216219,0.618132,0.285175,1.543116,-1.128346,0.20348,-0.596572,-1.54766,1.375064,-1.023576],
+ [2.419183,1.226965,-1.450029,1.226965,1.432711,-1.970549],
+ [0.76876,0.433064,0.003633,0.703365,-0.588378,0.243235,-0.200546,-0.590739,0.250319,-0.571848],
+ [0.452878,1.112903,-1.09391,1.761206,0.483742,-2.116296],
+ [1.167059,0.32758,0.562908,2.46278,-1.28842,1.497105,-1.152553,-0.737649,-0.242627,-1.581963,1.213138,-1.307762],
+ [0.620694,0.332219,0.123868,1.21057,-0.606714,0.510956,-0.929011,-0.426474,-0.277351,-1.483561,0.370252,-0.62355],
+ [1.202185,0.923943,-1.150855,0.869897,1.148138,-1.977428],
+ [1.770585,0.619465,-0.895599,2.591361,-1.12279,-0.921387,1.416994,-1.703481],
+ [0.888653,0.721608,-0.683931,1.062763,-0.513353,-0.534988,0.407532,-1.163286],
+ [1.784972,1.710956,-2.587935,0.10756,0.6524,-1.459981],
+ [-0.913629,0.268683,0.229133,-0.943746,0.684497,0.675063],
+ [1.694188,-0.749765,0.219167,1.674253,-1.457047,0.947582,-0.588004,-1.638416],
+ [-0.303824,1.171626,-1.086435,0.146327,-0.170954,-1.227608,0.915194,-0.573571,0.879685,0.554672],
+ [-0.514918,0.270247,-0.527438,-0.445523,-0.016454,-0.564818,0.518137,-0.375949,0.489342,0.429605,0.008943,0.630815],
+ [1.119561,-2.068867,1.404306,1.998156,-2.523866,0.07071],
+ [1.482189,-0.297254,0.213838,1.911408,-1.42735,-0.074368,-0.418297,-1.712025],
+ [-1.426158,0.208361,-0.611989,-0.71043,0.978386,-0.591093,1.174682,0.438207,0.015156,0.761049],
+ [-1.109922,-1.082978,-0.068181,-1.862484,1.337808,-0.573009,1.033103,1.32516,-0.288355,1.764583,-1.328348,0.364352],
+ [-0.682285,1.615536,-0.714932,-1.680398,1.397216,0.064863],
+ [1.736384,0.161078,-0.227531,1.303217,-1.850213,-0.063509,0.417418,-1.343678],
+ [-0.217166,-1.756816,1.776002,-0.890141,1.407945,1.362845,-1.093395,1.598662,-1.90702,-0.629252],
+ [0.800038,-0.954722,1.926496,0.017713,0.443146,1.064848,-1.082781,0.987726,-1.718345,-0.13499,-0.466139,-1.14747],
+ [2.059079,-0.3801,-1.178527,1.660686,-0.880552,-1.280585],
+ [-1.444109,-0.958149,0.836186,-2.277595,1.406845,1.288753,-0.929076,2.024399],
+ [1.273431,-0.644297,1.135849,1.716595,-1.078008,1.660533,-1.376664,-0.776169,0.24718,-2.301741],
+ [1.315181,0.448243,-0.088125,1.160994,-1.053694,0.675189,-1.396082,-0.200154,-0.182949,-1.13105,1.004575,-0.840145],
+ [0.454547,0.740741,-1.145338,-0.222925,0.690791,-0.517816],
+ [-0.75837,1.902807,-1.844438,-1.15956,0.778082,-1.711558,1.928636,0.842653],
+ [-1.462947,0.772889,-1.618296,-0.741215,0.113256,-1.433251,1.907321,-0.108776,0.714958,1.41356],
+ [-0.256518,0.781139,-0.761681,0.282511,-0.375345,-0.656519,0.209284,-1.086673,0.624881,-0.175567,0.428669,0.909175],
+ [-1.829952,1.184171,0.251057,-2.386755,1.578895,1.202584],
+ [0.126763,-2.299748,1.307637,0.024866,-0.287565,2.170885,-1.247405,0.25662],
+ [-0.957723,-0.325805,0.149924,-1.002328,0.932512,-0.125458,0.630128,0.851509,-0.749322,0.612973],
+ [0.291654,1.28728,-1.85008,0.77857,-1.691474,-0.844351,-0.244894,-1.270339,1.55912,-0.977496,1.865734,0.780452],
+ [0.035847,-2.090401,1.541042,1.251732,-1.57689,0.838795],
+ [-0.043402,1.832538,-1.155806,0.158205,-0.138477,-1.93436,1.250881,0.056893],
+ [-2.01756,-0.61182,-0.170178,-1.842482,1.727153,-0.696872,1.4151,1.574893,-0.948739,1.475214],
+ [-0.048668,-1.95692,1.104679,-0.902224,0.927545,1.292337,-0.253535,1.833057,-1.230076,0.450618,-0.956811,-0.869888],
+ [0.299269,-1.649596,1.00595,1.42912,-1.305219,0.220476],
+ [-0.901347,0.155797,-0.446815,-0.59508,0.868644,-0.251884,0.41944,0.653321],
+ [0.243788,1.515286,-1.015974,0.900267,-0.831379,-1.256828,0.35605,-1.46936,1.256317,0.294817],
+ [1.548499,0.200274,0.732241,0.92969,-0.675718,0.894106,-1.576118,0.226995,-0.815358,-0.981332,0.951144,-0.840151],
+ [0.313997,0.828101,-1.425825,-0.271498,1.111828,-0.556602],
+ [-1.802962,-0.057437,-0.141003,-1.677927,1.61572,-0.548665,0.381742,1.959932],
+ [-0.561055,-1.524267,0.66342,-1.570728,1.058149,0.447987,0.152225,1.767022,-1.123873,0.851655],
+ [0.457362,0.998705,-0.369891,0.915936,-0.869244,-0.189948,-0.322897,-1.091178,0.290304,-0.908811,0.877582,0.072311],
+ [-1.930293,1.574452,-0.860407,-2.003899,2.790699,0.429448],
+ [1.743407,0.51121,-0.659217,1.89713,-1.658171,-0.486843,0.489148,-1.946667],
+ [0.450124,-0.911506,0.776857,0.619264,-0.117185,0.944553,-0.898662,0.04012,-0.358195,-0.824627],
+ [0.527952,-1.649136,1.787494,0.135296,1.016107,1.386543,-0.83953,1.243049,-1.937703,0.162258,-0.851282,-1.225371],
+ [-2.816644,0.039825,1.506455,-1.761375,1.310188,1.721551],
+ [0.950101,-0.84867,1.268301,0.895295,-1.026447,0.805044,-1.219767,-0.882344],
+ [-2.43747,0.167214,-0.409235,-1.387899,1.60565,-1.178644,1.993821,0.590666,-0.429606,1.523127],
+ [-0.791987,-0.942784,0.717402,-1.236998,1.960806,-0.066225,0.703723,1.185104,-1.094451,0.95071,-2.057754,-0.081425],
+ [1.202492,1.806832,-2.088335,-0.354711,0.885844,-1.452121],
+ [0.811502,-0.861935,1.051575,0.487963,-0.897916,0.915907,-0.912368,-0.61493],
+ [0.795262,-1.178501,1.944368,0.595302,0.038039,1.515259,-1.621748,0.627747,-1.089608,-1.556349],
+ [-0.297738,-0.944439,0.80626,-0.992794,0.925212,0.446392,0.348533,1.053203,-0.647276,0.926216,-1.104858,-0.331888],
+ [1.15453,-0.805337,0.46827,0.900744,-1.622801,-0.095554],
+ [-0.201744,-1.805237,1.824122,-0.501771,0.422576,1.625627,-1.907175,0.741691],
+ [-0.225619,-1.133884,0.691106,-0.728066,0.720347,0.8149,-0.405372,1.103009,-0.856016,-0.336202],
+ [-0.387956,-1.071161,0.289445,-0.889708,0.672731,0.001981,0.448676,0.895653,-0.102474,1.085597,-0.67825,0.112098],
+ [-1.529535,1.681134,-1.528493,-1.927374,3.058028,0.24624],
+ [-1.807903,-0.221645,0.646993,-1.41253,1.700487,0.415243,-0.563081,1.321239],
+ [-0.543892,0.741671,-0.976059,-0.456379,0.289813,-0.880816,0.921072,-0.170505,0.547392,0.810076],
+ [-1.207225,-1.370183,0.837487,-1.380703,2.037197,-0.177907,1.389247,1.228505,-1.323906,1.384183,-1.871156,-0.201955],
+ [-1.652469,1.211774,-0.754252,-1.780276,2.406833,0.568502],
+ [0.855957,1.079657,-1.302409,0.675157,-0.846079,-1.009015,1.234068,-0.788428],
+ [0.623796,0.50761,-0.350575,0.81314,-0.724914,-0.162007,-0.282231,-0.769026,0.618825,-0.543492],
+ [1.191689,1.184553,-0.466582,2.166567,-1.33501,0.495978,-1.377319,-1.23816,0.14706,-2.047967,1.633974,-0.361576],
+ [-2.160077,0.408178,0.874243,-1.875816,1.285943,1.467637],
+ [-0.667919,-0.631919,0.380952,-1.497248,0.833018,0.37682,-0.56951,1.553461],
+ [1.220425,-1.514742,1.349427,0.402594,0.198113,2.131514,-1.506567,0.734271,-0.880193,-1.686142],
+ [-0.609212,-0.963912,0.739445,-0.984559,1.360303,0.073322,0.556404,1.124984,-0.738121,0.798473,-1.499536,0.019058],
+ [1.021003,-0.581343,-0.072072,0.956483,-0.948931,-0.375139],
+ [-1.692325,1.000093,-1.083821,-1.539678,1.344215,-1.402598,1.306528,1.702389],
+ [-0.647105,0.874509,-1.381762,-0.148381,-0.312538,-1.009814,1.473718,-0.224277,0.837983,0.721864],
+ [0.624997,-1.048055,0.955077,0.271152,0.334249,1.26153,-0.665718,1.269868,-0.890451,-0.309649,-0.111602,-1.542966],
+ [3.043483,1.160256,-2.345894,0.997856,-0.697589,-2.158112],
+ [0.470133,1.296881,-1.690136,0.465633,-0.446093,-1.230674,1.642056,-0.598174],
+ [0.16918,-1.822957,1.08996,-0.31028,0.835721,1.274467,-0.537141,1.682793,-1.159808,-0.766809],
+ [-0.767006,1.770804,-1.667624,-0.280358,-0.462607,-2.017741,0.803831,-1.901915,1.559233,0.144799,0.577669,2.14656],
+ [-0.770847,1.703532,-1.593144,-1.550949,2.363992,-0.152693],
+ [0.48717,1.662155,-1.286074,0.427762,-0.16923,-1.743856,1.118364,-0.431816],
+ [-0.168183,1.144211,-0.709839,-0.024989,-0.097858,-1.096031,0.557368,-0.570684,0.633378,0.362701],
+ [1.602697,0.236355,0.365021,1.527768,-0.890279,1.361152,-1.357151,-0.159913,-0.561695,-1.806399,1.005645,-0.881413],
+ [0.939822,1.216903,-2.181327,-0.175787,1.241505,-1.040978],
+ [-0.215417,-1.487524,1.084718,0.201036,-0.105361,1.40887,-0.922714,-0.120769],
+ [0.359439,-1.795326,2.207851,0.048253,0.43825,1.614709,-2.12678,0.795272,-1.294637,-0.987035],
+ [1.652069,0.538381,0.296653,1.341246,-1.478298,1.027733,-1.463299,-0.523487,-0.225489,-1.422339,1.086795,-1.224674],
+ [0.122688,-0.952736,0.939454,0.758742,-1.062301,0.194152],
+ [-1.151823,1.625277,-1.430379,-1.609437,1.14545,-1.467338,1.53816,1.389687],
+ [1.710176,0.437556,-0.127054,1.225441,-1.803876,0.447321,-0.831005,-1.075676,1.079955,-1.051977],
+ [-0.165781,1.013816,-1.444977,0.406523,-1.278934,-0.508874,0.169974,-0.970963,1.565937,-0.398266,1.104766,0.55199],
+ [0.477251,-2.417247,1.583476,1.407039,-2.060727,1.010208],
+ [-0.340457,-2.300655,1.675199,0.226477,0.228652,2.128153,-1.586624,0.113882],
+ [1.154862,0.533992,-0.415311,0.928054,-1.270797,0.031658,-0.429912,-0.874422,0.771209,-0.800699],
+ [-0.553763,-0.238679,-0.12975,-0.840796,0.585598,-0.470474,0.50902,0.378926,0.029599,0.805175,-0.494394,0.616228],
+ [-0.331644,2.346063,-1.355441,-1.714954,1.687087,-0.63122],
+ [0.243001,1.468456,-0.717376,0.570339,-0.367813,-1.301254,0.763738,-0.726648],
+ [0.34577,1.086265,-0.558563,0.730255,-0.542291,-0.70725,0.174357,-1.135078,0.644408,-0.167064],
+ [-1.642065,0.570656,-1.138047,-0.857924,0.273286,-1.584612,1.559814,-0.689033,1.293671,0.887109,-0.661071,1.496237],
+ [-0.929569,1.427254,-0.853837,-1.712705,1.783406,0.285451],
+ [-0.173456,1.331902,-1.353203,-0.27374,0.66851,-1.322911,1.043362,0.465591],
+ [-1.721307,0.612813,-1.771308,-1.227632,1.089513,-1.475704,1.952559,0.212424,0.487812,1.899627],
+ [-1.765057,0.935122,-1.419618,-0.625496,-0.042055,-1.453896,1.420846,-1.031817,1.681255,0.663354,-0.059654,1.328858],
+ [0.592466,-1.688576,0.881816,1.190437,-1.47428,0.49814],
+ [0.623076,2.07062,-1.164661,1.640675,-0.845262,-2.129624,1.392917,-1.276003],
+ [1.643123,-0.779572,0.795312,1.554778,-1.067152,1.356864,-1.608597,-0.228276,-0.169176,-1.755433],
+ [0.796151,0.865515,-0.113417,1.451196,-0.882717,0.488347,-0.64176,-1.247858,0.243893,-1.28282,0.854327,-0.522749]
+].map(points=>new Float32Array(points));
+let impactMistSprite=null;
+function getImpactMistSprite(){
+ if(impactMistSprite)return impactMistSprite;
+ const image=document.createElement('canvas');image.width=image.height=64;
+ const paint=image.getContext('2d'),gradient=paint.createRadialGradient(32,32,0,32,32,32);
+ gradient.addColorStop(0,'rgba(210,213,205,.9)');
+ gradient.addColorStop(.3,'rgba(210,213,205,.68)');
+ gradient.addColorStop(.65,'rgba(210,213,205,.22)');
+ gradient.addColorStop(1,'rgba(210,213,205,0)');
+ paint.fillStyle=gradient;paint.fillRect(0,0,64,64);impactMistSprite=image;return image;
+}
+let visualSeed=(Date.now()>>>0)||1;
+function visualRandom(){visualSeed=(Math.imul(visualSeed,1664525)+1013904223)>>>0;return visualSeed/4294967296;}
+function randomImpactColor(){
+ const base=IMPACT_COLORS[Math.floor(visualRandom()*IMPACT_COLORS.length)],brightness=1.02+visualRandom()*.18,saturation=1.8+visualRandom()*.3;
+ const luminance=.2126*base[0]+.7152*base[1]+.0722*base[2];
+ return 'rgb('+base.map(v=>clamp(Math.round((luminance+(v-luminance)*saturation)*brightness),0,255)).join(',')+')';
+}
+function impactScatterBasis(contact,ux,uy){
+ const rx=(contact.vx??ux)-ux,ry=(contact.vy??uy)-uy;
+ const normal=rx*contact.nx+ry*contact.ny,closing=Math.max(0,-normal);
+ const tx=rx-normal*contact.nx,ty=ry-normal*contact.ny;
+ const tangentScale=Math.min(.12,60/Math.max(1,Math.hypot(tx,ty))),kick=Math.min(50,closing*.1);
+ return{x:contact.nx*kick+tx*tangentScale,y:contact.ny*kick+ty*tangentScale};
+}
+function capVisualEffects(){
+ while(effects.length>90){const index=effects.findIndex(e=>e.kind!=='breakup');effects.splice(index<0?0:index,1);}
+}
+// All sizes share the same signed triangular spin distribution.
+const IMPACT_SPIN_MAX=30;
+const IMPACT_PREFABS=IMPACT_SHAPES.map(vertices=>{
+ let area=0;
+ for(let j=0;j<vertices.length;j+=2){const k=(j+2)%vertices.length;area+=vertices[j]*vertices[k+1]-vertices[k]*vertices[j+1];}
+ return{vertices,area:Math.abs(area)*.5};
+});
+function impactEffect(contact,damage,inheritedVx=0,inheritedVy=0){
+ if(!(damage>0)||!Number.isFinite(damage))return;
+ const amount=clamp(damage,0,1.5),particles=[],mist=[],basis=impactScatterBasis(contact,inheritedVx,inheritedVy);
+ const expectedCount=amount*20;
+ const count=Math.floor(expectedCount)+(visualRandom()<expectedCount%1?1:0);
+ for(let i=0;i<count;i++){
+  const angle=Math.atan2(contact.ny,contact.nx)+(visualRandom()<.15?Math.PI:0)+(visualRandom()-.5)*3.3;
+  const speed=15+visualRandom()*30,rotation=visualRandom()*TAU;
+  const prefab=IMPACT_PREFABS[Math.floor(visualRandom()*IMPACT_PREFABS.length)],color=randomImpactColor();
+  const sx=basis.x+Math.cos(angle)*speed,sy=basis.y+Math.sin(angle)*speed,limit=Math.min(1,85/Math.max(1,Math.hypot(sx,sy)));
+  particles.push({area:prefab.area,rotation,vx:inheritedVx+sx*limit,vy:inheritedVy+sy*limit,
+   x:(visualRandom()-.5)*2,y:(visualRandom()-.5)*2,vertices:prefab.vertices,
+   color,life:.45+visualRandom()*.35,spin:(visualRandom()-visualRandom())*IMPACT_SPIN_MAX});
+ }
+ for(let i=0;i<3+Math.ceil(amount*2);i++){
+  const angle=visualRandom()*TAU,speed=5+visualRandom()*16;
+  mist.push({vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+   radius:(2.5+visualRandom()*3)*(.8+Math.sqrt(amount)*.9),expansion:(10+visualRandom()*12)*(.8+Math.sqrt(amount)*.7),life:.26+visualRandom()*.14});
+ }
+ effects.push({kind:'impact',x:contact.x,y:contact.y,age:0,life:.82,damage:amount,particles,mist});
+ capVisualEffects();
+}
+function effect(x,y,kind,strength=1,angle=0){effects.push({x,y,age:0,life:kind==='intercept'?.18:.24,kind,strength,angle});capVisualEffects();}
+// Chunky quadrilateral, pentagonal and hexagonal patches, clipped to the body.
+const HIT_MARK_SHAPES=[
+ [.3,-1,.3,1,-.75,.65,-.8,-.65],
+ [.28,-.92,.28,.95,-.8,.58,-.6,-.78],
+ [.35,-1,.35,.88,-.65,.72,-.95,-.48],
+ [.3,-.9,.3,1,-.9,.48,-.7,-.75],
+ [.25,-1,.25,.92,-.75,.72,-.85,-.6],
+ [.3,-.88,.3,1,-.8,.6,-.9,-.55],
+ [.35,-.95,.35,.95,-.6,.78,-.95,-.6],
+ [.3,-1,.3,.9,-.9,.55,-.72,-.78],
+ [.28,-.94,.28,1,-.72,.75,-.9,-.5],
+ [.32,-1,.32,.92,-.85,.65,-.6,-.82],
+ [.3,-.92,.3,1,-.55,.8,-.95,.28,-.8,-.65],
+ [.35,-1,.35,.94,-.7,.7,-.95,-.2,-.6,-.8],
+ [.25,-.9,.25,1,-.65,.75,-.95,.05,-.72,-.7],
+ [.3,-1,.3,.9,-.8,.6,-.9,-.42,-.4,-.85],
+ [.33,-.96,.33,.98,-.55,.8,-.95,.18,-.8,-.72],
+ [.28,-1,.28,.9,-.4,.8,-.85,.4,-.9,-.3,-.45,-.85],
+ [.32,-.9,.32,1,-.55,.8,-.9,.3,-.8,-.55,-.3,-.86],
+ [.3,-1,.3,.95,-.6,.78,-.92,.2,-.75,-.65,-.25,-.9],
+ [.35,-.94,.35,.92,-.4,.82,-.88,.4,-.9,-.45,-.35,-.85],
+ [.28,-.98,.28,1,-.5,.8,-.9,.3,-.85,-.6,-.3,-.86]
+].map(points=>{
+ const patch=new Path2D();patch.moveTo(points[0],points[1]);
+ for(let i=2;i<points.length;i+=2)patch.lineTo(points[i],points[i+1]);patch.closePath();
+ // A broad four-sided facet instead of a triangular inward spike.
+ const facet=new Path2D();facet.moveTo(points[0],points[1]*.62);facet.lineTo(points[2],points[3]*.62);facet.lineTo(-.6,.3);facet.lineTo(-.62,-.3);facet.closePath();
+ return{patch,facet};
+});
+// Six fixed eight-piece partitions, compiled once into centered paths.
+const BREAKUP_LAYOUTS=[
+ [
+  [-0.02906,-0.32487,-0.01608,0.21207,-0.37828,0.22706,-0.63286,-0.38901],
+  [-0.01608,0.21207,-0.02906,-0.32487,0.02494,-0.39257,0.59348,-0.30007,0.43296,0.24788,0.09438,0.30051],
+  [1,0,0.98079,0.19509,0.92388,0.38268,0.86536,0.49217,0.43296,0.24788,0.59348,-0.30007,0.85847,-0.50505,0.92388,-0.38268,0.98079,-0.19509],
+  [0.86536,0.49217,0.83147,0.55557,0.70711,0.70711,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0.00316,0.99969,0.09438,0.30051,0.43296,0.24788],
+  [0.00316,0.99969,0,1,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.84327,0.53349,-0.37828,0.22706,-0.01608,0.21207,0.09438,0.30051],
+  [-0.84327,0.53349,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.8462,-0.52801,-0.63286,-0.38901,-0.37828,0.22706],
+  [-0.8462,-0.52801,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.05367,-0.99471,0.02494,-0.39257,-0.02906,-0.32487,-0.63286,-0.38901],
+  [0.05367,-0.99471,0.19509,-0.98079,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.85847,-0.50505,0.59348,-0.30007,0.02494,-0.39257]
+ ],
+ [
+  [-0.09235,-0.29148,0.09157,0.3407,-0.02576,0.44362,-0.53826,0.31419,-0.36683,-0.26365],
+  [0.09157,0.3407,-0.09235,-0.29148,0.03274,-0.40157,0.46595,-0.26827,0.41985,0.32012],
+  [1,0,0.98079,0.19509,0.92388,0.38268,0.83734,0.54459,0.41985,0.32012,0.46595,-0.26827,0.89151,-0.44325,0.92388,-0.38268,0.98079,-0.19509],
+  [0.83734,0.54459,0.83147,0.55557,0.70711,0.70711,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.06616,0.99348,-0.02576,0.44362,0.09157,0.3407,0.41985,0.32012],
+  [-0.06616,0.99348,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.8762,0.47189,-0.53826,0.31419,-0.02576,0.44362],
+  [-0.8762,0.47189,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.83713,-0.54499,-0.36683,-0.26365,-0.53826,0.31419],
+  [-0.83713,-0.54499,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.08175,-0.99195,0.03274,-0.40157,-0.09235,-0.29148,-0.36683,-0.26365],
+  [0.08175,-0.99195,0.19509,-0.98079,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.89151,-0.44325,0.46595,-0.26827,0.03274,-0.40157]
+ ],
+ [
+  [0.08467,-0.31308,-0.14154,0.2201,-0.48353,0.1787,-0.53656,-0.50294],
+  [-0.14154,0.2201,0.08467,-0.31308,0.10789,-0.32607,0.51377,-0.17259,0.37787,0.35681,-0.07344,0.32606],
+  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.72952,0.6798,0.37787,0.35681,0.51377,-0.17259,0.96899,-0.23398,0.98079,-0.19509],
+  [0.72952,0.6798,0.70711,0.70711,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.13374,0.98683,-0.07344,0.32606,0.37787,0.35681],
+  [-0.13374,0.98683,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.93192,0.35618,-0.48353,0.1787,-0.14154,0.2201,-0.07344,0.32606],
+  [-0.93192,0.35618,-0.98079,0.19509,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.72948,-0.67985,-0.53656,-0.50294,-0.48353,0.1787],
+  [-0.72948,-0.67985,-0.70711,-0.70711,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.23695,-0.96809,0.10789,-0.32607,0.08467,-0.31308,-0.53656,-0.50294],
+  [0.51377,-0.17259,0.10789,-0.32607,0.23695,-0.96809,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.96899,-0.23398]
+ ],
+ [
+  [-0.0514,-0.20857,0.04535,0.29391,-0.15534,0.4655,-0.69815,0.15492,-0.20104,-0.25387],
+  [0.04535,0.29391,-0.0514,-0.20857,0.20281,-0.37443,0.65213,-0.13832,0.2966,0.36151],
+  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.70711,0.70711,0.67205,0.73588,0.2966,0.36151,0.65213,-0.13832,0.98477,-0.15464],
+  [0.67205,0.73588,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.19509,0.98079,-0.29899,0.94927,-0.15534,0.4655,0.04535,0.29391,0.2966,0.36151],
+  [-0.29899,0.94927,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.98079,0.19509,-0.98177,0.18507,-0.69815,0.15492,-0.15534,0.4655],
+  [-0.98177,0.18507,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.70711,-0.70711,-0.63951,-0.76259,-0.20104,-0.25387,-0.69815,0.15492],
+  [-0.0514,-0.20857,-0.20104,-0.25387,-0.63951,-0.76259,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.33631,-0.93795,0.20281,-0.37443],
+  [0.65213,-0.13832,0.20281,-0.37443,0.33631,-0.93795,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.98079,-0.19509,0.98477,-0.15464]
+ ],
+ [
+  [-0.03832,-0.31198,-0.00649,0.29037,-0.26815,0.44002,-0.63065,0.02406,-0.14836,-0.35219],
+  [-0.00649,0.29037,-0.03832,-0.31198,0.13353,-0.36747,0.55843,-0.01769,0.28041,0.39141],
+  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.70711,0.70711,0.56508,0.82367,0.28041,0.39141,0.55843,-0.01769,0.99325,-0.0685],
+  [0.56508,0.82367,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.19509,0.98079,-0.38268,0.92388,-0.46412,0.88035,-0.26815,0.44002,-0.00649,0.29037,0.28041,0.39141],
+  [-0.46412,0.88035,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.99963,-0.00381,-0.63065,0.02406,-0.26815,0.44002],
+  [-0.99963,-0.00381,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.5322,-0.84396,-0.14836,-0.35219,-0.63065,0.02406],
+  [-0.03832,-0.31198,-0.14836,-0.35219,-0.5322,-0.84396,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.38268,-0.92388,0.52598,-0.84728,0.13353,-0.36747],
+  [0.55843,-0.01769,0.13353,-0.36747,0.52598,-0.84728,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.98079,-0.19509,0.99325,-0.0685]
+ ],
+ [
+  [-0.06457,-0.20167,-0.01447,0.35154,-0.39075,0.51048,-0.52379,-0.056,-0.1027,-0.22262],
+  [-0.01447,0.35154,-0.06457,-0.20167,0.25175,-0.27486,0.62811,-0.00804,0.25675,0.50714],
+  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.70711,0.70711,0.55557,0.83147,0.43603,0.89536,0.25675,0.50714,0.62811,-0.00804,0.99768,-0.02357],
+  [0.43603,0.89536,0.38268,0.92388,0.19509,0.98079,0,1,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.63694,0.76469,-0.39075,0.51048,-0.01447,0.35154,0.25675,0.50714],
+  [-0.63694,0.76469,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.98807,-0.12109,-0.52379,-0.056,-0.39075,0.51048],
+  [-0.98807,-0.12109,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.40659,-0.9111,-0.1027,-0.22262,-0.52379,-0.056],
+  [-0.06457,-0.20167,-0.1027,-0.22262,-0.40659,-0.9111,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.38268,-0.92388,0.50561,-0.85817,0.25175,-0.27486],
+  [0.62811,-0.00804,0.25175,-0.27486,0.50561,-0.85817,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.98079,-0.19509,0.99768,-0.02357]
+ ]
+].map(layout=>layout.map(points=>{
+ let twiceArea=0,cx=0,cy=0;
+ for(let i=0;i<points.length;i+=2){const j=(i+2)%points.length,cross=points[i]*points[j+1]-points[j]*points[i+1];twiceArea+=cross;cx+=(points[i]+points[j])*cross;cy+=(points[i+1]+points[j+1])*cross;}
+ cx/=3*twiceArea;cy/=3*twiceArea;
+ const path=new Path2D();path.moveTo(points[0]-cx,points[1]-cy);
+ for(let i=2;i<points.length;i+=2)path.lineTo(points[i]-cx,points[i+1]-cy);path.closePath();
+ return{path,cx,cy,area:Math.abs(twiceArea)*.5};
+}));
+const breakupTextures=[null,null];let breakupTextureId=0;
+function breakupEffect(a,contact,ux,uy){
+ if(a.shattered)return;
+ a.shattered=true;
+ // At most two simultaneous deaths; the two small textures are reused.
+ const old=effects.findIndex(e=>e.kind==='breakup');
+ if(effects.filter(e=>e.kind==='breakup').length>=2)effects.splice(old,1);
+ const slot=breakupTextureId++%2,image=breakupTextures[slot]??(breakupTextures[slot]=document.createElement('canvas'));
+ image.width=image.height=96;const paint=image.getContext('2d'),drawing=actorDrawing(a,a.team),shape=drawing.shape;
+ paint.setTransform(42/shape.rx,0,0,42/shape.ry,48,48);
+ paint.drawImage(drawing.image,-shape.rx,-shape.ry,shape.rx*2,shape.ry*2);paint.save();paint.clip(drawing.body);
+ drawActorHitMarks(a,shape,paint);paint.restore();
+ const layout=BREAKUP_LAYOUTS[Math.floor(visualRandom()*BREAKUP_LAYOUTS.length)],co=Math.cos(shape.angle),si=Math.sin(shape.angle);
+ const mxx=co*shape.rx,myx=si*shape.rx,mxy=-si*shape.ry,myy=co*shape.ry;
+ const relativeX=(contact.vx??ux)-ux,relativeY=(contact.vy??uy)-uy,relativeSpeed=Math.hypot(relativeX,relativeY);
+ const pushX=relativeSpeed>1?relativeX/relativeSpeed*30:-contact.nx*30,pushY=relativeSpeed>1?relativeY/relativeSpeed*30:-contact.ny*30;
+ const pieces=layout.map(prefab=>{
+  const x=mxx*prefab.cx+mxy*prefab.cy,y=myx*prefab.cx+myy*prefab.cy,length=Math.max(1,Math.hypot(x,y)),kick=20+visualRandom()*28;
+  return{prefab,x,y,vx:ux+pushX+x/length*kick,vy:uy+pushY+y/length*kick,spin:(visualRandom()-.5)*5};
+ });
+ effects.push({kind:'breakup',x:a.x,y:a.y,age:0,life:.76,image,mxx,myx,mxy,myy,pieces});capVisualEffects();
+}
+// Contact marks live in the actor's aim frame and follow its deformed boundary.
+function addActorHitMark(a,contact,damage){
+ if(!(damage>0)||!Number.isFinite(damage))return;
+ const shape=bodyShape(a),co=Math.cos(shape.angle),si=Math.sin(shape.angle);
+ const nx=co*contact.nx+si*contact.ny,ny=-si*contact.nx+co*contact.ny;
+ const lx=shape.rx*shape.rx*nx,ly=shape.ry*shape.ry*ny;
+ const angle=Math.atan2(si*lx+co*ly,co*lx-si*ly)-(a.aim||0),amount=clamp(damage,0,1.5);
+ const list=a.hitMarks??=[];
+ list.push({angle,age:0,life:1.6,width:3+4*Math.sqrt(amount),depth:2+5*Math.sqrt(amount),shape:Math.floor(visualRandom()*HIT_MARK_SHAPES.length),color:randomImpactColor()});if(list.length>10)list.shift();
+}
+function updateActorHitMarks(a,dt){
+ if(!a?.hitMarks)return;
+ for(const mark of a.hitMarks)mark.age+=dt;
+ a.hitMarks=a.hitMarks.filter(mark=>mark.age<mark.life-1e-9);
+}
+function actorHitMarkPose(a,mark,shape=bodyShape(a)){
+ const angle=(a.aim||0)+mark.angle-shape.angle,co=Math.cos(angle),si=Math.sin(angle);
+ const r=1/Math.hypot(co/shape.rx,si/shape.ry);
+ return{x:co*r,y:si*r,co,si};
+}
+function drawActorHitMarks(a,shape,paint=ctx){
+ const opacity=paint.globalAlpha;
+ for(const mark of a.hitMarks||[]){
+  const fade=Math.max(0,1-mark.age/mark.life),pose=actorHitMarkPose(a,mark,shape),scale=a.r/15;
+  const width=mark.width*scale,depth=mark.depth*scale,prefab=HIT_MARK_SHAPES[mark.shape];
+  paint.save();paint.transform(pose.co*depth,pose.si*depth,-pose.si*width,pose.co*width,pose.x,pose.y);
+  paint.fillStyle=mark.color;paint.globalAlpha=opacity*.65*fade;paint.fill(prefab.patch);
+  paint.fillStyle='#fff6e3';paint.globalAlpha=opacity*.45*fade;paint.fill(prefab.facet);
+  paint.restore();
+ }
+}
 function contactClosingSpeed(a,b,contact){return Math.max(0,-(((contact.vx??b.vx)-a.vx)*contact.nx+((contact.vy??b.vy)-a.vy)*contact.ny));}
 function projectileMomentumDamage(b,a,contact){return Math.min(cfg.momentumDamageCap,cfg.momentumDamageScale*contactClosingSpeed(a,b,contact));}
 function projectileHitDamage(b,a,contact){return projectileDamage(b,contact.travel??b.travel)+projectileMomentumDamage(b,a,contact);}
-function applyImpact(a,b,contact){
- // Charge scales only the base blast; relative-speed knockback stays separate.
- // Exponential decay integrates to impulse * decay, so baseKnockback is
- // the isolated, unobstructed travel of the base component, not a teleport.
- const closing=contactClosingSpeed(a,b,contact);
- const damage=projectileDamage(b,contact.travel??b.travel);
- const impulse=cfg.baseKnockback*damage/IMPACT.decay+closing*cfg.impactScale,strength=clamp(impulse/320,0,1.6);
+function applyImpact(a,b,contact,damage=projectileHitDamage(b,a,contact)){
+ // Exponential decay integrates to impulse * decay; damage is normalized.
+ const impulse=cfg.knockbackScale*100*damage/(IMPACT.decay*actorSizeRatio(a)),strength=clamp(impulse/320,0,1.6);
  // The contact normal points out of the body; push away from the hit face.
  a.ivx-=contact.nx*impulse;a.ivy-=contact.ny*impulse;const magnitude=Math.hypot(a.ivx,a.ivy);if(magnitude>IMPACT.maxSpeed){a.ivx*=IMPACT.maxSpeed/magnitude;a.ivy*=IMPACT.maxSpeed/magnitude;}
  a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy;
@@ -1706,7 +2141,7 @@ function projectileDamage(b,travel=b.travel||0){
  return cfg.minimumDamage+(1-cfg.minimumDamage)*charge;
 }
 function showDamageNumber(x,y,damage,team){
- if(damage<=0)return;
+ if(!cfg.showDamageNumbers||damage<=0)return;
  const text=String(formatHealth(damage));
  damageNumbers.push({x,y,text,team,offset:((damageNumberId++%5)-2)*11,age:0,life:damage});
  if(damageNumbers.length>40)damageNumbers.shift();
@@ -1715,9 +2150,10 @@ function updateDamageNumbers(dt){for(const n of damageNumbers)n.age+=dt;damageNu
 // Combat math retains normalized units; displays and sliders use 100x units.
 function formatHealth(value){return Math.round(value*100);}
 function resolveHit(b,a,contact){
- b.dead=true;if(a.hp<=0)return;const damage=projectileHitDamage(b,a,contact),own=a.team===0,strength=applyImpact(a,b,contact);effect(contact.x,contact.y,own?'hit':'spark',strength,a.hitAngle);playSound(own?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
- if(own){hits++;if(!isPracticeMode())a.hp=Math.max(0,a.hp-damage);}
- else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){effect(a.x,a.y,'kill');playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
+ b.dead=true;if(a.hp<=0)return;const damage=projectileHitDamage(b,a,contact),own=a.team===0,inheritedVx=a.vx,inheritedVy=a.vy,previousHp=a.hp;addActorHitMark(a,contact,damage);applyImpact(a,b,contact,damage);impactEffect(contact,damage,inheritedVx,inheritedVy);playSound(own?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
+ if(own){hits++;if(!isPracticeMode()){a.hp=Math.max(0,a.hp-damage);if(a.hp===0)breakupEffect(a,contact,inheritedVx,inheritedVy);}}
+ else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){breakupEffect(a,contact,inheritedVx,inheritedVy);playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
+ if(a.hp<previousHp)a.healthFlash=Math.min(1,(a.healthFlash||0)+.55*damage);
  updateHud(true);
 }
 
@@ -1744,7 +2180,7 @@ function createBot(actor){
  const profile=BOT_PROFILES[Math.floor(rand()*BOT_PROFILES.length)];
  const bot={profile,time:0,nextSample:0,nextDecision:0,history:[],side:rand()<.5?-1:1,nextSide:2+rand()*2,
   noiseAngle:0,noiseRange:0,nextNoise:0,decisions:0,observedAt:null,nextAttack:.45,
-  lastSalvoSeq:actor.salvoSeq||0,pulse:false,pendingShot:false,tracks:new Map(),learnedAt:-1,readySince:null,lastAimMiss:Infinity,
+  lastSalvoSeq:actor.salvoSeq||0,pulse:false,pendingShot:false,tracks:new Map(),learnedAt:-1,readySince:null,lastAimMiss:Infinity,aimJob:null,aimResult:null,aimJobsCompleted:0,aimSliceFrame:-1,aimSliceUsed:0,aimSliceSteps:0,
   output:{x:0,y:0,aim:actor.aim||0,range:actor.range||500,shoot:false,reload:false}};
  actor.bot=bot;return bot;
 }
@@ -1767,7 +2203,7 @@ function botBullet(b){
   phase,solid:phase==='solid',arming:phase==='arming'};
 }
 function botBodyStep(body,input,dt){
- const a={...body},tau=cfg.inertia||0;let tx=input.x*ACTOR.speed,ty=input.y*ACTOR.speed;
+ const a={...body},tau=(cfg.inertia||0)*actorSizeRatio(body);let tx=input.x*ACTOR.speed,ty=input.y*ACTOR.speed;
  const terrain=MAPS[mapId].terrain;if(terrain&&tau>0){const f=terrainAcceleration(a.x,a.y,mapAccelerationScratch);tx+=f.x*terrain.actorScale*tau;ty+=f.y*terrain.actorScale*tau;}
  let dx,dy;
  if(tau>0){const z=Math.exp(-dt/tau);dx=tx*dt+(a.mvx-tx)*tau*(1-z);dy=ty*dt+(a.mvy-ty)*tau*(1-z);a.mvx=tx+(a.mvx-tx)*z;a.mvy=ty+(a.mvy-ty)*z;}
@@ -1822,10 +2258,10 @@ function botLearn(bot,observation){
      const body=frame.self,mx=(b.x+prev.x)*.5,my=(b.y+prev.y)*.5,w=fieldWeight(mx,my,body),sw=b.solid&&prev.solid?fieldWeight(mx,my,source,cfg.controlRadius):0,totalWeight=w+sw;
      // Known map forces bend a visible track without revealing launch spin.
      // Preserve the earlier estimate across these samples, including activation.
-     if(!mapAffected&&previousActive&&dt>0&&dt<.09&&totalWeight>.08&&cfg.spinForce>1&&speed>20){
+     if(!mapAffected&&previousActive&&dt>0&&dt<.09&&w>.08&&cfg.spinForce>1&&speed>20){
       const omega=Math.atan2(prev.vx*b.vy-prev.vy*b.vx,prev.vx*b.vx+prev.vy*b.vy)/dt;
       const nx=(b.vx+prev.vx)/(speed+oldSpeed),ny=(b.vy+prev.vy)/(speed+oldSpeed);
-      const estimate=(omega*Math.hypot((speed+oldSpeed)*.5,6)/cfg.spinForce-receiverSpin(body,nx,ny)*w-receiverSpin(source,nx,ny)*sw)/totalWeight;
+      const estimate=(omega*Math.hypot((speed+oldSpeed)*.5,6)-LATERAL_FORCE*(receiverSpin(body,nx,ny)*w+receiverSpin(source,nx,ny,cfg.controlSpinScale)*sw))/(cfg.spinForce*w);
       if(Number.isFinite(estimate)&&Math.abs(estimate)<2*Math.max(1,cfg.launchSpinScale)){spin=confidence<.3?estimate:spin*.55+estimate*.45;confidence=Math.min(1,confidence+.2);}
      }
     }
@@ -1853,7 +2289,7 @@ function botForecastActiveStep(b,dt,body,source=null){
   const speed=Math.max(1e-6,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
   const w=active?fieldWeight(b.x,b.y,body):0,inside=active&&brakingWeight(b.x,b.y,body);
   const sourceWeight=damaging?fieldWeight(b.x,b.y,source,cfg.controlRadius):0;
-  const rate=cfg.spinForce*((b.spin+receiverSpin(body,nx,ny))*w+(b.spin+receiverSpin(source,nx,ny))*sourceWeight)/Math.hypot(speed,6);
+  const rate=(cfg.spinForce*b.spin*w+LATERAL_FORCE*(receiverSpin(body,nx,ny)*w+receiverSpin(source,nx,ny,cfg.controlSpinScale)*sourceWeight))/Math.hypot(speed,6);
   // Bound forecast detail in very tight curls; live RK4 motion is unchanged.
   let h=Math.min(remaining,.025,Math.max(.004,.25/Math.max(1,Math.abs(rate))));
   if(active&&!damaging)h=Math.min(h,b.warm);
@@ -1875,9 +2311,10 @@ function botForecastActiveStep(b,dt,body,source=null){
   const midX=b.x+mx*midSpeed*h*.5,midY=b.y+my*midSpeed*h*.5;
   const midWeight=active?fieldWeight(midX,midY,body):0;
   const sourceMidWeight=damaging?fieldWeight(midX,midY,source,cfg.controlRadius):0;
-  const omega=cfg.spinForce*((b.spin+receiverSpin(body,mx,my))*midWeight+(b.spin+receiverSpin(source,mx,my))*sourceMidWeight)/Math.hypot(midSpeed,6);
+  const omega=(cfg.spinForce*b.spin*midWeight+LATERAL_FORCE*(receiverSpin(body,mx,my)*midWeight+receiverSpin(source,mx,my,cfg.controlSpinScale)*sourceMidWeight))/Math.hypot(midSpeed,6);
   const moveAngle=angle+omega*h*.5,oldX=b.x,oldY=b.y;
-  const mapForce=mapAcceleration(midX,midY),ax=mapForce.x,ay=mapForce.y,forced=ax!==0||ay!==0;
+  const mapForce=mapAcceleration(midX,midY);
+  const ax=mapForce.x,ay=mapForce.y,forced=ax!==0||ay!==0;
   const driftX=Math.cos(moveAngle)*midSpeed+ax*h*.5,driftY=Math.sin(moveAngle)*midSpeed+ay*h*.5;
   let ds=forced?Math.hypot(driftX,driftY)*h:midSpeed*h,endX=oldX+driftX*h,endY=oldY+driftY*h;
   if(ds>until){
@@ -1923,7 +2360,8 @@ function botForecastStep(b,dt,body){
     const speed=Math.max(1e-9,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
     const travel=speed*h+.5*cfg.propulsion*h*h,newSpeed=speed+cfg.propulsion*h;
     if(!mapFields.length&&!MAPS[mapId].terrain)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
-    const midX=b.x+nx*travel*.5,midY=b.y+ny*travel*.5,mapForce=mapAcceleration(midX,midY),ax=mapForce.x,ay=mapForce.y;
+    const midX=b.x+nx*travel*.5,midY=b.y+ny*travel*.5,mapForce=mapAcceleration(midX,midY);
+    const ax=mapForce.x,ay=mapForce.y;
     if(ax===0&&ay===0)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
     const driftX=nx*(speed+newSpeed)*.5+ax*h*.5,driftY=ny*(speed+newSpeed)*.5+ay*h*.5;
     return{x:b.x+driftX*h,y:b.y+driftY*h,vx:nx*newSpeed+ax*h,vy:ny*newSpeed+ay*h,travel:Math.hypot(driftX,driftY)*h};
@@ -2246,7 +2684,7 @@ function botAnnihilationDefensiveAim(actor,forecast){
  return best;
 }
 
-function botAimProbe(actor,target,angle,range,annForecast=null,targetAt=null,sourceAt=null){
+function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=null,sourceAt=null){
  targetAt??=t=>botTargetAt(target,t);
  sourceAt??=t=>botTargetAt(actor,t);
  const firingBody={...actor,aim:angle},offset=muzzleDistance(firingBody,angle)+3,dx=Math.cos(angle),dy=Math.sin(angle);
@@ -2277,10 +2715,13 @@ function botAimProbe(actor,target,angle,range,annForecast=null,targetAt=null,sou
    if(miss<best.miss)best={miss,travel:old.travel+ds*time,time:t+dt*time};
   }
   const contact=collisionEvent(b,{...after,px:before.x,py:before.y});
-  if(contact){best={miss:0,travel:contact.travel,time:t+dt*contact.t,damage:projectileHitDamage(b,after,contact)};break;}
+  if(contact)best={miss:0,travel:contact.travel,time:t+dt*contact.t,damage:projectileHitDamage(b,after,contact)};
   // Continue after a first pass: a solid shot can hook back. Once its selected
   // damaging interval ends, a later harmless pass cannot improve this shot.
-  if(b.probeTruncated||b.wallAbsorbed||Number.isFinite(projectileEnd(b))&&b.travel>=projectileEnd(b)||b.x<10||b.x>W-10||b.y<10||b.y>H-10)break;
+  const done=contact||b.probeTruncated||b.wallAbsorbed||Number.isFinite(projectileEnd(b))&&b.travel>=projectileEnd(b)||b.x<10||b.x>W-10||b.y<10||b.y>H-10;
+  // Yield even at contact/expiry, so each search step integrates at most one interval.
+  yield;
+  if(done)break;
  }
  // Deep enough hits are equivalent. Favor room on both sides of the active
  // interval to tolerate errors in predicted motion and activation distance.
@@ -2290,13 +2731,16 @@ function botAimProbe(actor,target,angle,range,annForecast=null,targetAt=null,sou
  return{...best,angle,range,wallBlocked:b.wallAbsorbed&&best.miss>bodyShape(target).rx+b.r,annBlocked:ann.blocked,annDefense:ann.defense,
   damage:best.damage??projectileDamage(b,best.travel),score:Math.max(0,best.miss-hitTolerance)+phaseOffset*.08+best.time*.06+ann.score+30*(1-(best.damage??projectileDamage(b,best.travel)))};
 }
+function botAimProbe(...args){
+ const search=botAimProbeSteps(...args);let step;do{step=search.next();}while(!step.done);return step.value;
+}
 function botFlightTime(distance){
  // Solve distance = v0*t + a*t*t/2 for the nonnegative time without
  // cancellation at small acceleration. This is an open-space estimate only.
  const v0=Math.max(1,cfg.launchSpeed),a=Math.max(0,cfg.propulsion);
  return 2*Math.max(0,distance)/(v0+Math.sqrt(v0*v0+2*a*Math.max(0,distance)));
 }
-function botAim(actor,target,bot,level){
+function* botAimSearch(actor,target,bot,level){
  const distance=Math.hypot(target.x-actor.x,target.y-actor.y);
  const flightDistance=Math.max(0,distance-muzzleDistance(actor)-3);
  const preparation=cfg.armingDelay??0;
@@ -2319,23 +2763,58 @@ function botAim(actor,target,bot,level){
   if(!body){body=botTargetAt(actor,t);sourceCache.set(t,body);}
   return body;
  };
- function consider(angle,range){const shot=botAimProbe(actor,target,angle,range,bot.annForecast,targetAt,sourceAt);if(!best||shot.score<best.score)best=shot;}
+ function* consider(angle,range){const shot=yield* botAimProbeSteps(actor,target,angle,range,bot.annForecast,targetAt,sourceAt);if(!best||shot.score<best.score)best=shot;}
  // Changing range moves both endpoints; search direction and range together.
  const angles=[-.30,0,.30],ranges=[-1,0,1];
- for(const da of angles)for(const dr of ranges)consider(base+da,baseRange+dr*span);
+ for(const da of angles)for(const dr of ranges)yield* consider(base+da,baseRange+dr*span);
  if(BOT_TUNING.annDefenseWeight>0){
   const defense=botAnnihilationDefensiveAim(actor,bot.annForecast);
-  if(defense){consider(defense.angle,baseRange);consider(defense.angle,defense.range);}
+  if(defense){yield* consider(defense.angle,baseRange);yield* consider(defense.angle,defense.range);}
  }
  // Long, strongly damped active arcs need many integration substeps. A
  // smaller deterministic search keeps those extreme settings responsive.
  const refinements=[[.10,span*.35],[.035,span*.12]];
  for(const [da,dr] of refinements){
   const angle=best.angle,range=best.range;
-  for(const i of [-1,0,1])for(const j of [-1,0,1])if((i||j)&&(!i||!j))consider(angle+i*da,range+j*dr);
+  for(const i of [-1,0,1])for(const j of [-1,0,1])if((i||j)&&(!i||!j))yield* consider(angle+i*da,range+j*dr);
  }
- bot.lastAimMiss=best.miss;bot.lastAnnDefense=best.annDefense;bot.wallBlocked=best.wallBlocked;
- return{aim:best.angle+bot.noiseAngle,range:clamp(best.range+bot.noiseRange,MIN_ACTIVATION_RANGE,1400)};
+ return{aim:best.angle+bot.noiseAngle,range:clamp(best.range+bot.noiseRange,MIN_ACTIVATION_RANGE,1400),miss:best.miss,annDefense:best.annDefense,wallBlocked:best.wallBlocked,distance};
+}
+// The live path shares one budget across every physics step in a rendered frame.
+const BOT_AIM_LIMITS={milliseconds:1.5,steps:128};let botAimFrame=0;
+function applyBotAimResult(bot,result){
+ bot.lastAimMiss=result.miss;bot.lastAnnDefense=result.annDefense;bot.wallBlocked=result.wallBlocked;
+}
+// Synchronous reference for tests and idle warm-up; live decisions use slices.
+function botAim(actor,target,bot,level){
+ const search=botAimSearch(actor,target,bot,level);let step;do{step=search.next();}while(!step.done);
+ applyBotAimResult(bot,step.value);return{aim:step.value.aim,range:step.value.range};
+}
+function botAimReady(bot,actor,level,distance){
+ const ready=!actor.salvo&&actor.cd<=0&&bot.time>=bot.nextAttack;
+ if(ready){if(bot.readySince===null)bot.readySince=bot.time;}else bot.readySince=null;
+ bot.pendingShot=ready&&!bot.wallBlocked&&distance<1350&&
+  (bot.lastAimMiss<=BOT_TUNING.attackThreshold+level.rangeError*.3||bot.time-bot.readySince>=BOT_TUNING.maxHold||BOT_TUNING.annDefenseWeight>0&&bot.lastAnnDefense>.4);
+}
+function beginBotAimSearch(bot,self,target,level){
+ const plan={annForecast:bot.annForecast,noiseAngle:bot.noiseAngle,noiseRange:bot.noiseRange};
+ bot.aimJob={search:botAimSearch({...self},{...target},plan,level),map:mapId,level,steps:0};
+}
+function runBotAimSlice(bot,actor,level){
+ if(!bot.aimJob)return;
+ if(bot.aimJob.map!==mapId||bot.aimJob.level!==level||!actor.salvo&&actor.cd>0){bot.aimJob=null;return;}
+ if(bot.aimSliceFrame!==botAimFrame){bot.aimSliceFrame=botAimFrame;bot.aimSliceUsed=0;bot.aimSliceSteps=0;}
+ if(bot.aimSliceUsed>=BOT_AIM_LIMITS.milliseconds||bot.aimSliceSteps>=BOT_AIM_LIMITS.steps)return;
+ const start=performance.now();
+ while(bot.aimJob&&bot.aimSliceSteps<BOT_AIM_LIMITS.steps&&bot.aimSliceUsed+performance.now()-start<BOT_AIM_LIMITS.milliseconds){
+  const step=bot.aimJob.search.next();bot.aimJob.steps++;bot.aimSliceSteps++;
+  if(step.done){
+   const result=step.value;bot.aimJob=null;bot.aimResult=result;bot.aimJobsCompleted++;
+   applyBotAimResult(bot,result);bot.output.aim=result.aim;bot.output.range=result.range;
+   botAimReady(bot,actor,level,result.distance);
+  }
+ }
+ bot.aimSliceUsed+=performance.now()-start;
 }
 function botTrigger(bot,level,actor){
  const sequence=actor.salvoSeq||0;
@@ -2359,6 +2838,7 @@ function botTrigger(bot,level,actor){
 }
 function botControl(actor,target,projectiles,dt,options={}){
  const bot=actor.bot||createBot(actor),level=BOT_LEVELS[options.difficulty||cfg.difficulty]||BOT_LEVELS.normal;bot.time+=dt;
+ if(options.fire===false)bot.aimJob=null;else runBotAimSlice(bot,actor,level);
  if(bot.time<bot.nextSample&&bot.time<bot.nextDecision)return botTrigger(bot,level,actor);
  const self=botBody(actor);
  if(bot.time>=bot.nextSample){
@@ -2373,12 +2853,12 @@ function botControl(actor,target,projectiles,dt,options={}){
  if(bot.time<bot.nextDecision)return botTrigger(bot,level,actor);
  bot.nextDecision=bot.time+level.interval;let observation=null;
  for(let i=bot.history.length-1;i>=0;i--)if(bot.history[i].time<=bot.time-level.delay){observation=bot.history[i];break;}
- if(!observation||!observation.target||observation.target.hp<=0){bot.output={...bot.output,x:0,y:0};bot.pendingShot=false;return botTrigger(bot,level,actor);}
+ if(!observation||!observation.target||observation.target.hp<=0){bot.output={...bot.output,x:0,y:0};bot.pendingShot=false;bot.aimJob=null;return botTrigger(bot,level,actor);}
  botLearn(bot,observation);
  const age=bot.time-observation.time,observedMotion={...observation.target,vx:observation.target.vx*level.lead,vy:observation.target.vy*level.lead,ax:0,ay:0};
  const previous=bot.history.findLast(frame=>frame.time<observation.time-.05&&frame.target);
  if(previous){
-  const span=observation.time-previous.time,limit=ACTOR.speed/Math.max(.15,cfg.inertia)*1.5;
+  const span=observation.time-previous.time,limit=ACTOR.speed/Math.max(.15,cfg.inertia*actorSizeRatio(observation.target))*1.5;
   observedMotion.ax=clamp((observation.target.vx-previous.target.vx)/span,-limit,limit)*level.lead;
   observedMotion.ay=clamp((observation.target.vy-previous.target.vy)/span,-limit,limit)*level.lead;
  }
@@ -2393,22 +2873,26 @@ function botControl(actor,target,projectiles,dt,options={}){
  for(const candidate of BOT_DIRECTIONS){const cost=botMoveScore(self,perceived,threats,candidate,bot,level,moveContext);if(cost<score){score=cost;direction=candidate;}}
  // Practice targets use the same delayed movement decisions, without firing.
  if(options.fire===false){
-  bot.pendingShot=false;bot.annForecast=null;
+  bot.pendingShot=false;bot.annForecast=null;bot.aimJob=null;
   bot.output={x:direction.x,y:direction.y,aim:Math.atan2(perceived.y-self.y,perceived.x-self.x),range:Math.hypot(perceived.x-self.x,perceived.y-self.y),shoot:false,reload:false};
   bot.observedAt=observation.time;bot.decisions++;return bot.output;
  }
  const ready=!actor.salvo&&actor.cd<=0&&bot.time>=bot.nextAttack;
  bot.annForecast=cfg.annihilationChance>0&&(BOT_TUNING.annBlockWeight>0||BOT_TUNING.annDefenseWeight>0)&&(ready||actor.salvo)?
   botAnnihilationForecast(self,direction,threats,age):null;
- // Every decision during a burst may steer its remaining rounds. Reloading
- // still tracks the observed opponent; no world-space burst target is locked.
- const aim=ready||actor.salvo?botAim(self,perceived,bot,level):{
-  aim:Math.atan2(perceived.y-self.y,perceived.x-self.x)+bot.noiseAngle,
-  range:clamp((Math.hypot(perceived.x-self.x,perceived.y-self.y)-cfg.bandBase*.5)/(1+cfg.band/1000)+bot.noiseRange,MIN_ACTIVATION_RANGE,1400)};
- if(ready){if(bot.readySince===null)bot.readySince=bot.time;}else bot.readySince=null;
- bot.pendingShot=ready&&!bot.wallBlocked&&Math.hypot(perceived.x-self.x,perceived.y-self.y)<1350&&
-  (bot.lastAimMiss<=BOT_TUNING.attackThreshold+level.rangeError*.3||bot.time-bot.readySince>=BOT_TUNING.maxHold||BOT_TUNING.annDefenseWeight>0&&bot.lastAnnDefense>.4);
+ // Continue steering with the last completed solution while a fresh search runs.
+ let aim;
+ if(ready||actor.salvo){
+  aim={aim:bot.output.aim,range:bot.output.range};
+  if(!bot.aimJob)beginBotAimSearch(bot,self,perceived,level);
+ }else{
+  bot.aimJob=null;
+  aim={aim:Math.atan2(perceived.y-self.y,perceived.x-self.x)+bot.noiseAngle,
+   range:clamp((Math.hypot(perceived.x-self.x,perceived.y-self.y)-cfg.bandBase*.5)/(1+cfg.band/1000)+bot.noiseRange,MIN_ACTIVATION_RANGE,1400)};
+ }
+ botAimReady(bot,actor,level,Math.hypot(perceived.x-self.x,perceived.y-self.y));
  bot.output={x:direction.x,y:direction.y,...aim,shoot:false,reload:false};
+ runBotAimSlice(bot,actor,level);
  bot.observedAt=observation.time;bot.decisions++;return botTrigger(bot,level,actor);
 }
 
@@ -2481,10 +2965,11 @@ function scheduleStartupPreparation(){
 
 // === 11 · Fixed-step simulation and HUD ===
 function simulate(dt,control){
+ updateActorHitMarks(p,dt);updateActorHitMarks(enemy,dt);
  // Fades are visuals only: they never enter physics, collision or AI input.
  for(const fade of bulletFades){fade.px=fade.x;fade.py=fade.y;fade.age+=dt;fade.x+=fade.vx*dt;fade.y+=fade.vy*dt;}
  bulletFades=bulletFades.filter(fade=>fade.age<fade.life);
- elapsed+=dt;const practice=isPracticeMode(),fixed=$('mode').value==='practice',e=enemy;
+ elapsed+=dt;const practice=isPracticeMode(),fixed=$('mode').value==='practice',e=enemy,previousPlayerHp=p.hp,previousEnemyHp=e?.hp;
  // Both controllers supply intentions before the shared movement/weapon update.
  // botBullet strips private projectile fields only when a sensory sample is due.
  const ai=e?(fixed?{x:0,y:0,aim:Math.atan2(p.y-e.y,p.x-e.x),range:Math.hypot(p.x-e.x,p.y-e.y)-cfg.band*.5,shoot:false}:botControl(e,p,bullets,dt,practice?{difficulty:'advanced',fire:false}:{})):null;
@@ -2535,6 +3020,8 @@ function simulate(dt,control){
   if(ev.b.dead||ev.target!==p&&ev.target!==enemy)continue;
   resolveHit(ev.b,ev.target,ev.contact);
  }
+ // All contacts in a fixed step use the same body geometry.
+ if(p.hp!==previousPlayerHp)syncActorRadius(p);if(e&&e.hp!==previousEnemyHp)syncActorRadius(e);
  constrainActor(p);if(e){constrainActor(e);if(p.hp>0&&e.hp>0)separateActors(p,e);}
  for(const b of bullets)if(b.ended&&!b.dead){
   const distance=b.travel-b.prevTravel,t=distance>1e-10?clamp((projectileEnd(b)-b.prevTravel)/distance,0,1):1;
@@ -2663,37 +3150,27 @@ function drawRange(actor=p){
  ctx.moveTo(start,-capRadius);ctx.lineTo(start,capRadius);ctx.moveTo(end,-capRadius);ctx.lineTo(end,capRadius);ctx.stroke();ctx.restore();
 }
 
+const ACTOR_TINT_COLORS=[[141,163,154],[174,155,135]];
+const actorTintSprites=[null,null];
+function getActorTintSprite(team){
+ if(actorTintSprites[team])return actorTintSprites[team];
+ const image=document.createElement('canvas');image.width=image.height=96;
+ const paint=image.getContext('2d'),gradient=paint.createRadialGradient(48,48,0,48,48,48);
+ for(let i=0;i<=32;i++){
+  const radius=i/32,brightness=.8+.2*radius*radius;
+  gradient.addColorStop(radius,`rgb(${ACTOR_TINT_COLORS[team].map(channel=>channel*brightness).join(',')})`);
+ }
+ paint.fillStyle=gradient;paint.beginPath();paint.arc(48,48,48,0,TAU);paint.fill();
+ actorTintSprites[team]=image;return image;
+}
 function actorDrawing(a,team,gray=0){
- const muted=(r,g,b)=>{const luminance=.2126*r+.7152*g+.0722*b;return `rgb(${[r,g,b].map(v=>Math.round(v+(luminance-v)*gray)).join(',')})`;};
- const paint=hex=>{if(!gray)return hex;const n=parseInt(hex.slice(1),16);return muted(n>>16,(n>>8)&255,n&255);};
  const shape=bodyShape(a),body=new Path2D();body.ellipse(0,0,shape.rx,shape.ry,0,0,TAU);
- // Prepare geometry and charge colors once for the body and all its images.
- const relative=a.aim-shape.angle;
- const tipAngle=Math.atan2(shape.rx*Math.sin(relative),shape.ry*Math.cos(relative));
- const rearHalfAngle=Math.PI*2/9,rearA=tipAngle+Math.PI-rearHalfAngle,rearB=tipAngle+Math.PI+rearHalfAngle;
- const tipX=shape.rx*Math.cos(tipAngle),tipY=shape.ry*Math.sin(tipAngle);
- const backAX=shape.rx*Math.cos(rearA),backAY=shape.ry*Math.sin(rearA);
- const backBX=shape.rx*Math.cos(rearB),backBY=shape.ry*Math.sin(rearB);
- const chargePath=new Path2D();chargePath.moveTo(tipX,tipY);chargePath.lineTo(backAX,backAY);
- chargePath.ellipse(0,0,shape.rx,shape.ry,0,rearA,rearB);chargePath.closePath();
- const seam=new Path2D();seam.moveTo(backAX,backAY);seam.lineTo(tipX,tipY);seam.lineTo(backBX,backBY);
- const charge=a.salvo?0:clamp(1-a.cd/a.reloadDuration,0,1);
- const empty=team===0?[44,65,66]:[61,48,47],ready=team===0?[103,143,136]:[148,115,98];
- const fill=empty.map((low,i)=>Math.round(low+(ready[i]-low)*charge));
- return{shape,body,chargePath,seam,bodyColor:paint(team===0?'#91aaa5':'#9f8d7d'),
-  chargeColor:gray?muted(...fill):`rgb(${fill.join(',')})`,seamColor:paint(team===0?'#d2dfd6':'#e2d3c1'),
-  outlineColor:paint(a.hitFlash>0?'#eee5cd':team===0?C.player:C.enemy),arcColor:paint(C.enemy)};
+ return{shape,body,image:getActorTintSprite(team)};
 }
 function drawActor(a,team,gray=0,projection=false,drawing=actorDrawing(a,team,gray)){
- ctx.save();ctx.translate(a.x,a.y);
- ctx.save();ctx.rotate(drawing.shape.angle);
- ctx.fillStyle=drawing.bodyColor;ctx.fill(drawing.body);
- ctx.save();ctx.clip(drawing.body);ctx.fillStyle=drawing.chargeColor;ctx.fill(drawing.chargePath);
- ctx.strokeStyle=drawing.seamColor;ctx.lineWidth=1.25;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke(drawing.seam);
- ctx.restore();
- ctx.strokeStyle=drawing.outlineColor;ctx.lineWidth=a.hitFlash>0?2.2:1.4;ctx.stroke(drawing.body);
- ctx.restore();
- if(!projection&&a.hitArc>0){ctx.save();ctx.globalAlpha=a.hitArc/.3;ctx.strokeStyle=drawing.arcColor;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,a.r+10,a.hitAngle-.48,a.hitAngle+.48);ctx.stroke();ctx.restore();}
+ ctx.save();ctx.translate(a.x,a.y);ctx.rotate(drawing.shape.angle);
+ ctx.drawImage(drawing.image,-drawing.shape.rx,-drawing.shape.ry,drawing.shape.rx*2,drawing.shape.ry*2);
+ ctx.save();ctx.clip(drawing.body);drawActorHitMarks(a,drawing.shape);ctx.restore();
  ctx.restore();if(!projection&&a.hp>0)drawHealth(a,team);
 }
 
@@ -2713,14 +3190,16 @@ function drawLoopImages(a,gray,drawing,view=null){
 let healthDrawScale=1;
 function drawHealth(a,team){
  if(!cfg.showHealthNumbers)return;
- // Reserve the maximum body extent to keep the label steady during deformation.
- const scale=healthDrawScale;
+ const scale=healthDrawScale,flash=clamp(a.healthFlash||0,0,1);
  const reservedRadius=a.r*Math.sqrt(1+Math.abs(cfg.actorAspect)/100)*Math.exp(.29);
+ const text=String(formatHealth(a.hp)),y=-reservedRadius-7*scale;
  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());
- ctx.globalAlpha=.7;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${11*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
- ctx.fillText(String(formatHealth(a.hp)),0,-reservedRadius-7*scale);
+ ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.7+.3*flash;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${11*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+ ctx.fillText(text,0,y);
+ if(flash>0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4*flash;ctx.fillStyle='#ffffff';ctx.fillText(text,0,y);}
  ctx.restore();
 }
+
 function drawTouch(){
  if(inputMode!=='touch')return;
  const {x,y,radius}=TOUCH_STICK,t=touch.move,u=t?unit(t.x-x,t.y-y):{x:0,y:0,d:0},d=Math.min(radius,u.d);
@@ -2768,7 +3247,47 @@ function drawWalls(){
 }
 function renderActorPose(actor,slot,alpha){
  if(!actor)return null;
- const pose=Object.assign(renderActors[slot],actor);pose.x=(actor.px??actor.x)+(actor.x-(actor.px??actor.x))*alpha;pose.y=(actor.py??actor.y)+(actor.y-(actor.py??actor.y))*alpha;return pose;
+ const pose=Object.assign(renderActors[slot],actor);pose.shattered=!!actor.shattered;pose.healthFlash=actor.healthFlash||0;pose.x=(actor.px??actor.x)+(actor.x-(actor.px??actor.x))*alpha;pose.y=(actor.py??actor.y)+(actor.y-(actor.py??actor.y))*alpha;return pose;
+}
+function drawBreakupEffect(e,age=e.age){
+ const fade=clamp((e.life-age)/(e.life-.08),0,1),extent=48/42;
+ for(const piece of e.pieces){
+  ctx.save();ctx.globalAlpha=fade;
+  ctx.translate(e.x+piece.x+piece.vx*age,e.y+piece.y+piece.vy*age);ctx.rotate(piece.spin*age);
+  ctx.transform(e.mxx,e.myx,e.mxy,e.myy,0,0);ctx.clip(piece.prefab.path);
+  ctx.drawImage(e.image,-extent-piece.prefab.cx,-extent-piece.prefab.cy,extent*2,extent*2);
+  if(age<.07){ctx.globalAlpha=fade*.22*(1-age/.07);ctx.fillStyle='#fff4dc';ctx.fill(piece.prefab.path);}
+  ctx.restore();
+ }
+}
+function drawImpactEffect(e,age=e.age){
+ ctx.save();ctx.translate(e.x,e.y);
+ // A single cached soft sprite gives every puff a smooth transparent edge.
+ for(const puff of e.mist){
+  if(age>=puff.life)continue;
+  const t=age/puff.life,growth=t*(2-t);
+  ctx.globalAlpha=.22*(1-t)**1.4;
+  const radius=puff.radius*(.2+1.15*growth)+puff.expansion*age;
+  ctx.drawImage(getImpactMistSprite(),puff.vx*age-radius,puff.vy*age-radius,radius*2,radius*2);
+ }
+ // Fade opacity only: each fragment keeps its individual size and velocity.
+ for(const p of e.particles){
+  if(age>=p.life)continue;
+  const x=p.x+p.vx*age,y=p.y+p.vy*age,angle=p.rotation+p.spin*age,co=Math.cos(angle),si=Math.sin(angle);
+  ctx.fillStyle=p.color;ctx.globalAlpha=(1-age/p.life)**.95;ctx.beginPath();
+  for(let j=0;j<p.vertices.length;j+=2){
+   const px=x+co*p.vertices[j]-si*p.vertices[j+1],py=y+si*p.vertices[j]+co*p.vertices[j+1];
+   if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.closePath();ctx.fill();
+ }
+ if(age<.12){
+  const flash=(1-age/.12)**.8,r=(1.6+e.damage*2.8)*(.7+.3*flash);
+  ctx.fillStyle='#fff4df';ctx.globalAlpha=Math.min(1,.75+e.damage*.2)*flash*.25;
+  circle(0,0,r*1.7);ctx.fill();
+  ctx.globalAlpha=Math.min(1,.85+e.damage*.15)*flash;circle(0,0,r);ctx.fill();
+ }
+ ctx.restore();
 }
 function render(alpha=1){
  renderDirty=false;renderedState=state;
@@ -2790,29 +3309,35 @@ function render(alpha=1){
  drawWalls();
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3));else drawBullet(b,null,alpha);}
  for(const fade of bulletFades)drawBullet(fade,1-Math.max(0,fade.age-(1-alpha)*STEP)/fade.life,alpha);
- for(const actor of [visualEnemy,visualPlayer]){if(actor){const fade=ending&&actor.hp<=0?gray:0,drawing=actorDrawing(actor,actor.team,fade);drawLoopImages(actor,fade,drawing,view);drawActor(actor,actor.team,fade,false,drawing);}}
- for(const e of effects){const t=e.age/e.life;ctx.save();ctx.globalAlpha=(1-t)*.8;ctx.strokeStyle=e.kind==='intercept'?'#d5ddd5':e.kind==='hit'||e.kind==='kill'?C.enemy:C.player;ctx.lineWidth=1;circle(e.x,e.y,(e.kind==='kill'?18:2)+t*(e.kind==='kill'?35:e.kind==='intercept'?9:7+e.strength*6));ctx.stroke();
-  if(e.kind==='kill'){ctx.globalAlpha=(1-t)*.4;for(let i=0;i<8;i++){const a=i/8*TAU;ctx.fillStyle=C.enemy;circle(e.x+Math.cos(a)*(20+t*45),e.y+Math.sin(a)*(20+t*45),2*(1-t)+.5);ctx.fill();}}
-  else if(e.kind!=='intercept'){for(let i=-1;i<=1;i++){const angle=e.angle+i*.55,d=4+t*(8+e.strength*10);ctx.beginPath();ctx.moveTo(e.x+Math.cos(angle)*d,e.y+Math.sin(angle)*d);ctx.lineTo(e.x+Math.cos(angle)*(d+3),e.y+Math.sin(angle)*(d+3));ctx.stroke();}}ctx.restore();
+ for(const actor of [visualEnemy,visualPlayer]){if(actor&&!actor.shattered){const fade=ending&&actor.hp<=0?gray:0,drawing=actorDrawing(actor,actor.team,fade);drawLoopImages(actor,fade,drawing,view);drawActor(actor,actor.team,fade,false,drawing);}}
+ for(const e of effects){
+  const age=Math.max(0,e.age-(1-alpha)*STEP);
+  if(e.kind==='impact'){drawImpactEffect(e,age);continue;}
+  if(e.kind==='breakup'){drawBreakupEffect(e,age);continue;}
+  const t=age/e.life;ctx.save();ctx.globalAlpha=(1-t)*.8;ctx.strokeStyle='#d5ddd5';ctx.lineWidth=1;
+  circle(e.x,e.y,2+t*9);ctx.stroke();ctx.restore();
  }
  if(state==='running'){
   const {start}=shotRangePlan(visualPlayer,visualPlayer.range),aimPoint=headingView()?null:aimSource==='mouse'?mouse:aimSource==='touch'?touch.target:null;
   const x=aimPoint?.x??visualPlayer.x+Math.cos(visualPlayer.aim)*start,y=aimPoint?.y??visualPlayer.y+Math.sin(visualPlayer.aim)*start;
-  ctx.strokeStyle='rgba(200,216,208,.75)';ctx.lineWidth=AIM_STROKE;circle(x,y,ACTOR.shotRadius+AIM_STROKE/2);ctx.stroke();
+  if(state==='running'){ctx.strokeStyle='rgba(200,216,208,.75)';ctx.lineWidth=AIM_STROKE;circle(x,y,ACTOR.shotRadius+AIM_STROKE/2);ctx.stroke();}
  }
  // Counter-rotate labels so they stay upright in the heading view.
- for(const n of damageNumbers){
-  const t=clamp((n.age-(1-alpha)*STEP)/n.life,0,1);
+ if(cfg.showDamageNumbers)for(const n of damageNumbers){
+  const age=Math.max(0,n.age-(1-alpha)*STEP),t=clamp(age/n.life,0,1);
+  const pop=1+(.10+.12*clamp(n.life,0,1))*(1-clamp(age/.10,0,1))**2;
   ctx.save();ctx.translate(n.x,n.y);if(view)ctx.rotate(heading);
   ctx.globalAlpha=.70*(1-t);ctx.font='500 10px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
   ctx.lineWidth=2;ctx.lineJoin='round';ctx.strokeStyle=C.bg;ctx.fillStyle=n.team===0?C.enemy:C.player;
-  const y=-12-t*24;ctx.strokeText(n.text,n.offset,y);ctx.fillText(n.text,n.offset,y);ctx.restore();
+  ctx.translate(n.offset,-12-t*24);ctx.scale(pop,pop);
+  ctx.strokeText(n.text,0,0);ctx.fillText(n.text,0,0);ctx.restore();
  }
  ctx.setTransform(sx,0,0,sy,ox*sx,oy*sy);if(!ending)drawTouch();
 }
 
 // === 13 · Frame loop and input events ===
 function frame(now){
+ botAimFrame++;
  // A controller can start or resume here; reset the clock before computing dt.
  const pad=pollPad(),dt=last?Math.max(0,Math.min((now-last)/1000,.05)):0;last=now;
  if(state==='running'||state==='ending'){const input=state==='running'?getInput(pad,dt):null;accumulator+=dt;while(accumulator>=STEP&&(state==='running'||state==='ending')){if(state==='running')simulate(STEP,input);else updateEnding(STEP);accumulator-=STEP;renderStepReady=true;}}else accumulator=0;
@@ -2935,7 +3460,8 @@ function restoreSettings(){
     if(name==='actorAspect'&&Number.isFinite(value)&&Math.abs(value)<=100&&value%5===0)value=Math.sign(value)*Math.round(Math.abs(value)/10)*10;
     if(validSettingValue(name,value))cfg[name]=value;
    }
-   for(const name of ['sound','showField','showRange','showHealthNumbers','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+   if(!Object.hasOwn(saved.values,'knockbackScale')&&validSettingValue('knockbackScale',saved.values.baseKnockback/100))cfg.knockbackScale=saved.values.baseKnockback/100;
+   for(const name of ['sound','showField','showRange','showHealthNumbers','showDamageNumbers','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
    if(saved.view==='world'||saved.view==='heading')cfg.view=saved.view;
    if(typeof saved.difficulty==='string'&&Object.hasOwn(BOT_LEVELS,saved.difficulty))cfg.difficulty=saved.difficulty;
    if(typeof saved.mode==='string'&&(Object.hasOwn(BOT_LEVELS,saved.mode)||saved.mode==='practice'||saved.mode==='practice-dodge')){
@@ -2945,13 +3471,13 @@ function restoreSettings(){
   }
  }catch{}
  for(const name of SETTING_NAMES)$(name).value=cfg[name]*settingScale(name);
- $('showHealthNumbers').checked=cfg.showHealthNumbers;$('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
+ $('showDamageNumbers').checked=cfg.showDamageNumbers;$('showHealthNumbers').checked=cfg.showHealthNumbers;$('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
  $('map').value=mapId;$('view').value=cfg.view;syncDifficultyControl();
 }
 function saveSettings(){
  if(restoringDefaults)return;
  const values={};for(const name of SETTING_NAMES)values[name]=validSettingValue(name,cfg[name])?cfg[name]:DEFAULTS[name];
- try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,showHealthNumbers:cfg.showHealthNumbers,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view}));}catch{}
+ try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,showHealthNumbers:cfg.showHealthNumbers,showDamageNumbers:cfg.showDamageNumbers,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view}));}catch{}
  settingsDirty=padRangeDirty=false;
 }
 function flushSettings(){if(settingsDirty)saveSettings();}
@@ -2959,20 +3485,21 @@ for(const name of SETTING_NAMES)$(name).addEventListener('input',()=>{
  stopStartupPreparation();
  const value=Number($(name).value);cfg[name]=value/settingScale(name);
  $(name+'-value').textContent=formatSetting(name,value);
- if(name==='actorRadius'||name==='actorAspect')resizeActors();
+ if(name==='actorRadius'||name==='minRadiusRatio'||name==='actorAspect')resizeActors();
  if(name!=='padRange'&&enemy)enemy.bot=null;updateHud(true);render();
 });
 // Commit health once per slider gesture, preserving fractional health ratios.
 $('maxHealth').addEventListener('change',()=>{
- const value=cfg.maxHealth;for(const actor of [p,enemy]){if(!actor)continue;const fraction=actor.hp/actor.maxHp;actor.maxHp=value;actor.hp=fraction>0?Math.min(value,value*fraction):0;}
+ const value=cfg.maxHealth;for(const actor of [p,enemy]){if(!actor)continue;const fraction=actor.hp/actor.maxHp;actor.maxHp=value;actor.hp=fraction>0?Math.min(value,value*fraction):0;syncActorRadius(actor);}
  updateHud(true);render();
 });
 $('showField').addEventListener('change',()=>{cfg.showField=$('showField').checked;saveSettings();render();});
 $('showHealthNumbers').addEventListener('change',()=>{cfg.showHealthNumbers=$('showHealthNumbers').checked;saveSettings();render();});
+$('showDamageNumbers').addEventListener('change',()=>{cfg.showDamageNumbers=$('showDamageNumbers').checked;if(!cfg.showDamageNumbers)damageNumbers=[];saveSettings();render();});
 $('showRange').addEventListener('change',()=>{cfg.showRange=$('showRange').checked;saveSettings();render();});
 $('continuousFire').addEventListener('change',()=>{cfg.continuousFire=$('continuousFire').checked;saveSettings();});
 $('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?.6:0;saveSettings();$('sound').blur();});
-$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
+$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;$('showDamageNumbers').checked=cfg.showDamageNumbers=DEFAULTS.showDamageNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();render();});
 for(const name of SETTING_NAMES){$(name).addEventListener('input',()=>{settingsDirty=true;});$(name).addEventListener('change',saveSettings);}
 window.addEventListener('pagehide',flushSettings);
@@ -2984,7 +3511,7 @@ new ResizeObserver(resize).observe(canvas);reset();resize();initializeLanguage()
 
 // === 16 · Opt-in local test hooks (?test only) ===
 // Opt-in deterministic inspection for local development; absent in normal play.
-if(new URLSearchParams(location.search).has('test'))window.__fieldGame={snapshot:()=>({state,ending:ending?{...ending,actors:ending.actors.map(a=>a?{...a}:null)}:null,effects:effects.map(e=>({...e})),p:{...p},enemy:enemy?{...enemy,bot:enemy.bot?{time:enemy.bot.time,decisions:enemy.bot.decisions,observedAt:enemy.bot.observedAt,output:{...enemy.bot.output}}:null}:null,elapsed,kills,hits,intercepts,shots,bullets:bullets.map(b=>({...b})),bulletFades:bulletFades.map(fade=>({...fade})),cfg:{...cfg},renderFrames,inputMode,moveSource,aimSource,audioPlayed}),reset,pause,resume,step:(seconds,control={x:0,y:0,shoot:false})=>{for(let i=0;i<Math.round(seconds/STEP)&&(state==='running'||state==='ending');i++){if(state==='running')simulate(STEP,control);else updateEnding(STEP);}},frame,fieldWeight,activeWindow,projectilePhase,collisionEvent,applyImpact,fire,render,probe:(b,seconds)=>{const q={id:0,x:0,y:0,dx:1,dy:0,team:1,r:ACTOR.shotRadius,age:0,...b};for(let i=0;i<Math.round(seconds/STEP);i++)stepBullet(q,STEP);return q;},setPlayer:values=>Object.assign(p,values),inject:b=>bullets.push({id:++shotId,x:0,y:0,px:0,py:0,dx:1,dy:0,r:ACTOR.shotRadius,team:1,age:0,...b}),setEnemy:values=>{if(enemy)Object.assign(enemy,values);},config:values=>Object.assign(cfg,values)};
+if(new URLSearchParams(location.search).has('test'))window.__fieldGame={snapshot:()=>({state,ending:ending?{...ending,actors:ending.actors.map(a=>a?{...a}:null)}:null,effects:effects.map(e=>({...e})),p:{...p},enemy:enemy?{...enemy,bot:enemy.bot?{time:enemy.bot.time,decisions:enemy.bot.decisions,observedAt:enemy.bot.observedAt,output:{...enemy.bot.output}}:null}:null,elapsed,kills,hits,intercepts,shots,bullets:bullets.map(b=>({...b})),bulletFades:bulletFades.map(fade=>({...fade})),cfg:{...cfg},renderFrames,inputMode,moveSource,aimSource,audioPlayed}),reset,pause,resume,step:(seconds,control={x:0,y:0,shoot:false})=>{for(let i=0;i<Math.round(seconds/STEP)&&(state==='running'||state==='ending');i++){if(i%2===0)botAimFrame++;if(state==='running')simulate(STEP,control);else updateEnding(STEP);}},frame,fieldWeight,activeWindow,projectilePhase,collisionEvent,applyImpact,fire,render,probe:(b,seconds)=>{const q={id:0,x:0,y:0,dx:1,dy:0,team:1,r:ACTOR.shotRadius,age:0,...b};for(let i=0;i<Math.round(seconds/STEP);i++)stepBullet(q,STEP);return q;},setPlayer:values=>Object.assign(p,values),inject:b=>bullets.push({id:++shotId,x:0,y:0,px:0,py:0,dx:1,dy:0,r:ACTOR.shotRadius,team:1,age:0,...b}),setEnemy:values=>{if(enemy)Object.assign(enemy,values);},config:values=>Object.assign(cfg,values)};
 if(new URLSearchParams(location.search).has('test'))Object.assign(window.__fieldGame,{startupPreparation,runStartupSlice,scheduleStartupPreparation,stopStartupPreparation,projectilePairEvent,projectileActivationOverlap,projectileBlockedExitTime,startProjectileDamage,drawBullet,drawRange,shotRangePlan,integrateProjectile,projectileFieldActive,projectileDamageActive,projectileEnd,brakingWeight,receiverSpin,effectiveSpin,shotSpin,drawActor,muzzleDistance,updateWeapon,WEAPON,bulletAcceleration,stepBullet,createActor,moveActor,separateActors,stick,pollPad,getInput,drawHealth,ACTOR,botControl,createBot,botAim,botAimProbe,botAnnihilationForecast,botAnnihilationScore,botTrigger,BOT_LEVELS,BOT_TUNING,botBullet,botLearn,botForecastStep,botObservedThreats,botMoveScore});
 })();
 </script>
