@@ -415,7 +415,7 @@ html[lang="en"] .setting output{white-space:nowrap}
      <label for="knockbackScale">击退系数<output id="knockbackScale-value">0.24</output></label>
      <input id="knockbackScale" type="range" min="0" max="1" step="0.01" value="0.24">
      <div class="range-bounds" aria-hidden="true"><span id="knockbackScale-min">0</span><span id="knockbackScale-max">1</span></div>
-     <p class="setting-help">击退距离 = 系数 × 总伤害 ÷ 半径比例。</p>
+     <p class="setting-help">击退距离 = 系数 × 总伤害 ÷ 半径比例；致命一击加倍。</p>
     </div>
    </div>
   </section>
@@ -565,13 +565,14 @@ const keys=new Set(),mouse={x:850,y:375,down:false,press:null};
 const touch={move:null,aim:null,target:null};
 const TOUCH_STICK={x:125,get y(){return H-115;},radius:65,hitRadius:86};
 let inputMode='mouse',moveSource='keyboard',aimSource='mouse',gamepadName='',padPrev=[],rightPrev={x:0,y:0,m:0},rightAnchor={x:0,y:0,m:0},seed=3947;
-let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],effects=[],damageNumbers=[],damageNumberId=0,elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
+let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],effects=[],woundParticles=[],damageNumbers=[],damageNumberId=0,elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
 let ending=null,defeatedEnemy=null;
 let pointerLockPending=false,pointerWasLocked=false;
 const mouseLook={x:0,y:0};let pointerDistanceScale=1;
-let cameraAngle=0;const CAMERA_FOLLOW_GAIN=.02; // At range 500, the time constant is 0.1 seconds.
+let cameraAngle=0;const CAMERA_FOLLOW_GAIN=.02,DEFEAT_CAMERA_DISTANCE=800,DEFEAT_CAMERA_DAMP_START=500; // At range 500, the time constant is 0.1 seconds.
 let renderStepReady=false;const renderActors=[{},{}];
 let accumulator=0,last=0,hudAt=-1,toastUntil=0,shotId=0,rounds=0,renderFrames=0,renderDirty=true,renderedState=null;
+const AUDIO_MASTER_GAIN=.72;
 let audioCtx=null,audioMaster=null,audioVoices=0,audioPlayed=0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
@@ -613,7 +614,7 @@ const ENGLISH={
  "弹速越高阻力越强；顺着来弹后退减弱阻力，迎弹不增强；0 关闭。": "Faster bullets face more drag. Retreating with incoming bullets reduces drag; approaching does not increase it. 0 disables it.",
  "动量伤 = 系数 × 相对撞入速度，受上限限制；擦中较弱，0 关闭。": "Momentum damage = coefficient × relative inward speed, capped by its limit. Glancing hits add less; 0 disables it.",
  "仅限制动量伤，0 关闭。": "Caps momentum damage only; 0 disables it.",
- "击退距离 = 系数 × 总伤害 ÷ 半径比例。": "Knockback distance = coefficient × total damage / relative radius.",
+ "击退距离 = 系数 × 总伤害 ÷ 半径比例；致命一击加倍。": "Knockback distance = coefficient × total damage / relative radius; lethal hits double it.",
  "手柄：左杆移动，右杆瞄准，RT 射击。触屏：左杆移动，点击射击。": "Controller: left stick moves, right stick aims, RT fires. Touch: left stick moves, tap to fire.",
  "移动手感": "Movement response",
  "人物属性": "Character properties",
@@ -861,7 +862,7 @@ function prepareAudioDevice(){
   const master=audioCtx.createGain();
   try{master.connect(audioCtx.destination);audioMaster=master;}catch(error){try{master.disconnect();}catch{}throw error;}
  }
- audioMaster.gain.value=cfg.sound?.6:0;
+ audioMaster.gain.value=cfg.sound?AUDIO_MASTER_GAIN:0;
  prepareImpactAudio();
 }
 function resumeExistingAudio(allowMuted=false){
@@ -964,7 +965,7 @@ function playSound(kind,strength=1,x=W/2){
   }else if(kind==='hurt'){
    tone('triangle',96,43,.145,.205);
   }else if(kind==='intercept'){
-   tone('sine',880,540,.045,.062);
+   tone('sine',880,540,.009,.062);
   }else{
    transient(1050,.060,.048);
    tone('triangle',180,52,.145,.225);
@@ -979,8 +980,10 @@ function playSound(kind,strength=1,x=W/2){
 }
 
 // === 05 · Actors, shape, movement and wall geometry ===
-function impactState(){return{mvx:0,mvy:0,ivx:0,ivy:0,qx:0,qy:0,qvx:0,qvy:0,hitFlash:0,hitArc:0,hitAngle:0,healthFlash:0};}
-function updateShape(a,dt){a.qvx+=(-676*a.qx-18*a.qvx)*dt;a.qvy+=(-676*a.qy-18*a.qvy)*dt;a.qx+=a.qvx*dt;a.qy+=a.qvy*dt;const amplitude=Math.hypot(a.qx,a.qy);if(amplitude>.29){a.qx*=.29/amplitude;a.qy*=.29/amplitude;}a.hitFlash=Math.max(0,a.hitFlash-dt);a.hitArc=Math.max(0,a.hitArc-dt);a.healthFlash=Math.max(0,(a.healthFlash||0)-dt*2.75);}
+const ACTOR_FLASH_TIME=.1;
+function actorFlashAmount(a){return clamp((a.hitFlash||0)/ACTOR_FLASH_TIME,0,1)*clamp(a.hitFlashStrength||0,0,1);}
+function impactState(){return{mvx:0,mvy:0,ivx:0,ivy:0,qx:0,qy:0,qvx:0,qvy:0,hitFlash:0,hitFlashStrength:0};}
+function updateShape(a,dt){a.qvx+=(-676*a.qx-18*a.qvx)*dt;a.qvy+=(-676*a.qy-18*a.qvy)*dt;a.qx+=a.qvx*dt;a.qy+=a.qvy*dt;const amplitude=Math.hypot(a.qx,a.qy);if(amplitude>.29){a.qx*=.29/amplitude;a.qy*=.29/amplitude;}a.hitFlash=Math.max(0,a.hitFlash-dt);}
 let bodyAspectValue=0,bodyAspectAmount=0;
 function bodyShape(a){
  if(bodyAspectValue!==cfg.actorAspect){bodyAspectValue=cfg.actorAspect;bodyAspectAmount=Math.sign(bodyAspectValue)*Math.log1p(Math.abs(bodyAspectValue)/100)*.5;}
@@ -1167,7 +1170,7 @@ function reset(run=false){
  seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);cameraAngle=p.aim+Math.PI/2;
  if(headingView())p.range=VIEW_H*(.8-.5);
  ending=null;defeatedEnemy=null;
- bullets=[];bulletFades=[];effects=[];damageNumbers=[];damageNumberId=0;elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
+ bullets=[];bulletFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberId=0;elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);state=run?'running':'ready';
  $('pause').disabled=!run;$('pause').textContent=tr('暂停');$('overlay').hidden=run;updateHud(true);
  if(run){$('settings').open=false;announce('游戏开始');deferAudioUnlock();}
@@ -1187,7 +1190,8 @@ function finish(won){
  flushSettings();
  const values={secs:elapsed.toFixed(1),hp:formatHealth(won?p.hp:enemy?.hp||0),maxHp:formatHealth(won?p.maxHp:enemy?.maxHp??cfg.maxHealth),shots};
  // Freeze the result now; the remaining movement is purely visual.
- ending={age:0,duration:.8,result:won===null?'draw':won?'won':'lost',values,
+ ending={age:0,duration:.8,result:won===null?'draw':won?'won':'lost',values,cameraAnchor:p.hp<=0?{x:p.x,y:p.y}:null,
+  cameraPosition:p.hp<=0?{x:p.x,y:p.y}:null,
   title:won===null?'同时倒下':won?'这一局，你赢了':'再来一局',
   copy:won===null?'双方在同一步交锋中倒下。用时 {secs} 秒。':won?'用时 {secs} 秒，剩余生命 {hp} / {maxHp}，发射 {shots} 发。':'本局 {secs} 秒，对手剩余生命 {hp} / {maxHp}。可在顶部调整难度，再试一次。',
   announcement:won===null?'本局平局':won?'本局获胜':'本局结束',
@@ -1200,7 +1204,7 @@ function updateEnding(dt){
  for(const actor of ending.actors){if(actor){updateActorHitMarks(actor,dt);moveActor(actor,0,0,.16,dt);}}
  if(ending.actors[0]&&ending.actors[1])separateActors(ending.actors[0],ending.actors[1]);
  updateDamageNumbers(dt);
- for(const e of effects)e.age+=dt;effects=effects.filter(e=>e.age<e.life);
+ updateEffects(dt);
  for(const fade of bulletFades){fade.px=fade.x;fade.py=fade.y;fade.age+=dt;fade.x+=fade.vx*dt;fade.y+=fade.vy*dt;}bulletFades=bulletFades.filter(fade=>fade.age<fade.life);
  if(ending.age>=ending.duration-1e-9){ending.age=ending.duration;state=ending.result;showOverlay(ending.title,ending.copy,'再来一局',ending.values);announce(ending.announcement);}
 }
@@ -1235,6 +1239,17 @@ function getInput(pad,dt=STEP){
 // Heading view changes only presentation and input coordinates, never world physics.
 function headingView(){return cfg.view==='heading';}
 function cameraHeading(){return headingView()?cameraAngle:0;}
+function headingCameraPosition(actor){
+ const anchor=ending?.cameraAnchor;if(!anchor)return actor;
+ const dx=actor.x-anchor.x,dy=actor.y-anchor.y,distance=Math.hypot(dx,dy);
+ const last=ending.cameraPosition;
+ if(!Number.isFinite(distance))return last;
+ const tail=DEFEAT_CAMERA_DISTANCE-DEFEAT_CAMERA_DAMP_START;
+ const cameraDistance=distance>DEFEAT_CAMERA_DAMP_START?Math.min(DEFEAT_CAMERA_DISTANCE,DEFEAT_CAMERA_DAMP_START-tail*Math.expm1(-(distance-DEFEAT_CAMERA_DAMP_START)/tail)):distance;
+ const scale=distance>0?cameraDistance/distance:1;
+ last.x=anchor.x+dx*scale;last.y=anchor.y+dy*scale;
+ return distance<=DEFEAT_CAMERA_DAMP_START?actor:last;
+}
 function updateCamera(dt){
  if(!headingView())return;
  const actor=ending?.actors[0]||p,target=actor.aim+Math.PI/2,difference=Math.atan2(Math.sin(target-cameraAngle),Math.cos(target-cameraAngle));
@@ -1569,6 +1584,7 @@ function fire(actor,team,aim=actor.aim,range=actor.range){
  // Both teams draw once at launch; random values stay hidden from the bot.
  b.collisionRandom=Math.random();
  startProjectileDamage(b);bullets.push(b);
+ muzzleEffect(actor,b);
  playShotSound(actor);
  if(team===0)shots++;return b;
 }
@@ -1639,7 +1655,7 @@ function collisionEvent(b,a,shapeCache=null){
   const normal=unit(lx/(rx*rx),ly/(ry*ry)),nx=co*normal.x-si*normal.y,ny=si*normal.x+co*normal.y;
   const scale=1/Math.hypot(lx/shape.rx,ly/shape.ry),ax=origin.x+(a.x-origin.x)*t,ay=origin.y+(a.y-origin.y)*t;
   const travel=Number.isFinite(segment.travel0)?segment.travel0+(segment.travel1-segment.travel0)*localTime:(b.prevTravel??b.travel??0)+((b.travel??0)-(b.prevTravel??b.travel??0))*t;
-  return{t,nx,ny,travel,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,vx:segment.vx??b.vx,vy:segment.vy??b.vy};
+  return{t,nx,ny,travel,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,bulletX:segment.x0+(segment.x1-segment.x0)*localTime,bulletY:segment.y0+(segment.y1-segment.y0)*localTime,vx:segment.vx??b.vx,vy:segment.vy??b.vy};
  }
  return null;
 }
@@ -1913,6 +1929,21 @@ const IMPACT_SHAPES=[
  [0.796151,0.865515,-0.113417,1.451196,-0.882717,0.488347,-0.64176,-1.247858,0.243893,-1.28282,0.854327,-0.522749]
 ].map(points=>new Float32Array(points));
 let impactMistSprite=null;
+const IMPACT_PARTICLE_BRIGHTNESS=.85;
+const lightDustSprites=[];
+function getLightDustSprite(colorIndex){
+ if(lightDustSprites[colorIndex])return lightDustSprites[colorIndex];
+ const image=document.createElement('canvas');image.width=image.height=32;
+ const paint=image.getContext('2d'),gradient=paint.createRadialGradient(16,16,0,16,16,16);
+ const tint=IMPACT_COLORS[colorIndex].map(v=>Math.round(Math.round(v*.6+255*.4)*IMPACT_PARTICLE_BRIGHTNESS)).join(',');
+ const core=[255,253,247].map(v=>Math.round(v*IMPACT_PARTICLE_BRIGHTNESS)).join(',');
+ gradient.addColorStop(0,`rgba(${core},1)`);
+ gradient.addColorStop(.3,`rgba(${core},.88)`);
+ gradient.addColorStop(.5,`rgba(${tint},.25)`);
+ gradient.addColorStop(.72,`rgba(${tint},.08)`);
+ gradient.addColorStop(1,`rgba(${tint},0)`);
+ paint.fillStyle=gradient;paint.fillRect(0,0,32,32);return lightDustSprites[colorIndex]=image;
+}
 function getImpactMistSprite(){
  if(impactMistSprite)return impactMistSprite;
  const image=document.createElement('canvas');image.width=image.height=64;
@@ -1923,12 +1954,44 @@ function getImpactMistSprite(){
  gradient.addColorStop(1,'rgba(210,213,205,0)');
  paint.fillStyle=gradient;paint.fillRect(0,0,64,64);impactMistSprite=image;return image;
 }
+const muzzleSprites=[null,null];let interceptHaloSprite=null;
+function getMuzzleSprite(team){
+ if(muzzleSprites[team])return muzzleSprites[team];
+ const image=document.createElement('canvas');image.width=image.height=64;
+ const paint=image.getContext('2d'),gradient=paint.createRadialGradient(32,32,0,32,32,32);
+ const tint=team===0?'178,206,202':'210,180,155';
+ gradient.addColorStop(0,'rgba(255,255,250,1)');
+ gradient.addColorStop(.15,'rgba(255,255,250,.95)');
+ gradient.addColorStop(.28,'rgba(255,255,250,.65)');
+ gradient.addColorStop(.45,`rgba(${tint},.17)`);
+ gradient.addColorStop(.75,`rgba(${tint},.05)`);
+ gradient.addColorStop(1,`rgba(${tint},0)`);
+ paint.fillStyle=gradient;paint.fillRect(0,0,64,64);return muzzleSprites[team]=image;
+}
+function getInterceptHaloSprite(){
+ if(interceptHaloSprite)return interceptHaloSprite;
+ const image=document.createElement('canvas');image.width=image.height=64;
+ const paint=image.getContext('2d'),gradient=paint.createRadialGradient(32,32,0,32,32,32);
+ gradient.addColorStop(0,'rgba(213,221,213,0)');
+ gradient.addColorStop(.4,'rgba(213,221,213,0)');
+ gradient.addColorStop(.6,'rgba(213,221,213,.06)');
+ gradient.addColorStop(.76,'rgba(213,221,213,.3)');
+ gradient.addColorStop(.9,'rgba(213,221,213,.12)');
+ gradient.addColorStop(1,'rgba(213,221,213,0)');
+ paint.fillStyle=gradient;paint.fillRect(0,0,64,64);return interceptHaloSprite=image;
+}
 let visualSeed=(Date.now()>>>0)||1;
 function visualRandom(){visualSeed=(Math.imul(visualSeed,1664525)+1013904223)>>>0;return visualSeed/4294967296;}
+function muzzleEffect(actor,bullet){
+ const flash={kind:'muzzle',actor,team:bullet.team,x:bullet.x,y:bullet.y,
+  age:0,previousAge:0,life:.05*(.85+visualRandom()*.3),size:.85+visualRandom()*.3};
+ const old=effects.find(e=>e.kind==='muzzle'&&e.actor===actor);
+ if(old)Object.assign(old,flash);else{effects.push(flash);capVisualEffects();}
+}
 function randomImpactColor(){
  const base=IMPACT_COLORS[Math.floor(visualRandom()*IMPACT_COLORS.length)],brightness=1.02+visualRandom()*.18,saturation=1.8+visualRandom()*.3;
  const luminance=.2126*base[0]+.7152*base[1]+.0722*base[2];
- return 'rgb('+base.map(v=>clamp(Math.round((luminance+(v-luminance)*saturation)*brightness),0,255)).join(',')+')';
+ return 'rgb('+base.map(v=>Math.round(clamp(Math.round((luminance+(v-luminance)*saturation)*brightness),0,255)*IMPACT_PARTICLE_BRIGHTNESS)).join(',')+')';
 }
 function impactScatterBasis(contact,ux,uy){
  const rx=(contact.vx??ux)-ux,ry=(contact.vy??uy)-uy;
@@ -1937,8 +2000,21 @@ function impactScatterBasis(contact,ux,uy){
  const tangentScale=Math.min(.12,60/Math.max(1,Math.hypot(tx,ty))),kick=Math.min(50,closing*.1);
  return{x:contact.nx*kick+tx*tangentScale,y:contact.ny*kick+ty*tangentScale};
 }
+const MAX_VISUAL_FRAGMENTS=200,MAX_LIGHT_DUST=80,MAX_WOUND_PARTICLES=48;
 function capVisualEffects(){
  while(effects.length>90){const index=effects.findIndex(e=>e.kind!=='breakup');effects.splice(index<0?0:index,1);}
+ let count=0,dustCount=0;
+ for(const e of effects){
+  if(e.kind==='breakup'&&e.age<e.life){e.pieces=e.pieces.filter(p=>e.age<p.life);count+=e.pieces.length;}
+  if(e.particles){for(let i=e.particles.length-1;i>=0;i--)if(e.age>=e.particles[i].life)e.particles.splice(i,1);count+=e.particles.length;}
+  if(e.dust){for(let i=e.dust.length-1;i>=0;i--)if(e.age>=e.dust[i].life)e.dust.splice(i,1);dustCount+=e.dust.length;}
+ }
+ let excess=count-MAX_VISUAL_FRAGMENTS;
+ // Preserve complete death partitions and the newest impacts.
+ for(const e of effects){if(excess<=0)break;if(e.particles?.length){const removed=Math.min(excess,e.particles.length);e.particles.splice(0,removed);excess-=removed;}}
+ let dustExcess=dustCount+woundParticles.length-MAX_LIGHT_DUST;
+ if(dustExcess>0&&woundParticles.length){const removed=Math.min(dustExcess,woundParticles.length);woundParticles.splice(0,removed);dustExcess-=removed;}
+ for(const e of effects){if(dustExcess<=0)break;if(e.dust?.length){const removed=Math.min(dustExcess,e.dust.length);e.dust.splice(0,removed);dustExcess-=removed;}}
 }
 // All sizes share the same signed triangular spin distribution.
 const IMPACT_SPIN_MAX=30;
@@ -1947,26 +2023,37 @@ const IMPACT_PREFABS=IMPACT_SHAPES.map(vertices=>{
  for(let j=0;j<vertices.length;j+=2){const k=(j+2)%vertices.length;area+=vertices[j]*vertices[k+1]-vertices[k]*vertices[j+1];}
  return{vertices,area:Math.abs(area)*.5};
 });
-function impactEffect(contact,damage,inheritedVx=0,inheritedVy=0){
+function impactEffect(contact,damage,inheritedVx=0,inheritedVy=0,explosionDamage=0,bulletRadius=ACTOR.shotRadius,bulletTeam=0){
  if(!(damage>0)||!Number.isFinite(damage))return;
- const amount=clamp(damage,0,1.5),particles=[],mist=[],basis=impactScatterBasis(contact,inheritedVx,inheritedVy);
+ const amount=clamp(damage,0,1.5),particles=[],mist=[],dust=[],basis=impactScatterBasis(contact,inheritedVx,inheritedVy);
+ const charge=clamp(explosionDamage,0,1),normalBoost=15*charge,scatterLimit=85+20*charge;
  const expectedCount=amount*20;
  const count=Math.floor(expectedCount)+(visualRandom()<expectedCount%1?1:0);
  for(let i=0;i<count;i++){
   const angle=Math.atan2(contact.ny,contact.nx)+(visualRandom()<.15?Math.PI:0)+(visualRandom()-.5)*3.3;
-  const speed=15+visualRandom()*30,rotation=visualRandom()*TAU;
+  const speed=5+visualRandom()*(50+20*charge),rotation=visualRandom()*TAU;
   const prefab=IMPACT_PREFABS[Math.floor(visualRandom()*IMPACT_PREFABS.length)],color=randomImpactColor();
-  const sx=basis.x+Math.cos(angle)*speed,sy=basis.y+Math.sin(angle)*speed,limit=Math.min(1,85/Math.max(1,Math.hypot(sx,sy)));
-  particles.push({area:prefab.area,rotation,vx:inheritedVx+sx*limit,vy:inheritedVy+sy*limit,
+  const sx=basis.x+contact.nx*normalBoost+Math.cos(angle)*speed,sy=basis.y+contact.ny*normalBoost+Math.sin(angle)*speed,limit=Math.min(1,scatterLimit/Math.max(1,Math.hypot(sx,sy)));
+  particles.push({area:prefab.area,rotation,vx:inheritedVx+sx*limit*3,vy:inheritedVy+sy*limit*3,
    x:(visualRandom()-.5)*2,y:(visualRandom()-.5)*2,vertices:prefab.vertices,
-   color,life:.45+visualRandom()*.35,spin:(visualRandom()-visualRandom())*IMPACT_SPIN_MAX});
+   color,life:.4+visualRandom()*.4,spin:(visualRandom()-visualRandom())*IMPACT_SPIN_MAX});
  }
- for(let i=0;i<3+Math.ceil(amount*2);i++){
+ for(let i=0;i<4+Math.ceil(amount*3);i++){
   const angle=visualRandom()*TAU,speed=5+visualRandom()*16;
-  mist.push({vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-   radius:(2.5+visualRandom()*3)*(.8+Math.sqrt(amount)*.9),expansion:(10+visualRandom()*12)*(.8+Math.sqrt(amount)*.7),life:.26+visualRandom()*.14});
+  mist.push({vx:inheritedVx+basis.x+Math.cos(angle)*speed,vy:inheritedVy+basis.y+Math.sin(angle)*speed,damping:8,
+   radius:(2.5+visualRandom()*3)*(.8+Math.sqrt(amount)*.9),expansion:(10+visualRandom()*12)*(.8+Math.sqrt(amount)*.7),life:.3+visualRandom()*.2});
  }
- effects.push({kind:'impact',x:contact.x,y:contact.y,age:0,life:.82,damage:amount,particles,mist});
+ const expectedDust=amount*20,dustCount=Math.floor(expectedDust)+(visualRandom()<expectedDust%1?1:0);
+ for(let i=0;i<dustCount;i++){
+  const angle=Math.atan2(contact.ny,contact.nx)+(visualRandom()-.5)*3,speed=20+visualRandom()*40,life=.4+visualRandom()*.4;
+  dust.push({x:(visualRandom()-.5)*3,y:(visualRandom()-.5)*3,vx:inheritedVx+basis.x+Math.cos(angle)*speed,vy:inheritedVy+basis.y+Math.sin(angle)*speed,
+   radius:1.4+1.1*visualRandom()**2,life,colorIndex:Math.floor(visualRandom()*IMPACT_COLORS.length),
+   glint:true,flareAt:life*(.12+visualRandom()*.45),flareWidth:.02+visualRandom()*.06,
+   flareSharpness:.8+visualRandom()*1.4,flareStrength:.25+visualRandom(),damping:.3+visualRandom()*5.7});
+ }
+ effects.push({kind:'impact',x:contact.x,y:contact.y,age:0,life:1.02,damage:amount,bulletRadius,bulletTeam,
+  flashX:(contact.bulletX??contact.x+contact.nx*bulletRadius)-contact.x,flashY:(contact.bulletY??contact.y+contact.ny*bulletRadius)-contact.y,
+  flashVx:contact.vx??inheritedVx,flashVy:contact.vy??inheritedVy,particles,mist,dust});
  capVisualEffects();
 }
 function effect(x,y,kind,strength=1,angle=0){effects.push({x,y,age:0,life:kind==='intercept'?.18:.24,kind,strength,angle});capVisualEffects();}
@@ -1999,67 +2086,147 @@ const HIT_MARK_SHAPES=[
  const facet=new Path2D();facet.moveTo(points[0],points[1]*.62);facet.lineTo(points[2],points[3]*.62);facet.lineTo(-.6,.3);facet.lineTo(-.62,-.3);facet.closePath();
  return{patch,facet};
 });
-// Six fixed eight-piece partitions, compiled once into centered paths.
+// Ten fixed partitions: fine cells near the +X impact side, larger cells behind it.
 const BREAKUP_LAYOUTS=[
  [
-  [-0.02906,-0.32487,-0.01608,0.21207,-0.37828,0.22706,-0.63286,-0.38901],
-  [-0.01608,0.21207,-0.02906,-0.32487,0.02494,-0.39257,0.59348,-0.30007,0.43296,0.24788,0.09438,0.30051],
-  [1,0,0.98079,0.19509,0.92388,0.38268,0.86536,0.49217,0.43296,0.24788,0.59348,-0.30007,0.85847,-0.50505,0.92388,-0.38268,0.98079,-0.19509],
-  [0.86536,0.49217,0.83147,0.55557,0.70711,0.70711,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0.00316,0.99969,0.09438,0.30051,0.43296,0.24788],
-  [0.00316,0.99969,0,1,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.84327,0.53349,-0.37828,0.22706,-0.01608,0.21207,0.09438,0.30051],
-  [-0.84327,0.53349,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.8462,-0.52801,-0.63286,-0.38901,-0.37828,0.22706],
-  [-0.8462,-0.52801,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.05367,-0.99471,0.02494,-0.39257,-0.02906,-0.32487,-0.63286,-0.38901],
-  [0.05367,-0.99471,0.19509,-0.98079,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.85847,-0.50505,0.59348,-0.30007,0.02494,-0.39257]
+  [0.967581,0.247805,0.95694,0.290285,0.92388,0.382683,0.897211,0.43907,0.519086,0.343289,0.608063,0.016608,0.616484,0.017011],
+  [0.105371,-0.994094,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.804951,-0.591327,0.400181,-0.370993,0.075622,-0.835166],
+  [1,0,0.995185,0.098017,0.980785,0.19509,0.967581,0.247805,0.616484,0.017011,0.955883,-0.293239,0.95694,-0.290285,0.980785,-0.19509,0.995185,-0.098017],
+  [0.616484,0.017011,0.608063,0.016608,0.330956,-0.151292,0.400181,-0.370993,0.804951,-0.591327,0.83147,-0.55557,0.881921,-0.471397,0.92388,-0.382683,0.955883,-0.293239],
+  [0.897211,0.43907,0.881921,0.471397,0.83147,0.55557,0.77301,0.634393,0.72198,0.690697,0.448647,0.582713,0.452676,0.395274,0.519086,0.343289],
+  [0.72198,0.690697,0.707107,0.707107,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.146294,0.988024,0.448647,0.582713],
+  [0.330956,-0.151292,0.608063,0.016608,0.519086,0.343289,0.452676,0.395274,0.058592,0.173987,0.048917,-0.004124],
+  [-0.146294,0.988024,-0.19509,0.980785,-0.233123,0.971259,0.058592,0.173987,0.452676,0.395274,0.448647,0.582713],
+  [0.075622,-0.835166,0.400181,-0.370993,0.330956,-0.151292,0.048917,-0.004124,-0.461,-0.287632],
+  [-0.233123,0.971259,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.664782,0.745468,-0.514104,-0.28619,-0.461,-0.287632,0.048917,-0.004124,0.058592,0.173987],
+  [-0.874528,-0.483732,-0.83147,-0.55557,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,0,-1,0.098017,-0.995185,0.105371,-0.994094,0.075622,-0.835166,-0.461,-0.287632,-0.514104,-0.28619],
+  [-0.664782,0.745468,-0.707107,0.707107,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.874528,-0.483732,-0.514104,-0.28619]
  ],
  [
-  [-0.09235,-0.29148,0.09157,0.3407,-0.02576,0.44362,-0.53826,0.31419,-0.36683,-0.26365],
-  [0.09157,0.3407,-0.09235,-0.29148,0.03274,-0.40157,0.46595,-0.26827,0.41985,0.32012],
-  [1,0,0.98079,0.19509,0.92388,0.38268,0.83734,0.54459,0.41985,0.32012,0.46595,-0.26827,0.89151,-0.44325,0.92388,-0.38268,0.98079,-0.19509],
-  [0.83734,0.54459,0.83147,0.55557,0.70711,0.70711,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.06616,0.99348,-0.02576,0.44362,0.09157,0.3407,0.41985,0.32012],
-  [-0.06616,0.99348,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.8762,0.47189,-0.53826,0.31419,-0.02576,0.44362],
-  [-0.8762,0.47189,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.83713,-0.54499,-0.36683,-0.26365,-0.53826,0.31419],
-  [-0.83713,-0.54499,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.08175,-0.99195,0.03274,-0.40157,-0.09235,-0.29148,-0.36683,-0.26365],
-  [0.08175,-0.99195,0.19509,-0.98079,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.89151,-0.44325,0.46595,-0.26827,0.03274,-0.40157]
+  [1,0,0.995185,0.098017,0.992837,0.113846,0.829883,0.102929,0.859393,-0.254009,0.945481,-0.322312,0.95694,-0.290285,0.980785,-0.19509,0.995185,-0.098017],
+  [0.567577,-0.822564,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.891883,-0.450333,0.454678,-0.483969,0.422999,-0.52841],
+  [0.454678,-0.483969,0.891883,-0.450333,0.92388,-0.382683,0.945481,-0.322312,0.859393,-0.254009,0.532917,-0.211285],
+  [0.814688,0.578197,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.124674,0.991231,0.510383,0.195191,0.540134,0.204561],
+  [0.992837,0.113846,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.814688,0.578197,0.540134,0.204561,0.829883,0.102929],
+  [0.532917,-0.211285,0.859393,-0.254009,0.829883,0.102929,0.540134,0.204561,0.510383,0.195191,0.443017,0.122541],
+  [0.047811,-0.505683,0.422999,-0.52841,0.454678,-0.483969,0.532917,-0.211285,0.443017,0.122541,-0.13594,0.030762,-0.282232,-0.133862],
+  [-0.036759,-0.998194,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.567577,-0.822564,0.422999,-0.52841,0.047811,-0.505683],
+  [0.124674,0.991231,0.098017,0.995185,0.078061,0.996165,-0.133918,0.654384,-0.13594,0.030762,0.443017,0.122541,0.510383,0.195191],
+  [-0.796806,0.602309,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.964701,-0.259304,-0.282232,-0.133862,-0.13594,0.030762,-0.133918,0.654384],
+  [0.078061,0.996165,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.796806,0.602309,-0.133918,0.654384],
+  [-0.964701,-0.259304,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,-0.036759,-0.998194,0.047811,-0.505683,-0.282232,-0.133862]
  ],
  [
-  [0.08467,-0.31308,-0.14154,0.2201,-0.48353,0.1787,-0.53656,-0.50294],
-  [-0.14154,0.2201,0.08467,-0.31308,0.10789,-0.32607,0.51377,-0.17259,0.37787,0.35681,-0.07344,0.32606],
-  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.72952,0.6798,0.37787,0.35681,0.51377,-0.17259,0.96899,-0.23398,0.98079,-0.19509],
-  [0.72952,0.6798,0.70711,0.70711,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.13374,0.98683,-0.07344,0.32606,0.37787,0.35681],
-  [-0.13374,0.98683,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.93192,0.35618,-0.48353,0.1787,-0.14154,0.2201,-0.07344,0.32606],
-  [-0.93192,0.35618,-0.98079,0.19509,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.72948,-0.67985,-0.53656,-0.50294,-0.48353,0.1787],
-  [-0.72948,-0.67985,-0.70711,-0.70711,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.23695,-0.96809,0.10789,-0.32607,0.08467,-0.31308,-0.53656,-0.50294],
-  [0.51377,-0.17259,0.10789,-0.32607,0.23695,-0.96809,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.96899,-0.23398]
+  [0.474995,-0.879765,0.55557,-0.83147,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.92388,-0.382683,0.95694,-0.290285,0.9758,-0.214994,0.587942,-0.284914,0.311983,-0.483532],
+  [0.995881,0.083841,0.995185,0.098017,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.818685,0.572808,0.739867,0.436544,0.744711,0.3326],
+  [1,0,0.995881,0.083841,0.744711,0.3326,0.520586,0.156774,0.989922,-0.133493,0.995185,-0.098017],
+  [0.330138,0.175733,0.520586,0.156774,0.744711,0.3326,0.739867,0.436544,0.33131,0.413801,0.303948,0.187541],
+  [0.587942,-0.284914,0.9758,-0.214994,0.980785,-0.19509,0.989922,-0.133493,0.520586,0.156774,0.330138,0.175733],
+  [0.818685,0.572808,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.227934,0.972558,0.33131,0.413801,0.739867,0.436544],
+  [0.181117,-0.418399,0.311983,-0.483532,0.587942,-0.284914,0.330138,0.175733,0.303948,0.187541,0.028917,0.016019],
+  [-0.540248,-0.840653,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.474995,-0.879765,0.311983,-0.483532,0.181117,-0.418399],
+  [0.227934,0.972558,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.105108,0.994133,-0.319301,0.408463,-0.132508,0.058313,0.028917,0.016019,0.303948,0.187541,0.33131,0.413801],
+  [-0.844038,-0.534601,-0.83147,-0.55557,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.540248,-0.840653,0.181117,-0.418399,0.028917,0.016019,-0.132508,0.058313],
+  [-0.943937,0.326625,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.844038,-0.534601,-0.132508,0.058313,-0.319301,0.408463],
+  [-0.105108,0.994133,-0.19509,0.980785,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.943937,0.326625,-0.319301,0.408463]
  ],
  [
-  [-0.0514,-0.20857,0.04535,0.29391,-0.15534,0.4655,-0.69815,0.15492,-0.20104,-0.25387],
-  [0.04535,0.29391,-0.0514,-0.20857,0.20281,-0.37443,0.65213,-0.13832,0.2966,0.36151],
-  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.70711,0.70711,0.67205,0.73588,0.2966,0.36151,0.65213,-0.13832,0.98477,-0.15464],
-  [0.67205,0.73588,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.19509,0.98079,-0.29899,0.94927,-0.15534,0.4655,0.04535,0.29391,0.2966,0.36151],
-  [-0.29899,0.94927,-0.38268,0.92388,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.98079,0.19509,-0.98177,0.18507,-0.69815,0.15492,-0.15534,0.4655],
-  [-0.98177,0.18507,-1,0,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.70711,-0.70711,-0.63951,-0.76259,-0.20104,-0.25387,-0.69815,0.15492],
-  [-0.0514,-0.20857,-0.20104,-0.25387,-0.63951,-0.76259,-0.55557,-0.83147,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.33631,-0.93795,0.20281,-0.37443],
-  [0.65213,-0.13832,0.20281,-0.37443,0.33631,-0.93795,0.38268,-0.92388,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.98079,-0.19509,0.98477,-0.15464]
+  [0.979881,0.198702,0.95694,0.290285,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.591603,0.804746,0.267835,0.439664,0.281291,0.299977,0.650267,0.155877],
+  [0.650267,0.155877,0.281291,0.299977,0.262521,0.266979,0.431696,-0.252511,0.523346,-0.289117,0.640474,-0.163702],
+  [1,0,0.995185,0.098017,0.980785,0.19509,0.979881,0.198702,0.650267,0.155877,0.640474,-0.163702,0.98152,-0.190137,0.995185,-0.098017],
+  [-0.075611,-0.996285,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.624426,-0.780403,0.532343,-0.497676,-0.079511,-0.839738],
+  [0.624426,-0.780403,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.87652,-0.480408,0.577619,-0.406893,0.532343,-0.497676],
+  [0.640474,-0.163702,0.523346,-0.289117,0.577619,-0.406893,0.87652,-0.480408,0.881921,-0.471397,0.92388,-0.382683,0.95694,-0.290285,0.980785,-0.19509,0.98152,-0.190137],
+  [0.591603,0.804746,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.250044,0.96702,-0.18657,0.716574,0.267835,0.439664],
+  [-0.079511,-0.839738,0.532343,-0.497676,0.577619,-0.406893,0.523346,-0.289117,0.431696,-0.252511,-0.162361,-0.487748],
+  [-0.162361,-0.487748,0.431696,-0.252511,0.262521,0.266979,-0.319706,-0.225719],
+  [-0.779144,0.000211,-0.319706,-0.225719,0.262521,0.266979,0.281291,0.299977,0.267835,0.439664,-0.18657,0.716574],
+  [-0.999435,0.0115,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,-0.075611,-0.996285,-0.079511,-0.839738,-0.162361,-0.487748,-0.319706,-0.225719,-0.779144,0.000211],
+  [-0.250044,0.96702,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-0.999435,0.0115,-0.779144,0.000211,-0.18657,0.716574]
  ],
  [
-  [-0.03832,-0.31198,-0.00649,0.29037,-0.26815,0.44002,-0.63065,0.02406,-0.14836,-0.35219],
-  [-0.00649,0.29037,-0.03832,-0.31198,0.13353,-0.36747,0.55843,-0.01769,0.28041,0.39141],
-  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.70711,0.70711,0.56508,0.82367,0.28041,0.39141,0.55843,-0.01769,0.99325,-0.0685],
-  [0.56508,0.82367,0.55557,0.83147,0.38268,0.92388,0.19509,0.98079,0,1,-0.19509,0.98079,-0.38268,0.92388,-0.46412,0.88035,-0.26815,0.44002,-0.00649,0.29037,0.28041,0.39141],
-  [-0.46412,0.88035,-0.55557,0.83147,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.99963,-0.00381,-0.63065,0.02406,-0.26815,0.44002],
-  [-0.99963,-0.00381,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.5322,-0.84396,-0.14836,-0.35219,-0.63065,0.02406],
-  [-0.03832,-0.31198,-0.14836,-0.35219,-0.5322,-0.84396,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.38268,-0.92388,0.52598,-0.84728,0.13353,-0.36747],
-  [0.55843,-0.01769,0.13353,-0.36747,0.52598,-0.84728,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.98079,-0.19509,0.99325,-0.0685]
+  [0.150224,-0.987441,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.634393,-0.77301,0.707107,-0.707107,0.763096,-0.645332,0.470767,-0.310009,-0.060662,-0.41902],
+  [0.691112,0.089139,0.526062,-0.028533,0.513593,-0.25482,0.975397,-0.167057],
+  [0.526062,-0.028533,0.691112,0.089139,0.69374,0.293098,0.498389,0.351974,0.338503,0.096766],
+  [0.906456,0.419522,0.881921,0.471397,0.83147,0.55557,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.104499,0.994223,0.099366,0.871339,0.498389,0.351974,0.69374,0.293098],
+  [0.470767,-0.310009,0.763096,-0.645332,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.92388,-0.382683,0.95694,-0.290285,0.980785,-0.19509,0.984514,-0.169952,0.975397,-0.167057,0.513593,-0.25482],
+  [1,0,0.995185,0.098017,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.906456,0.419522,0.69374,0.293098,0.691112,0.089139,0.975397,-0.167057,0.984514,-0.169952,0.995185,-0.098017],
+  [-0.089746,-0.391901,0.27294,0.081625,-0.032115,0.547172,-0.471705,-0.010186,-0.529728,-0.189884],
+  [-0.032115,0.547172,0.27294,0.081625,0.338503,0.096766,0.498389,0.351974,0.099366,0.871339],
+  [-0.060662,-0.41902,0.470767,-0.310009,0.513593,-0.25482,0.526062,-0.028533,0.338503,0.096766,0.27294,0.081625,-0.089746,-0.391901],
+  [0.104499,0.994223,0.098017,0.995185,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.717797,0.695312,-0.471705,-0.010186,-0.032115,0.547172,0.099366,0.871339],
+  [-0.940125,-0.33728,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,0,-1,0.098017,-0.995185,0.150224,-0.987441,-0.060662,-0.41902,-0.089746,-0.391901,-0.529728,-0.189884],
+  [-0.717797,0.695312,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.940125,-0.33728,-0.529728,-0.189884,-0.471705,-0.010186]
  ],
  [
-  [-0.06457,-0.20167,-0.01447,0.35154,-0.39075,0.51048,-0.52379,-0.056,-0.1027,-0.22262],
-  [-0.01447,0.35154,-0.06457,-0.20167,0.25175,-0.27486,0.62811,-0.00804,0.25675,0.50714],
-  [1,0,0.98079,0.19509,0.92388,0.38268,0.83147,0.55557,0.70711,0.70711,0.55557,0.83147,0.43603,0.89536,0.25675,0.50714,0.62811,-0.00804,0.99768,-0.02357],
-  [0.43603,0.89536,0.38268,0.92388,0.19509,0.98079,0,1,-0.19509,0.98079,-0.38268,0.92388,-0.55557,0.83147,-0.63694,0.76469,-0.39075,0.51048,-0.01447,0.35154,0.25675,0.50714],
-  [-0.63694,0.76469,-0.70711,0.70711,-0.83147,0.55557,-0.92388,0.38268,-0.98079,0.19509,-1,0,-0.98807,-0.12109,-0.52379,-0.056,-0.39075,0.51048],
-  [-0.98807,-0.12109,-0.98079,-0.19509,-0.92388,-0.38268,-0.83147,-0.55557,-0.70711,-0.70711,-0.55557,-0.83147,-0.40659,-0.9111,-0.1027,-0.22262,-0.52379,-0.056],
-  [-0.06457,-0.20167,-0.1027,-0.22262,-0.40659,-0.9111,-0.38268,-0.92388,-0.19509,-0.98079,0,-1,0.19509,-0.98079,0.38268,-0.92388,0.50561,-0.85817,0.25175,-0.27486],
-  [0.62811,-0.00804,0.25175,-0.27486,0.50561,-0.85817,0.55557,-0.83147,0.70711,-0.70711,0.83147,-0.55557,0.92388,-0.38268,0.98079,-0.19509,0.99768,-0.02357]
+  [0.753533,0.370195,0.358702,0.128553,0.392034,0.08093,0.854126,0.136951,0.866623,0.148635],
+  [1,0,0.995185,0.098017,0.986881,0.153998,0.866623,0.148635,0.854126,0.136951,0.787928,-0.183194,0.962334,-0.268752,0.980785,-0.19509,0.995185,-0.098017],
+  [0.694744,-0.718312,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.92388,-0.382683,0.95694,-0.290285,0.962334,-0.268752,0.787928,-0.183194,0.486481,-0.170056,0.36947,-0.480071],
+  [0.824356,0.565162,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.584169,0.810259,0.213917,0.342427,0.273257,0.190775,0.358702,0.128553,0.753533,0.370195],
+  [0.986881,0.153998,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.824356,0.565162,0.753533,0.370195,0.866623,0.148635],
+  [0.854126,0.136951,0.392034,0.08093,0.486481,-0.170056,0.787928,-0.183194],
+  [0.165758,-0.553532,0.36947,-0.480071,0.486481,-0.170056,0.392034,0.08093,0.358702,0.128553,0.273257,0.190775,-0.213139,-0.224875],
+  [-0.015349,-0.999246,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.634393,-0.77301,0.694744,-0.718312,0.36947,-0.480071,0.165758,-0.553532],
+  [0.584169,0.810259,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.623169,0.781335,0.213917,0.342427],
+  [-0.750454,0.659281,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.77301,-0.634393,-0.731434,-0.680266,-0.406966,-0.202147],
+  [-0.731434,-0.680266,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,-0.015349,-0.999246,0.165758,-0.553532,-0.213139,-0.224875,-0.406966,-0.202147],
+  [-0.623169,0.781335,-0.634393,0.77301,-0.707107,0.707107,-0.750454,0.659281,-0.406966,-0.202147,-0.213139,-0.224875,0.273257,0.190775,0.213917,0.342427]
+ ],
+ [
+  [1,0,0.995185,0.098017,0.980785,0.19509,0.95694,0.290285,0.936976,0.346081,0.889104,0.337101,0.585708,-0.000378,0.584506,-0.02151,0.813458,-0.265636,0.94281,-0.329776,0.95694,-0.290285,0.980785,-0.19509,0.995185,-0.098017],
+  [0.238928,-0.969804,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.92388,-0.382683,0.94281,-0.329776,0.813458,-0.265636,0.330838,-0.490737],
+  [0.526054,0.51105,0.355443,0.457229,0.351698,0.423351,0.585708,-0.000378,0.889104,0.337101],
+  [0.330838,-0.490737,0.813458,-0.265636,0.584506,-0.02151,0.212406,-0.158092],
+  [0.675624,0.735641,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.140752,0.988846,0.355443,0.457229,0.526054,0.51105],
+  [0.936976,0.346081,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.77301,0.634393,0.707107,0.707107,0.675624,0.735641,0.526054,0.51105,0.889104,0.337101],
+  [-0.140752,0.988846,-0.19509,0.980785,-0.290285,0.95694,-0.292262,0.956233,-0.15107,-0.053353,-0.059355,-0.046754,0.351698,0.423351,0.355443,0.457229],
+  [-0.09151,-0.995504,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.238928,-0.969804,0.330838,-0.490737,0.212406,-0.158092,-0.059355,-0.046754,-0.15107,-0.053353,-0.291184,-0.163041],
+  [0.212406,-0.158092,0.584506,-0.02151,0.585708,-0.000378,0.351698,0.423351,-0.059355,-0.046754],
+  [-0.292262,0.956233,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.968899,0.242543,-0.476876,-0.147331,-0.291184,-0.163041,-0.15107,-0.053353],
+  [-0.823687,-0.566064,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,-0.09151,-0.995504,-0.291184,-0.163041,-0.476876,-0.147331],
+  [-0.968899,0.242543,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.823687,-0.566064,-0.476876,-0.147331]
+ ],
+ [
+  [1,0,0.995185,0.098017,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.918182,0.39473,0.731453,-0.060614,0.820789,-0.129512,0.987771,-0.147993,0.995185,-0.098017],
+  [0.832083,-0.554546,0.881921,-0.471397,0.882887,-0.469355,0.820789,-0.129512,0.731453,-0.060614,0.461551,-0.178892,0.463485,-0.199393],
+  [0.91723,0.396742,0.881921,0.471397,0.83147,0.55557,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.584443,0.810056,0.29488,0.484551,0.237289,0.042092],
+  [0.263972,-0.963531,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.832083,-0.554546,0.463485,-0.199393,0.200813,-0.799292],
+  [0.882887,-0.469355,0.92388,-0.382683,0.95694,-0.290285,0.980785,-0.19509,0.987771,-0.147993,0.820789,-0.129512],
+  [0.918182,0.39473,0.91723,0.396742,0.237289,0.042092,0.23255,0.031434,0.461551,-0.178892,0.731453,-0.060614],
+  [-0.286392,0.059741,-0.072069,-0.0277,0.23255,0.031434,0.237289,0.042092,0.29488,0.484551,-0.223219,0.536694],
+  [0.200813,-0.799292,0.463485,-0.199393,0.461551,-0.178892,0.23255,0.031434,-0.072069,-0.0277,-0.004049,-0.606772],
+  [0.584443,0.810056,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.290285,0.95694,-0.371159,0.928003,-0.223219,0.536694,0.29488,0.484551],
+  [-0.982369,-0.184412,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.814305,-0.578714,-0.004049,-0.606772,-0.072069,-0.0277,-0.286392,0.059741],
+  [-0.371159,0.928003,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.982369,-0.184412,-0.286392,0.059741,-0.223219,0.536694],
+  [-0.814305,-0.578714,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.263972,-0.963531,0.200813,-0.799292,-0.004049,-0.606772]
+ ],
+ [
+  [0.70705,-0.128867,0.548066,-0.241984,0.758035,-0.650916,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.911958,-0.40789],
+  [0.008325,-0.121174,0.215843,-0.264039,0.548066,-0.241984,0.70705,-0.128867,0.829132,0.056575,0.592258,0.298748,0.312972,0.358137,-0.026515,0.154903,-0.082547,0.037971],
+  [1,0,0.996606,0.069078,0.829132,0.056575,0.70705,-0.128867,0.911958,-0.40789,0.92388,-0.382683,0.95694,-0.290285,0.980785,-0.19509,0.995185,-0.098017],
+  [0.996606,0.069078,0.995185,0.098017,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.813492,0.57981,0.592258,0.298748,0.829132,0.056575],
+  [0.813492,0.57981,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.400109,0.915638,0.312972,0.358137,0.592258,0.298748],
+  [0.629367,-0.776738,0.634393,-0.77301,0.707107,-0.707107,0.758035,-0.650916,0.548066,-0.241984,0.215843,-0.264039,0.245092,-0.382657],
+  [0.156949,-0.986443,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.471397,-0.881921,0.55557,-0.83147,0.629367,-0.776738,0.245092,-0.382657],
+  [-0.305714,-0.951419,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,0,-1,0.098017,-0.995185,0.156949,-0.986443,0.245092,-0.382657,0.215843,-0.264039,0.008325,-0.121174],
+  [0.400109,0.915638,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.290285,0.95694,-0.317857,0.947075,-0.026515,0.154903,0.312972,0.358137],
+  [-0.935802,0.349363,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.803986,-0.592627,-0.461219,-0.003348],
+  [-0.317857,0.947075,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.935802,0.349363,-0.461219,-0.003348,-0.082547,0.037971,-0.026515,0.154903],
+  [-0.803986,-0.592627,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.471397,-0.881921,-0.382683,-0.92388,-0.305714,-0.951419,0.008325,-0.121174,-0.082547,0.037971,-0.461219,-0.003348]
+ ],
+ [
+  [0.272337,0.088038,0.683245,-0.07967,0.760868,0.162775,0.605328,0.34915,0.37345,0.257943],
+  [0.160369,-0.388585,0.765987,-0.315624,0.683245,-0.07967,0.272337,0.088038,-0.012434,-0.199108,-0.005059,-0.285437],
+  [0.995704,0.087443,0.995185,0.098017,0.980785,0.19509,0.95694,0.290285,0.92388,0.382683,0.881921,0.471397,0.83147,0.55557,0.787877,0.614348,0.727225,0.559875,0.605328,0.34915,0.760868,0.162775],
+  [0.449426,-0.892313,0.471397,-0.881921,0.55557,-0.83147,0.634393,-0.77301,0.707107,-0.707107,0.77301,-0.634393,0.83147,-0.55557,0.881921,-0.471397,0.92388,-0.382683,0.925953,-0.376889,0.765987,-0.315624,0.160369,-0.388585],
+  [0.787877,0.614348,0.77301,0.634393,0.707107,0.707107,0.634393,0.77301,0.55557,0.83147,0.471397,0.881921,0.382683,0.92388,0.290285,0.95694,0.19509,0.980785,0.098017,0.995185,0.064303,0.996841,0.051853,0.829347,0.727225,0.559875],
+  [1,0,0.995704,0.087443,0.760868,0.162775,0.683245,-0.07967,0.765987,-0.315624,0.925953,-0.376889,0.95694,-0.290285,0.980785,-0.19509,0.995185,-0.098017],
+  [-0.542358,-0.839389,-0.471397,-0.881921,-0.382683,-0.92388,-0.290285,-0.95694,-0.19509,-0.980785,-0.098017,-0.995185,0,-1,0.098017,-0.995185,0.19509,-0.980785,0.290285,-0.95694,0.382683,-0.92388,0.449426,-0.892313,0.160369,-0.388585,-0.005059,-0.285437],
+  [-0.404629,0.362602,-0.370089,0.203389,-0.012434,-0.199108,0.272337,0.088038,0.37345,0.257943,0.034596,0.776294],
+  [0.37345,0.257943,0.605328,0.34915,0.727225,0.559875,0.051853,0.829347,0.034596,0.776294],
+  [-0.781561,0.622864,-0.83147,0.55557,-0.881921,0.471397,-0.92388,0.382683,-0.95694,0.290285,-0.980785,0.19509,-0.995185,0.098017,-1,0,-0.995185,-0.098017,-0.980785,-0.19509,-0.978886,-0.202673,-0.370089,0.203389,-0.404629,0.362602],
+  [-0.978886,-0.202673,-0.95694,-0.290285,-0.92388,-0.382683,-0.881921,-0.471397,-0.83147,-0.55557,-0.77301,-0.634393,-0.707107,-0.707107,-0.634393,-0.77301,-0.55557,-0.83147,-0.542358,-0.839389,-0.005059,-0.285437,-0.012434,-0.199108,-0.370089,0.203389],
+  [0.064303,0.996841,0,1,-0.098017,0.995185,-0.19509,0.980785,-0.290285,0.95694,-0.382683,0.92388,-0.471397,0.881921,-0.55557,0.83147,-0.634393,0.77301,-0.707107,0.707107,-0.77301,0.634393,-0.781561,0.622864,-0.404629,0.362602,0.034596,0.776294,0.051853,0.829347]
  ]
 ].map(layout=>layout.map(points=>{
  let twiceArea=0,cx=0,cy=0;
@@ -2067,31 +2234,100 @@ const BREAKUP_LAYOUTS=[
  cx/=3*twiceArea;cy/=3*twiceArea;
  const path=new Path2D();path.moveTo(points[0]-cx,points[1]-cy);
  for(let i=2;i<points.length;i+=2)path.lineTo(points[i]-cx,points[i+1]-cy);path.closePath();
- return{path,cx,cy,area:Math.abs(twiceArea)*.5};
+ return{path,cx,cy,area:Math.abs(twiceArea)*.5,vertices:Float32Array.from(points,(v,i)=>v-(i%2?cy:cx))};
 }));
 const breakupTextures=[null,null];let breakupTextureId=0;
-function breakupEffect(a,contact,ux,uy){
+function breakupEffect(a,contact,ux,uy,kickX=0,kickY=0){
  if(a.shattered)return;
  a.shattered=true;
  // At most two simultaneous deaths; the two small textures are reused.
  const old=effects.findIndex(e=>e.kind==='breakup');
  if(effects.filter(e=>e.kind==='breakup').length>=2)effects.splice(old,1);
- const slot=breakupTextureId++%2,image=breakupTextures[slot]??(breakupTextures[slot]=document.createElement('canvas'));
- image.width=image.height=96;const paint=image.getContext('2d'),drawing=actorDrawing(a,a.team),shape=drawing.shape;
- paint.setTransform(42/shape.rx,0,0,42/shape.ry,48,48);
- paint.drawImage(drawing.image,-shape.rx,-shape.ry,shape.rx*2,shape.ry*2);paint.save();paint.clip(drawing.body);
+ const slot=breakupTextureId++%2;
+ let image=breakupTextures[slot];
+ if(!image){image=breakupTextures[slot]=document.createElement('canvas');image.width=image.height=96;}
+ const paint=image.getContext('2d'),drawing=actorDrawing(a,a.team),shape=drawing.shape;
+ paint.setTransform(1,0,0,1,0,0);paint.globalAlpha=1;paint.globalCompositeOperation='source-over';paint.clearRect(0,0,96,96);
+ const co=Math.cos(shape.angle),si=Math.sin(shape.angle),localNx=co*contact.nx+si*contact.ny,localNy=-si*contact.nx+co*contact.ny;
+ const angle=Math.atan2(shape.ry*localNy,shape.rx*localNx),c=Math.cos(angle),t=Math.sin(angle);
+ // Rotate the texture and partition together: +X is the actual struck boundary.
+ paint.setTransform(42*c/shape.rx,-42*t/shape.rx,42*t/shape.ry,42*c/shape.ry,48,48);
+ paintActorBody(drawing,paint);paint.save();paint.clip(drawing.body);
  drawActorHitMarks(a,shape,paint);paint.restore();
- const layout=BREAKUP_LAYOUTS[Math.floor(visualRandom()*BREAKUP_LAYOUTS.length)],co=Math.cos(shape.angle),si=Math.sin(shape.angle);
- const mxx=co*shape.rx,myx=si*shape.rx,mxy=-si*shape.ry,myy=co*shape.ry;
- const relativeX=(contact.vx??ux)-ux,relativeY=(contact.vy??uy)-uy,relativeSpeed=Math.hypot(relativeX,relativeY);
- const pushX=relativeSpeed>1?relativeX/relativeSpeed*30:-contact.nx*30,pushY=relativeSpeed>1?relativeY/relativeSpeed*30:-contact.ny*30;
+ const layout=BREAKUP_LAYOUTS[Math.floor(visualRandom()*BREAKUP_LAYOUTS.length)];
+ const mxx=co*shape.rx*c-si*shape.ry*t,myx=si*shape.rx*c+co*shape.ry*t;
+ const mxy=-co*shape.rx*t-si*shape.ry*c,myy=-si*shape.rx*t+co*shape.ry*c;
+ // Inherit pre-hit movement plus the actual velocity added by this hit.
+ const areaScale=Math.abs(mxx*myy-mxy*myx);
  const pieces=layout.map(prefab=>{
-  const x=mxx*prefab.cx+mxy*prefab.cy,y=myx*prefab.cx+myy*prefab.cy,length=Math.max(1,Math.hypot(x,y)),kick=20+visualRandom()*28;
-  return{prefab,x,y,vx:ux+pushX+x/length*kick,vy:uy+pushY+y/length*kick,spin:(visualRandom()-.5)*5};
+  const x=mxx*prefab.cx+mxy*prefab.cy,y=myx*prefab.cx+myy*prefab.cy;
+  const range=clamp(180/Math.sqrt(prefab.area*areaScale),20,180)*.7,angle=visualRandom()*TAU,speed=Math.sqrt(visualRandom())*range;
+  const outward=unit(x,y),randomVx=outward.x*70+Math.cos(angle)*speed,randomVy=outward.y*70+Math.sin(angle)*speed;
+  const size=clamp(Math.sqrt(.08/prefab.area),.6,2.2);
+  const vertices=new Float32Array(prefab.vertices.length);let radius2=0;
+  for(let i=0;i<vertices.length;i+=2){const lx=prefab.vertices[i],ly=prefab.vertices[i+1],px=mxx*lx+mxy*ly,py=myx*lx+myy*ly;vertices[i]=px;vertices[i+1]=py;radius2=Math.max(radius2,px*px+py*py);}
+  return{prefab,x:a.x+x,y:a.y+y,px:a.x+x,py:a.y+y,angle:0,previousAngle:0,vertices,world:new Float32Array(vertices.length),radius:Math.sqrt(radius2),invMass:1/(prefab.area*areaScale),vx:ux+kickX+randomVx,vy:uy+kickY+randomVy,spin:(visualRandom()-visualRandom())*(5+8*size),life:.42+.2*clamp(Math.sqrt(prefab.area/.5),0,1)+visualRandom()*.12};
  });
- effects.push({kind:'breakup',x:a.x,y:a.y,age:0,life:.76,image,mxx,myx,mxy,myy,pieces});capVisualEffects();
+ for(const piece of pieces)refreshBreakupPolygon(piece);
+ const mist=[];
+ for(let i=0;i<8;i++){
+  const angle=visualRandom()*TAU,speed=8+visualRandom()*18,scale=a.r/15*1.5;
+  mist.push({x:mxx*.7+(visualRandom()-.5)*a.r*.6,y:myx*.7+(visualRandom()-.5)*a.r*.6,vx:ux+kickX+Math.cos(angle)*speed,vy:uy+kickY+Math.sin(angle)*speed,damping:8,radius:(3.5+visualRandom()*4)*scale,expansion:(12+visualRandom()*14)*scale,life:.35+visualRandom()*.25,opacity:.17});
+ }
+ effects.push({kind:'breakup',x:a.x,y:a.y,bodyVx:ux+kickX,bodyVy:uy+kickY,splitDelay:.04,age:0,previousAge:0,life:.76,image,mxx,myx,mxy,myy,pieces,mist});capVisualEffects();
+}
+function refreshBreakupPolygon(piece){
+ const c=Math.cos(piece.angle),s=Math.sin(piece.angle),vertices=piece.vertices,world=piece.world;
+ for(let i=0;i<vertices.length;i+=2){world[i]=piece.x+c*vertices[i]-s*vertices[i+1];world[i+1]=piece.y+s*vertices[i]+c*vertices[i+1];}
+}
+function collideBreakupPieces(a,b){
+ const dx=b.x-a.x,dy=b.y-a.y,r=a.radius+b.radius;if(dx*dx+dy*dy>r*r)return false;
+ const av=a.world,bv=b.world;let depth=Infinity,nx=0,ny=0;
+ // Convex SAT uses the same polygon as rendering, rather than overlapping circle proxies.
+ for(let side=0;side<2;side++){
+  const vertices=side?bv:av;
+  for(let i=0;i<vertices.length;i+=2){
+   const j=(i+2)%vertices.length,ex=vertices[j]-vertices[i],ey=vertices[j+1]-vertices[i+1],length=Math.hypot(ex,ey);if(length<1e-7)continue;
+   const ax=-ey/length,ay=ex/length;let amin=Infinity,amax=-Infinity,bmin=Infinity,bmax=-Infinity;
+   for(let k=0;k<av.length;k+=2){const dot=av[k]*ax+av[k+1]*ay;amin=Math.min(amin,dot);amax=Math.max(amax,dot);}
+   for(let k=0;k<bv.length;k+=2){const dot=bv[k]*ax+bv[k+1]*ay;bmin=Math.min(bmin,dot);bmax=Math.max(bmax,dot);}
+   const positive=amax-bmin,negative=bmax-amin;if(positive<=0||negative<=0)return false;
+   const overlap=Math.min(positive,negative);
+   if(overlap<depth){depth=overlap;const sign=positive<=negative?1:-1;nx=ax*sign;ny=ay*sign;}
+  }
+ }
+ if(!Number.isFinite(depth))return false;
+ const inverseMass=a.invMass+b.invMass,correction=Math.max(0,depth-.01)*.8/inverseMass;
+ a.x-=nx*correction*a.invMass;a.y-=ny*correction*a.invMass;b.x+=nx*correction*b.invMass;b.y+=ny*correction*b.invMass;
+ const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+ if(closing<0){const impulse=-1.3*closing/inverseMass;a.vx-=nx*impulse*a.invMass;a.vy-=ny*impulse*a.invMass;b.vx+=nx*impulse*b.invMass;b.vy+=ny*impulse*b.invMass;}
+ refreshBreakupPolygon(a);refreshBreakupPolygon(b);return true;
+}
+function updateEffects(dt){
+ for(const particle of woundParticles)particle.age+=dt;
+ woundParticles=woundParticles.filter(particle=>particle.age<particle.life);
+ for(const e of effects){
+  e.previousAge=e.age;e.age+=dt;
+  if(e.kind!=='breakup'||e.age>=e.life)continue;
+  const pieces=e.pieces=e.pieces.filter(p=>e.age<p.life);
+  const held=clamp(e.splitDelay-e.previousAge,0,dt),moving=dt-held;
+  for(const p of pieces){p.px=p.x;p.py=p.y;p.previousAngle=p.angle;p.x+=e.bodyVx*held;p.y+=e.bodyVy*held;}
+  if(moving<=0)continue;
+  // Each defeated character's pieces interact only with each other.
+  for(let step=0;step<2;step++){
+   for(const p of pieces){p.x+=p.vx*moving*.5;p.y+=p.vy*moving*.5;p.angle+=p.spin*moving*.5;refreshBreakupPolygon(p);}
+   for(let pass=0;pass<3;pass++)for(let i=0;i<pieces.length;i++)for(let j=i+1;j<pieces.length;j++)collideBreakupPieces(pieces[i],pieces[j]);
+  }
+ }
+ effects=effects.filter(e=>e.age<e.life);
 }
 // Contact marks live in the actor's aim frame and follow its deformed boundary.
+const HIT_MARK_TIME_PER_DAMAGE=3.2,WOUND_PARTICLES_PER_DAMAGE=24;
+function nextWoundEmission(mark){
+ if(!mark.emitCount)return mark.life;
+ const progress=(mark.emitCount-mark.emitRemaining+mark.emitPhase)/mark.emitCount;
+ return mark.life*(1-Math.sqrt(Math.max(0,1-progress)));
+}
 function addActorHitMark(a,contact,damage){
  if(!(damage>0)||!Number.isFinite(damage))return;
  const shape=bodyShape(a),co=Math.cos(shape.angle),si=Math.sin(shape.angle);
@@ -2099,12 +2335,35 @@ function addActorHitMark(a,contact,damage){
  const lx=shape.rx*shape.rx*nx,ly=shape.ry*shape.ry*ny;
  const angle=Math.atan2(si*lx+co*ly,co*lx-si*ly)-(a.aim||0),amount=clamp(damage,0,1.5);
  const list=a.hitMarks??=[];
- list.push({angle,age:0,life:1.6,width:3+4*Math.sqrt(amount),depth:2+5*Math.sqrt(amount),shape:Math.floor(visualRandom()*HIT_MARK_SHAPES.length),color:randomImpactColor()});if(list.length>10)list.shift();
+ const expected=amount*WOUND_PARTICLES_PER_DAMAGE,count=Math.floor(expected)+(visualRandom()<expected%1?1:0);
+ const mark={angle,age:0,life:clamp(amount*HIT_MARK_TIME_PER_DAMAGE,.4,2.4),width:3+4*Math.sqrt(amount),depth:2+5*Math.sqrt(amount),shape:Math.floor(visualRandom()*HIT_MARK_SHAPES.length),color:'#ffffff',
+  opacity:.45+.45*Math.sqrt(Math.min(1,amount)),emitPhase:.9+visualRandom()*.099,emitCount:count,emitRemaining:count};
+ mark.nextEmit=nextWoundEmission(mark);list.push(mark);if(list.length>10)list.shift();
 }
 function updateActorHitMarks(a,dt){
  if(!a?.hitMarks)return;
- for(const mark of a.hitMarks)mark.age+=dt;
+ let emitted=false;
+ for(const mark of a.hitMarks){
+  mark.age+=dt;
+  if(a.shattered||a.hp<=0)continue;
+  while(mark.emitRemaining>0&&mark.nextEmit<mark.life&&mark.nextEmit<=mark.age){
+   emitWoundParticle(a,mark);mark.emitRemaining--;mark.nextEmit=nextWoundEmission(mark);emitted=true;
+  }
+ }
  a.hitMarks=a.hitMarks.filter(mark=>mark.age<mark.life-1e-9);
+ if(emitted)capVisualEffects();
+}
+function emitWoundParticle(a,mark){
+ const shape=bodyShape(a),co=Math.cos(shape.angle),si=Math.sin(shape.angle);
+ const birthAngle=(a.aim||0)+mark.angle-shape.angle+(visualRandom()-.5)*mark.width/15;
+ const nx=Math.cos(birthAngle),ny=Math.sin(birthAngle),edge=1/Math.hypot(nx/shape.rx,ny/shape.ry);
+ const radius=edge-visualRandom()*mark.depth*(a.r/15)*.2,lx=nx*radius,ly=ny*radius;
+ const normal=unit(nx*edge/(shape.rx*shape.rx),ny*edge/(shape.ry*shape.ry));
+ const angle=Math.atan2(si*normal.x+co*normal.y,co*normal.x-si*normal.y)+(visualRandom()-.5)*2.2,speed=(35+visualRandom()*55)*Math.sqrt(Math.max(0,1-mark.age/mark.life)),life=.4+visualRandom()*.4;
+ woundParticles.push({x:a.x+co*lx-si*ly,y:a.y+si*lx+co*ly,age:Math.max(0,mark.age-(mark.nextEmit??mark.age)),
+  vx:(a.vx||0)+Math.cos(angle)*speed,vy:(a.vy||0)+Math.sin(angle)*speed,radius:1+visualRandom()*.7,life,colorIndex:Math.floor(visualRandom()*IMPACT_COLORS.length),damping:.3+visualRandom()*1.5,
+  glint:true,flareAt:life*(.12+visualRandom()*.45),flareWidth:.02+visualRandom()*.04,flareSharpness:1,flareStrength:.15+visualRandom()*.2});
+ if(woundParticles.length>MAX_WOUND_PARTICLES)woundParticles.splice(0,woundParticles.length-MAX_WOUND_PARTICLES);
 }
 function actorHitMarkPose(a,mark,shape=bodyShape(a)){
  const angle=(a.aim||0)+mark.angle-shape.angle,co=Math.cos(angle),si=Math.sin(angle);
@@ -2115,25 +2374,35 @@ function drawActorHitMarks(a,shape,paint=ctx){
  const opacity=paint.globalAlpha;
  for(const mark of a.hitMarks||[]){
   const fade=Math.max(0,1-mark.age/mark.life),pose=actorHitMarkPose(a,mark,shape),scale=a.r/15;
-  const width=mark.width*scale,depth=mark.depth*scale,prefab=HIT_MARK_SHAPES[mark.shape];
+  const width=mark.width*scale,depth=mark.depth*scale;
   paint.save();paint.transform(pose.co*depth,pose.si*depth,-pose.si*width,pose.co*width,pose.x,pose.y);
-  paint.fillStyle=mark.color;paint.globalAlpha=opacity*.65*fade;paint.fill(prefab.patch);
-  paint.fillStyle='#fff6e3';paint.globalAlpha=opacity*.45*fade;paint.fill(prefab.facet);
+  paint.globalAlpha=opacity*(mark.opacity??.9)*fade;paint.drawImage(getHitMarkSprite(mark.shape),-1,-1,2,2);
   paint.restore();
  }
+}
+const hitMarkSprites=[];
+function getHitMarkSprite(index){
+ if(hitMarkSprites[index])return hitMarkSprites[index];
+ const image=document.createElement('canvas');image.width=image.height=64;
+ const paint=image.getContext('2d');paint.setTransform(32,0,0,32,32,32);
+ const gradient=paint.createRadialGradient(0,0,0,0,0,1.15);
+ gradient.addColorStop(0,'rgba(255,255,255,1)');gradient.addColorStop(.35,'rgba(255,255,255,.72)');
+ gradient.addColorStop(.75,'rgba(255,255,255,.26)');gradient.addColorStop(1,'rgba(255,255,255,0)');
+ paint.fillStyle=gradient;paint.fill(HIT_MARK_SHAPES[index].patch);return hitMarkSprites[index]=image;
 }
 function contactClosingSpeed(a,b,contact){return Math.max(0,-(((contact.vx??b.vx)-a.vx)*contact.nx+((contact.vy??b.vy)-a.vy)*contact.ny));}
 function projectileMomentumDamage(b,a,contact){return Math.min(cfg.momentumDamageCap,cfg.momentumDamageScale*contactClosingSpeed(a,b,contact));}
 function projectileHitDamage(b,a,contact){return projectileDamage(b,contact.travel??b.travel)+projectileMomentumDamage(b,a,contact);}
-function applyImpact(a,b,contact,damage=projectileHitDamage(b,a,contact)){
+function applyImpact(a,b,contact,damage=projectileHitDamage(b,a,contact),knockbackMultiplier=1){
  // Exponential decay integrates to impulse * decay; damage is normalized.
- const impulse=cfg.knockbackScale*100*damage/(IMPACT.decay*actorSizeRatio(a)),strength=clamp(impulse/320,0,1.6);
+ const impulse=knockbackMultiplier*cfg.knockbackScale*100*damage/(IMPACT.decay*actorSizeRatio(a)),strength=clamp(impulse/320,0,1.6);
  // The contact normal points out of the body; push away from the hit face.
  a.ivx-=contact.nx*impulse;a.ivy-=contact.ny*impulse;const magnitude=Math.hypot(a.ivx,a.ivy);if(magnitude>IMPACT.maxSpeed){a.ivx*=IMPACT.maxSpeed/magnitude;a.ivy*=IMPACT.maxSpeed/magnitude;}
  a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy;
  const xx=contact.nx*contact.nx-contact.ny*contact.ny,xy=2*contact.nx*contact.ny;
  a.qx-=xx*.025*strength;a.qy-=xy*.025*strength;a.qvx-=xx*8*strength;a.qvy-=xy*8*strength;
- a.hitFlash=.16;a.hitArc=.3;a.hitAngle=Math.atan2(contact.ny,contact.nx);return strength;
+ if(damage>0){a.hitFlashStrength=Math.min(1,actorFlashAmount(a)+damage/1.5);a.hitFlash=ACTOR_FLASH_TIME;}
+ return strength;
 }
 function projectileDamage(b,travel=b.travel||0){
  const start=Number.isFinite(b.damageStart)?b.damageStart:b.solidStart;
@@ -2150,10 +2419,13 @@ function updateDamageNumbers(dt){for(const n of damageNumbers)n.age+=dt;damageNu
 // Combat math retains normalized units; displays and sliders use 100x units.
 function formatHealth(value){return Math.round(value*100);}
 function resolveHit(b,a,contact){
- b.dead=true;if(a.hp<=0)return;const damage=projectileHitDamage(b,a,contact),own=a.team===0,inheritedVx=a.vx,inheritedVy=a.vy,previousHp=a.hp;addActorHitMark(a,contact,damage);applyImpact(a,b,contact,damage);impactEffect(contact,damage,inheritedVx,inheritedVy);playSound(own?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
- if(own){hits++;if(!isPracticeMode()){a.hp=Math.max(0,a.hp-damage);if(a.hp===0)breakupEffect(a,contact,inheritedVx,inheritedVy);}}
- else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){breakupEffect(a,contact,inheritedVx,inheritedVy);playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
- if(a.hp<previousHp)a.healthFlash=Math.min(1,(a.healthFlash||0)+.55*damage);
+ b.dead=true;if(a.hp<=0)return;
+ const damage=projectileHitDamage(b,a,contact),explosionDamage=projectileDamage(b,contact.travel??b.travel),own=a.team===0,inheritedVx=a.vx,inheritedVy=a.vy;
+ const lethal=damage>=a.hp&&(!own||!isPracticeMode());
+ addActorHitMark(a,contact,damage);applyImpact(a,b,contact,damage,lethal?2:1);
+ const kickX=a.vx-inheritedVx,kickY=a.vy-inheritedVy;impactEffect(contact,damage,inheritedVx,inheritedVy,explosionDamage,b.r??ACTOR.shotRadius,b.team);playSound(own?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
+ if(own){hits++;if(!isPracticeMode()){a.hp=Math.max(0,a.hp-damage);if(a.hp===0)breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);}}
+ else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
  updateHud(true);
 }
 
@@ -2187,7 +2459,7 @@ function createBot(actor){
 // Own-body prediction may use proprioception, including recoil velocity.
 function botBody(a){return{x:a.x,y:a.y,vx:a.vx||0,vy:a.vy||0,
  mvx:a.mvx??a.vx??0,mvy:a.mvy??a.vy??0,ivx:a.ivx||0,ivy:a.ivy||0,
- r:a.r||ACTOR.radius,team:a.team,hp:a.hp,aim:a.aim||0,qx:a.qx||0,qy:a.qy||0,qvx:a.qvx||0,qvy:a.qvy||0,hitFlash:0,hitArc:0};}
+ r:a.r||ACTOR.radius,team:a.team,hp:a.hp,aim:a.aim||0,qx:a.qx||0,qy:a.qy||0,qvx:a.qvx||0,qvy:a.qvy||0,hitFlash:0};}
 // Opponent observations contain only publicly visible body state. In
 // particular, never inspect the opponent's aim distance, keys or weapon state.
 function botVisibleBody(a){return{x:a.x,y:a.y,vx:a.vx||0,vy:a.vy||0,r:a.r||ACTOR.radius,team:a.team,hp:a.hp,aim:a.aim||0,qx:a.qx||0,qy:a.qy||0};}
@@ -2905,11 +3177,21 @@ function createStartupAIJob(){
  actor.vx=90;actor.vy=160;
  const shortActor={...actor,x:43.1,y:375.1,vx:.1,vy:.1},shortTarget={...target,x:42.1,y:375.1};
  const bot={annForecast:null,noiseAngle:0,noiseRange:0,side:1,output:{x:0,y:0}};
- let phase=0,index=0,bullet=null;
+ let phase=-1,index=0,bullet=null;
  return()=>{
   // Begin with paths that immediately leave the arena, then gradually
   // exercise longer curves. Never run a full cold search as one idle job.
-  if(phase===0){
+  if(phase===-1){
+   // Fixed sprites are prepared incrementally while the start screen is idle.
+   if(index<20)getHitMarkSprite(index);
+   else if(index<32)getLightDustSprite(index-20);
+   else if(index===32)getImpactMistSprite();
+   else if(index===33)getInterceptHaloSprite();
+   else if(index<36)getMuzzleSprite(index-34);
+   else if(index<38)getActorTintSprite(index-36);
+   else bulletGlow(ACTOR.shotRadius,BULLET_COLORS[index-38].solid);
+   if(++index===40){phase++;index=0;}
+  }else if(phase===0){
    botAimProbe(shortActor,shortTarget,Math.PI+[-.3,0,.3][index%3],100);
    if(++index===12){phase++;index=0;}
   }else if(phase===1){
@@ -3029,7 +3311,7 @@ function simulate(dt,control){
   bulletFades.push({x:b.endPoint?.x??b.px+(b.x-b.px)*t,y:b.endPoint?.y??b.py+(b.y-b.py)*t,vx:b.vx*.12,vy:b.vy*.12,r:b.r,team:b.team,fadeSolid:!Number.isFinite(b.fieldStart)||Number.isFinite(b.damageStart),fadeDamage:projectileDamage(b,projectileEnd(b)),age:0,life:.14});
  }
  updateDamageNumbers(dt);
- bullets=bullets.filter(b=>!b.dead&&!b.expired);for(const effect of effects)effect.age+=dt;effects=effects.filter(effect=>effect.age<effect.life);
+ bullets=bullets.filter(b=>!b.dead&&!b.expired);updateEffects(dt);
  if(!practice){if(p.hp<=0)finish(enemy===null?null:false);else if(enemy===null)finish(true);}updateHud();
 }
 function setHudText(id,text){const node=$(id);if(node.textContent!==text)node.textContent=text;}
@@ -3044,9 +3326,9 @@ function updateHud(force=false){
 
 // === 12 · Canvas drawing ===
 function circle(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,TAU);}
-let mapDrawingCache=null;
+const mapDrawingCache=new Map();
 function mapDrawing(){
- if(mapDrawingCache?.id===mapId)return mapDrawingCache;
+ const cached=mapDrawingCache.get(mapId);if(cached)return cached;
  const drawing={id:mapId,fields:[],walls:[],edges:[],grid:new Path2D()};
  const terrain=MAPS[mapId].terrain;
  if(terrain){
@@ -3121,7 +3403,7 @@ function mapDrawing(){
   }
   path.closePath();drawing.walls.push({path,width,fill:wall.type==='absorb'?'#455254':'#293437',stroke:wall.type==='absorb'?'#617173':'#afbab8'});
  }
- return mapDrawingCache=drawing;
+ mapDrawingCache.set(mapId,drawing);return drawing;
 }
 function drawMapField(){
  if(!mapFields.length)return;
@@ -3152,24 +3434,33 @@ function drawRange(actor=p){
 
 const ACTOR_TINT_COLORS=[[141,163,154],[174,155,135]];
 const actorTintSprites=[null,null];
-function getActorTintSprite(team){
- if(actorTintSprites[team])return actorTintSprites[team];
- const image=document.createElement('canvas');image.width=image.height=96;
- const paint=image.getContext('2d'),gradient=paint.createRadialGradient(48,48,0,48,48,48);
- for(let i=0;i<=32;i++){
-  const radius=i/32,brightness=.8+.2*radius*radius;
-  gradient.addColorStop(radius,`rgb(${ACTOR_TINT_COLORS[team].map(channel=>channel*brightness).join(',')})`);
- }
- paint.fillStyle=gradient;paint.beginPath();paint.arc(48,48,48,0,TAU);paint.fill();
- actorTintSprites[team]=image;return image;
+// Cache the body and extra light separately; full-brightness colors would clip before blending.
+function getActorTintSprite(team,highlight=false){
+ if(!actorTintSprites[team])actorTintSprites[team]=[0,1].map(flash=>{
+  const image=document.createElement('canvas');image.width=image.height=96;
+  const paint=image.getContext('2d'),gradient=paint.createRadialGradient(48,48,0,48,48,48);
+  for(let i=0;i<=32;i++){
+   const radius=i/32,brightness=flash?.6*radius*radius:.8+.2*radius*radius;
+   gradient.addColorStop(radius,`rgb(${ACTOR_TINT_COLORS[team].map(channel=>channel*brightness).join(',')})`);
+  }
+  paint.fillStyle=gradient;paint.beginPath();paint.arc(48,48,48,0,TAU);paint.fill();return image;
+ });
+ return actorTintSprites[team][highlight?1:0];
 }
 function actorDrawing(a,team,gray=0){
  const shape=bodyShape(a),body=new Path2D();body.ellipse(0,0,shape.rx,shape.ry,0,0,TAU);
- return{shape,body,image:getActorTintSprite(team)};
+ const flash=actorFlashAmount(a);
+ return{shape,body,image:getActorTintSprite(team),flash,flashImage:flash>0?getActorTintSprite(team,true):null};
+}
+function paintActorBody(drawing,paint=ctx){
+ const {rx,ry}=drawing.shape;
+ paint.drawImage(drawing.image,-rx,-ry,rx*2,ry*2);
+ // Add only the extra light, so transparent projections keep their dark center.
+ if(drawing.flash>0){paint.save();paint.globalAlpha*=drawing.flash;paint.globalCompositeOperation='lighter';paint.drawImage(drawing.flashImage,-rx,-ry,rx*2,ry*2);paint.restore();}
 }
 function drawActor(a,team,gray=0,projection=false,drawing=actorDrawing(a,team,gray)){
  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(drawing.shape.angle);
- ctx.drawImage(drawing.image,-drawing.shape.rx,-drawing.shape.ry,drawing.shape.rx*2,drawing.shape.ry*2);
+ paintActorBody(drawing);
  ctx.save();ctx.clip(drawing.body);drawActorHitMarks(a,drawing.shape);ctx.restore();
  ctx.restore();if(!projection&&a.hp>0)drawHealth(a,team);
 }
@@ -3190,13 +3481,13 @@ function drawLoopImages(a,gray,drawing,view=null){
 let healthDrawScale=1;
 function drawHealth(a,team){
  if(!cfg.showHealthNumbers)return;
- const scale=healthDrawScale,flash=clamp(a.healthFlash||0,0,1);
+ const scale=healthDrawScale,flash=actorFlashAmount(a);
  const reservedRadius=a.r*Math.sqrt(1+Math.abs(cfg.actorAspect)/100)*Math.exp(.29);
  const text=String(formatHealth(a.hp)),y=-reservedRadius-7*scale;
  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());
- ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.7+.3*flash;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${11*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+ ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.7;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${11*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
  ctx.fillText(text,0,y);
- if(flash>0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4*flash;ctx.fillStyle='#ffffff';ctx.fillText(text,0,y);}
+ if(flash>0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.42*flash;ctx.fillText(text,0,y);}
  ctx.restore();
 }
 
@@ -3206,10 +3497,11 @@ function drawTouch(){
  ctx.save();ctx.strokeStyle='rgba(185,202,196,.25)';ctx.lineWidth=1.5;circle(x,y,radius);ctx.stroke();
  ctx.fillStyle=t?'rgba(185,202,196,.28)':'rgba(185,202,196,.12)';circle(x+u.x*d,y+u.y*d,19);ctx.fill();ctx.restore();
 }
-const bulletGlowCache=new Map();
+const bulletGlowCache=new Map();let bulletGlowScale=0;
 function bulletGlow(radius,color){
- const key=color+':'+radius;let glow=bulletGlowCache.get(key);if(glow)return glow;
  const scale=Math.max(1,Math.ceil(canvas.width/VIEW_W),Math.ceil(canvas.height/VIEW_H));
+ if(scale!==bulletGlowScale){bulletGlowCache.clear();bulletGlowScale=scale;}
+ const key=color+':'+radius;let glow=bulletGlowCache.get(key);if(glow)return glow;
  const image=document.createElement('canvas'),size=Math.ceil(radius*5.6*scale)+2,center=size*.5;
  image.width=image.height=size;const paint=image.getContext('2d');
  const gradient=paint.createRadialGradient(center,center,radius*.5*scale,center,center,radius*2.8*scale);
@@ -3247,29 +3539,75 @@ function drawWalls(){
 }
 function renderActorPose(actor,slot,alpha){
  if(!actor)return null;
- const pose=Object.assign(renderActors[slot],actor);pose.shattered=!!actor.shattered;pose.healthFlash=actor.healthFlash||0;pose.x=(actor.px??actor.x)+(actor.x-(actor.px??actor.x))*alpha;pose.y=(actor.py??actor.y)+(actor.y-(actor.py??actor.y))*alpha;return pose;
+ const pose=Object.assign(renderActors[slot],actor);pose.shattered=!!actor.shattered;pose.hitFlash=actor.hitFlash||0;pose.hitFlashStrength=actor.hitFlashStrength||0;pose.x=(actor.px??actor.x)+(actor.x-(actor.px??actor.x))*alpha;pose.y=(actor.py??actor.y)+(actor.y-(actor.py??actor.y))*alpha;return pose;
+}
+function drawMistPuffs(mist,age){
+ const alpha=ctx.globalAlpha;
+ for(const puff of mist||[]){
+  if(age>=puff.life)continue;
+  const t=age/puff.life,growth=t*(2-t),radius=puff.radius*(.2+1.15*growth)+puff.expansion*age;
+  // Integrate exponential drag directly so drift is independent of frame rate.
+  const travel=puff.damping>0?-Math.expm1(-puff.damping*age)/puff.damping:age;
+  ctx.globalAlpha=alpha*(puff.opacity??.22)*(1-t)**1.4;
+  ctx.drawImage(getImpactMistSprite(),(puff.x||0)+puff.vx*travel-radius,(puff.y||0)+puff.vy*travel-radius,radius*2,radius*2);
+ }
+ ctx.globalAlpha=alpha;
+}
+function drawMuzzleEffect(e,age,pose=e.actor){
+ if(age>=e.life||!pose||pose.shattered)return;
+ const t=clamp(age/e.life,0,1),size=e.size*(1-.25*t);
+ // Keep the flash attached to the current rendered muzzle, including aim changes.
+ const angle=pose.aim||0,distance=muzzleDistance(pose,angle)+2;
+ ctx.save();ctx.translate(pose.x+Math.cos(angle)*distance,pose.y+Math.sin(angle)*distance);ctx.rotate(angle);
+ ctx.globalAlpha=.9*(1-t)**.65;
+ ctx.drawImage(getMuzzleSprite(e.team),-10*size,-6*size,20*size,12*size);ctx.restore();
+}
+function drawInterceptEffect(e,age){
+ if(age>=e.life)return;
+ const t=clamp(age/e.life,0,1),radius=3+t*9;
+ ctx.save();ctx.globalAlpha=.8*(1-t)**.8;
+ ctx.drawImage(getInterceptHaloSprite(),e.x-radius,e.y-radius,radius*2,radius*2);ctx.restore();
 }
 function drawBreakupEffect(e,age=e.age){
- const fade=clamp((e.life-age)/(e.life-.08),0,1),extent=48/42;
+ const extent=48/42,alpha=e.age>e.previousAge?clamp((age-e.previousAge)/(e.age-e.previousAge),0,1):1;
+ ctx.save();ctx.translate(e.x,e.y);drawMistPuffs(e.mist,age);ctx.restore();
+ // Start with the intact captured body; release pieces after a short coherent drift.
+ if(age<e.splitDelay){
+  ctx.save();ctx.translate(e.x+e.bodyVx*age,e.y+e.bodyVy*age);ctx.transform(e.mxx,e.myx,e.mxy,e.myy,0,0);
+  ctx.drawImage(e.image,-extent,-extent,extent*2,extent*2);ctx.restore();return;
+ }
  for(const piece of e.pieces){
+  if(age>=piece.life)continue;
+  const fade=clamp((piece.life-age)/(piece.life-.08),0,1);
   ctx.save();ctx.globalAlpha=fade;
-  ctx.translate(e.x+piece.x+piece.vx*age,e.y+piece.y+piece.vy*age);ctx.rotate(piece.spin*age);
+  ctx.translate(piece.px+(piece.x-piece.px)*alpha,piece.py+(piece.y-piece.py)*alpha);ctx.rotate(piece.previousAngle+(piece.angle-piece.previousAngle)*alpha);
   ctx.transform(e.mxx,e.myx,e.mxy,e.myy,0,0);ctx.clip(piece.prefab.path);
   ctx.drawImage(e.image,-extent-piece.prefab.cx,-extent-piece.prefab.cy,extent*2,extent*2);
   if(age<.07){ctx.globalAlpha=fade*.22*(1-age/.07);ctx.fillStyle='#fff4dc';ctx.fill(piece.prefab.path);}
   ctx.restore();
  }
 }
+function drawLightDust(dust,age,ageOffset=0){
+ const alpha=ctx.globalAlpha,composite=ctx.globalCompositeOperation;
+ for(const p of dust||[]){
+  const elapsed=Math.max(0,(age??p.age??0)-ageOffset);
+  if(elapsed>=p.life)continue;
+  const damping=p.damping??3,travel=-Math.expm1(-damping*elapsed)/damping;
+  const fade=(1-clamp(elapsed/p.life,0,1))**.85,x=p.x+p.vx*travel-p.radius,y=p.y+p.vy*travel-p.radius,image=getLightDustSprite(p.colorIndex);
+  ctx.globalAlpha=alpha*.3*fade;
+  ctx.drawImage(image,x,y,p.radius*2,p.radius*2);
+  const distance=Math.abs(elapsed-p.flareAt)/p.flareWidth;
+  const pulse=p.glint&&distance<1?((1+Math.cos(Math.PI*distance))*.5)**(p.flareSharpness??1):0;
+  if(pulse>0){
+   ctx.globalCompositeOperation='lighter';ctx.globalAlpha=alpha*Math.min(1,(p.flareStrength??.8)*pulse*fade);
+   ctx.drawImage(image,x,y,p.radius*2,p.radius*2);ctx.globalCompositeOperation=composite;
+  }
+ }
+ ctx.globalAlpha=alpha;ctx.globalCompositeOperation=composite;
+}
 function drawImpactEffect(e,age=e.age){
  ctx.save();ctx.translate(e.x,e.y);
- // A single cached soft sprite gives every puff a smooth transparent edge.
- for(const puff of e.mist){
-  if(age>=puff.life)continue;
-  const t=age/puff.life,growth=t*(2-t);
-  ctx.globalAlpha=.22*(1-t)**1.4;
-  const radius=puff.radius*(.2+1.15*growth)+puff.expansion*age;
-  ctx.drawImage(getImpactMistSprite(),puff.vx*age-radius,puff.vy*age-radius,radius*2,radius*2);
- }
+ drawMistPuffs(e.mist,age);
  // Fade opacity only: each fragment keeps its individual size and velocity.
  for(const p of e.particles){
   if(age>=p.life)continue;
@@ -3281,11 +3619,16 @@ function drawImpactEffect(e,age=e.age){
   }
   ctx.closePath();ctx.fill();
  }
- if(age<.12){
-  const flash=(1-age/.12)**.8,r=(1.6+e.damage*2.8)*(.7+.3*flash);
-  ctx.fillStyle='#fff4df';ctx.globalAlpha=Math.min(1,.75+e.damage*.2)*flash*.25;
-  circle(0,0,r*1.7);ctx.fill();
-  ctx.globalAlpha=Math.min(1,.85+e.damage*.15)*flash;circle(0,0,r);ctx.fill();
+ ctx.globalAlpha=1;drawLightDust(e.dust,age);
+ if(age<.035){
+  const flash=(1-age/.035)**1.5,r=e.bulletRadius??ACTOR.shotRadius,palette=BULLET_COLORS[e.bulletTeam===1?1:0];
+  const x=(e.flashX||0)+(e.flashVx||0)*age,y=(e.flashY||0)+(e.flashVy||0)*age;
+  const glow=bulletGlow(r,palette.solid),extent=glow.extent,composite=ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=flash;
+  ctx.drawImage(glow.image,x-extent,y-extent,extent*2,extent*2);
+  ctx.fillStyle=palette.solid;ctx.globalAlpha=flash*.9;circle(x,y,r);ctx.fill();
+  ctx.fillStyle=palette.core;ctx.globalAlpha=flash*.35;circle(x,y,r*.75);ctx.fill();
+  ctx.globalCompositeOperation=composite;
  }
  ctx.restore();
 }
@@ -3295,8 +3638,8 @@ function render(alpha=1){
  if(!ending&&!headingView()){const target=aimSource==='mouse'?mouse:aimSource==='touch'?touch.target:null;if(target){visualPlayer.aim=Math.atan2(target.y-visualPlayer.y,target.x-visualPlayer.x);visualPlayer.range=clamp(Math.hypot(target.x-visualPlayer.x,target.y-visualPlayer.y),MIN_ACTIVATION_RANGE,1400);}}
  const gray=ending?clamp((ending.age-.08)/.32,0,1):0;
  renderFrames++;const sx=canvas.width/VIEW_W,sy=canvas.height/VIEW_H,ox=(VIEW_W-W)/2,oy=(VIEW_H-H)/2;ctx.setTransform(sx,0,0,sy,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,VIEW_W,VIEW_H);
- const heading=cameraHeading(),view=headingView()?{x:visualPlayer.x,y:visualPlayer.y,co:Math.cos(heading),si:Math.sin(heading)}:null;
- if(view){ctx.translate(VIEW_W*.5,VIEW_H*.8);ctx.rotate(-heading);ctx.translate(-visualPlayer.x,-visualPlayer.y);}else ctx.translate(ox,oy);
+ const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,view=camera?{x:camera.x,y:camera.y,co:Math.cos(heading),si:Math.sin(heading)}:null;
+ if(view){ctx.translate(VIEW_W*.5,VIEW_H*.8);ctx.rotate(-heading);ctx.translate(-view.x,-view.y);}else ctx.translate(ox,oy);
  // Keep terrain shading and contours inside the arena; draw the border separately.
  if(MAPS[mapId].terrain)ctx.drawImage(mapDrawing().terrain,24,24,W-48,H-48,24,24,W-48,H-48);
  if(view){ctx.fillStyle='rgba(160,181,177,.24)';ctx.fill(mapDrawing().grid);}
@@ -3310,8 +3653,11 @@ function render(alpha=1){
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3));else drawBullet(b,null,alpha);}
  for(const fade of bulletFades)drawBullet(fade,1-Math.max(0,fade.age-(1-alpha)*STEP)/fade.life,alpha);
  for(const actor of [visualEnemy,visualPlayer]){if(actor&&!actor.shattered){const fade=ending&&actor.hp<=0?gray:0,drawing=actorDrawing(actor,actor.team,fade);drawLoopImages(actor,fade,drawing,view);drawActor(actor,actor.team,fade,false,drawing);}}
+ ctx.save();ctx.globalAlpha=1;drawLightDust(woundParticles,null,(1-alpha)*STEP);ctx.restore();
  for(const e of effects){
   const age=Math.max(0,e.age-(1-alpha)*STEP);
+  if(e.kind==='muzzle'){drawMuzzleEffect(e,age,e.actor===p?visualPlayer:e.actor===enemy?visualEnemy:e.actor);continue;}
+  if(e.kind==='intercept'){drawInterceptEffect(e,age);continue;}
   if(e.kind==='impact'){drawImpactEffect(e,age);continue;}
   if(e.kind==='breakup'){drawBreakupEffect(e,age);continue;}
   const t=age/e.life;ctx.save();ctx.globalAlpha=(1-t)*.8;ctx.strokeStyle='#d5ddd5';ctx.lineWidth=1;
@@ -3498,7 +3844,7 @@ $('showHealthNumbers').addEventListener('change',()=>{cfg.showHealthNumbers=$('s
 $('showDamageNumbers').addEventListener('change',()=>{cfg.showDamageNumbers=$('showDamageNumbers').checked;if(!cfg.showDamageNumbers)damageNumbers=[];saveSettings();render();});
 $('showRange').addEventListener('change',()=>{cfg.showRange=$('showRange').checked;saveSettings();render();});
 $('continuousFire').addEventListener('change',()=>{cfg.continuousFire=$('continuousFire').checked;saveSettings();});
-$('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?.6:0;saveSettings();$('sound').blur();});
+$('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?AUDIO_MASTER_GAIN:0;saveSettings();$('sound').blur();});
 $('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;$('showDamageNumbers').checked=cfg.showDamageNumbers=DEFAULTS.showDamageNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();render();});
 for(const name of SETTING_NAMES){$(name).addEventListener('input',()=>{settingsDirty=true;});$(name).addEventListener('change',saveSettings);}
