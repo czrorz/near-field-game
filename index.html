@@ -22,6 +22,9 @@ main{max-width:1200px;margin:auto}
 h1{font-size:24px;letter-spacing:4px;margin:0;font-weight:500}
 .tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .device{font-size:12px;color:var(--muted);margin-right:5px}
+.performance-monitor{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.performance-value{min-width:7ch;text-align:right}
+.performance-cpu{min-width:10ch;text-align:right}
 .arena{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#20282a;isolation:isolate}
 canvas{display:block;width:100%;aspect-ratio:8/5;touch-action:none;user-select:none;cursor:none}
 .hud{position:relative;margin-top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;font-size:12px;letter-spacing:.5px}
@@ -130,6 +133,10 @@ html[lang="en"] .setting output{white-space:nowrap}
  <header class="top">
   <div class="identity"><h1>近场</h1></div>
   <div class="tools">
+   <div class="performance-monitor">
+    <span class="performance-value" id="fps">FPS —</span>
+    <span class="performance-cpu" id="cpu-time" title="Average CPU time per frame; update and draw submission.">CPU — ms</span>
+   </div>
    <span class="device" id="device">键盘 + 鼠标</span>
    <label class="sr-only" for="map">地图</label>
    <select id="map">
@@ -1958,15 +1965,18 @@ const muzzleSprites=[null,null];let interceptHaloSprite=null;
 function getMuzzleSprite(team){
  if(muzzleSprites[team])return muzzleSprites[team];
  const image=document.createElement('canvas');image.width=image.height=64;
- const paint=image.getContext('2d'),gradient=paint.createRadialGradient(32,32,0,32,32,32);
- const tint=team===0?'178,206,202':'210,180,155';
- gradient.addColorStop(0,'rgba(255,255,250,1)');
- gradient.addColorStop(.15,'rgba(255,255,250,.95)');
- gradient.addColorStop(.28,'rgba(255,255,250,.65)');
- gradient.addColorStop(.45,`rgba(${tint},.17)`);
- gradient.addColorStop(.75,`rgba(${tint},.05)`);
+ const paint=image.getContext('2d'),gradient=paint.createRadialGradient(0,32,0,0,32,64),tint=team===0?'178,206,202':'210,180,155';
+ // Width grows linearly from half a bullet diameter to one full diameter.
+ gradient.addColorStop(0,'rgba(255,255,250,.8)');
+ gradient.addColorStop(.08,'rgba(255,255,250,.6)');
+ gradient.addColorStop(.22,`rgba(${tint},.3)`);
+ gradient.addColorStop(.5,`rgba(${tint},.15)`);
+ gradient.addColorStop(.8,`rgba(${tint},.04)`);
  gradient.addColorStop(1,`rgba(${tint},0)`);
- paint.fillStyle=gradient;paint.fillRect(0,0,64,64);return muzzleSprites[team]=image;
+ paint.fillStyle=gradient;paint.beginPath();paint.moveTo(0,32-16/3);paint.lineTo(64,32-32/3);paint.lineTo(64,32+32/3);paint.lineTo(0,32+16/3);paint.closePath();paint.fill();
+ const core=paint.createRadialGradient(0,32,0,0,32,16/3);
+ core.addColorStop(0,'rgba(255,255,250,1)');core.addColorStop(.6,'rgba(255,255,250,.9)');core.addColorStop(1,'rgba(255,255,250,0)');
+ paint.fillStyle=core;paint.fillRect(0,32-16/3,16/3,32/3);return muzzleSprites[team]=image;
 }
 function getInterceptHaloSprite(){
  if(interceptHaloSprite)return interceptHaloSprite;
@@ -1983,7 +1993,7 @@ function getInterceptHaloSprite(){
 let visualSeed=(Date.now()>>>0)||1;
 function visualRandom(){visualSeed=(Math.imul(visualSeed,1664525)+1013904223)>>>0;return visualSeed/4294967296;}
 function muzzleEffect(actor,bullet){
- const flash={kind:'muzzle',actor,team:bullet.team,x:bullet.x,y:bullet.y,
+ const flash={kind:'muzzle',actor,team:bullet.team,x:bullet.x,y:bullet.y,radius:bullet.r??ACTOR.shotRadius,
   age:0,previousAge:0,life:.05*(.85+visualRandom()*.3),size:.85+visualRandom()*.3};
  const old=effects.find(e=>e.kind==='muzzle'&&e.actor===actor);
  if(old)Object.assign(old,flash);else{effects.push(flash);capVisualEffects();}
@@ -3555,12 +3565,12 @@ function drawMistPuffs(mist,age){
 }
 function drawMuzzleEffect(e,age,pose=e.actor){
  if(age>=e.life||!pose||pose.shattered)return;
- const t=clamp(age/e.life,0,1),size=e.size*(1-.25*t);
+ const t=clamp(age/e.life,0,1),size=e.size*(1-.25*t),radius=e.radius??ACTOR.shotRadius;
  // Keep the flash attached to the current rendered muzzle, including aim changes.
  const angle=pose.aim||0,distance=muzzleDistance(pose,angle)+2;
  ctx.save();ctx.translate(pose.x+Math.cos(angle)*distance,pose.y+Math.sin(angle)*distance);ctx.rotate(angle);
  ctx.globalAlpha=.9*(1-t)**.65;
- ctx.drawImage(getMuzzleSprite(e.team),-10*size,-6*size,20*size,12*size);ctx.restore();
+ ctx.drawImage(getMuzzleSprite(e.team),-2,-radius*3,24*size,radius*6);ctx.restore();
 }
 function drawInterceptEffect(e,age){
  if(age>=e.life)return;
@@ -3682,14 +3692,32 @@ function render(alpha=1){
 }
 
 // === 13 · Frame loop and input events ===
+let monitorStarted=null,monitorFrames=0,monitorCPU=0;
+function setMonitorText(id,text){const element=$(id);if(element.textContent!==text)element.textContent=text;}
+function resetPerformanceMonitor(){
+ monitorStarted=null;monitorFrames=0;monitorCPU=0;
+ setMonitorText('fps','FPS —');setMonitorText('cpu-time','CPU — ms');
+}
+function updatePerformanceMonitor(now,cpu){
+ if(document.hidden)return;
+ if(monitorStarted===null){monitorStarted=now;return;}
+ monitorFrames++;monitorCPU+=cpu;const duration=now-monitorStarted;
+ if(duration<100)return;
+ const averageCPU=monitorCPU/monitorFrames;
+ setMonitorText('fps','FPS '+Math.round(monitorFrames*1000/duration));setMonitorText('cpu-time','CPU '+averageCPU.toFixed(1)+' ms');
+ monitorStarted=now;monitorFrames=0;monitorCPU=0;
+}
+document.addEventListener('visibilitychange',resetPerformanceMonitor);
 function frame(now){
+ const frameStarted=performance.now();
  botAimFrame++;
  // A controller can start or resume here; reset the clock before computing dt.
  const pad=pollPad(),dt=last?Math.max(0,Math.min((now-last)/1000,.05)):0;last=now;
  if(state==='running'||state==='ending'){const input=state==='running'?getInput(pad,dt):null;accumulator+=dt;while(accumulator>=STEP&&(state==='running'||state==='ending')){if(state==='running')simulate(STEP,input);else updateEnding(STEP);accumulator-=STEP;renderStepReady=true;}}else accumulator=0;
  if(state==='running'||state==='ending')updateCamera(dt);
  if(state==='running'||state==='ending'||renderDirty||renderedState!==state)render(renderStepReady&&(state==='running'||state==='ending')?clamp(accumulator/STEP,0,1):1);
- if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}requestAnimationFrame(frame);
+ if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}
+ updatePerformanceMonitor(now,performance.now()-frameStarted);requestAnimationFrame(frame);
 }
 function pointerWorld(e){const b=canvas.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*VIEW_W-(VIEW_W-W)/2,y:(e.clientY-b.top)/b.height*VIEW_H-(VIEW_H-H)/2};}
 canvas.addEventListener('pointerdown',e=>{
