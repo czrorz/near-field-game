@@ -140,10 +140,10 @@ html[lang="en"] .setting output{white-space:nowrap}
    <span class="device" id="device">键盘 + 鼠标</span>
    <label class="sr-only" for="map">地图</label>
    <select id="map">
-    <option value="open">地图 · 空场</option>
+    <option value="open" selected>地图 · 空场</option>
     <option value="hill">地图 · 缓丘</option>
     <option value="loop">地图 · 弹道回环</option>
-    <option value="four" selected>地图 · 四墙</option>
+    <option value="four">地图 · 四墙</option>
     <option value="ellipse">地图 · 椭圆反射场</option>
     <option value="peaks">地图 · 三柱</option>
     <option value="crossflow">地图 · 横流带</option>
@@ -249,8 +249,8 @@ html[lang="en"] .setting output{white-space:nowrap}
    <h3 class="settings-subtitle">连发与装填</h3>
    <div class="settings-grid field-grid">
     <div class="setting">
-     <label for="burstCount">每组子弹数<output id="burstCount-value">3</output></label>
-     <input id="burstCount" type="range" min="1" max="10" step="1" value="3">
+     <label for="burstCount">每组子弹数<output id="burstCount-value">5</output></label>
+     <input id="burstCount" type="range" min="1" max="10" step="1" value="5">
      <div class="range-bounds" aria-hidden="true"><span id="burstCount-min">1</span><span id="burstCount-max">10</span></div>
      <p class="setting-help">松开后仍会打完当前组。</p>
     </div>
@@ -278,6 +278,7 @@ html[lang="en"] .setting output{white-space:nowrap}
    </div>
    <label class="check field-visibility"><input id="continuousFire" type="checkbox">持续开火（无需按住）</label>
    <label class="check field-visibility"><input id="showRange" type="checkbox" checked>显示距离线</label>
+   <label class="check field-visibility"><input id="showActivationPreview" type="checkbox" checked>显示变亮位置</label>
    <p class="notes">手柄：左杆移动，右杆瞄准，RT 射击。触屏：左杆移动，点击射击。</p>
   </section>
   <section class="settings-group" aria-labelledby="projectile-settings">
@@ -389,8 +390,8 @@ html[lang="en"] .setting output{white-space:nowrap}
    <h2 id="control-field-settings">控弹场</h2>
    <div class="settings-grid field-grid">
     <div class="setting">
-     <label for="controlRadius">控弹场半径<output id="controlRadius-value">300</output></label>
-     <input id="controlRadius" type="range" min="0" max="1000" step="10" value="300">
+     <label for="controlRadius">控弹场半径<output id="controlRadius-value">1000</output></label>
+     <input id="controlRadius" type="range" min="0" max="1000" step="10" value="1000">
      <div class="range-bounds" aria-hidden="true"><span id="controlRadius-min">0</span><span id="controlRadius-max">1000</span></div>
      <p class="setting-help">影响己方亮弹的范围；虚线表示。</p>
     </div>
@@ -427,7 +428,7 @@ html[lang="en"] .setting output{white-space:nowrap}
    </div>
   </section>
   
-  <div class="hud"><div class="hud-left"><span class="sr-only" id="health"></span><span id="score">人机对战</span></div><div class="hud-right"><span id="weapon">3 连发就绪</span><span id="intercepts">已发 0</span><span id="time">00:00</span></div></div>
+  <div class="hud"><div class="hud-left"><span class="sr-only" id="health"></span><span id="score">人机对战</span></div><div class="hud-right"><span id="weapon">5 连发就绪</span><span id="intercepts">已发 0</span><span id="time">00:00</span></div></div>
   <div class="settings-foot"><button type="button" id="defaults">恢复默认</button></div>
  </details>
  <footer class="credits" lang="en">Concept and gameplay design by czrorz. Code written by ChatGPT.</footer>
@@ -486,7 +487,7 @@ const MAPS={
   {kind:'crossflow',x0:660,x1:820,y0:24,y1:726,ax:0,ay:-1,strength:3000,feather:32}
  ]}
 };
-let mapId='four',WALLS=MAPS.four.walls,mapFields=[];
+let mapId='open',WALLS=MAPS.open.walls,mapFields=[];
 function setMap(id){if(!Object.hasOwn(MAPS,id))return false;mapId=id;const map=MAPS[id],width=map.width||VIEW_W,height=map.height||VIEW_H;mouse.x+=(width-W)/2;mouse.y+=(height-H)/2;W=width;H=height;WALLS=map.walls;mapFields=map.fields||(map.field?[map.field]:[]);return true;}
 const mapAccelerationScratch={x:0,y:0};
 function peakHeight(x,y,p){
@@ -558,10 +559,10 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 // === 02 · Shared settings, runtime state and numeric helpers ===
 const DEFAULTS={
  maxHealth:10,actorRadius:15,minRadiusRatio:.7,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
- burstCount:3,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
+ burstCount:5,fireRate:6.25,reloadTime:1.1,armingDelay:0,padRange:500,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,controlSpinScale:1,
- radius:150,controlRadius:300,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
- difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true,showHealthNumbers:true,showDamageNumbers:true
+ radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
+ difficulty:'easy',autofire:true,continuousFire:false,sound:true,showField:false,showRange:true,showActivationPreview:true,showHealthNumbers:true,showDamageNumbers:true
 };
 const cfg={...DEFAULTS,view:'heading'};
 const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","burstCount","fireRate","reloadTime","padRange","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale"];
@@ -572,7 +573,7 @@ const keys=new Set(),mouse={x:850,y:375,down:false,press:null};
 const touch={move:null,aim:null,target:null};
 const TOUCH_STICK={x:125,get y(){return H-115;},radius:65,hitRadius:86};
 let inputMode='mouse',moveSource='keyboard',aimSource='mouse',gamepadName='',padPrev=[],rightPrev={x:0,y:0,m:0},rightAnchor={x:0,y:0,m:0},seed=3947;
-let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],effects=[],woundParticles=[],damageNumbers=[],damageNumberId=0,elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
+let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],activationPreviewFades=[],effects=[],woundParticles=[],damageNumbers=[],damageNumberId=0,elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
 let ending=null,defeatedEnemy=null;
 let pointerLockPending=false,pointerWasLocked=false;
 const mouseLook={x:0,y:0};let pointerDistanceScale=1;
@@ -730,6 +731,7 @@ const ENGLISH={
  "持续开火（无需按住）": "Continuous fire (no button held)",
  "显示头顶生命数字": "Show overhead health numbers",
  "显示距离线": "Show range indicator",
+ "显示变亮位置": "Show activation preview",
  "移动惯性": "Movement inertia",
  "人物排斥强度": "Character repulsion",
  "人物排斥距离": "Character repulsion range",
@@ -1177,7 +1179,7 @@ function reset(run=false){
  seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);cameraAngle=p.aim+Math.PI/2;
  if(headingView())p.range=VIEW_H*(.8-.5);
  ending=null;defeatedEnemy=null;
- bullets=[];bulletFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberId=0;elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
+ bullets=[];bulletFades=[];activationPreviewFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberId=0;elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);state=run?'running':'ready';
  $('pause').disabled=!run;$('pause').textContent=tr('暂停');$('overlay').hidden=run;updateHud(true);
  if(run){$('settings').open=false;announce('游戏开始');deferAudioUnlock();}
@@ -1434,7 +1436,7 @@ function projectileRK4(b,dt,carrier,fieldActive,source=null){
 }
 // Shared by gameplay and bot forecasts. Split at accumulated distance events
 // and at the end of the arming timer. Every accepted RK4 segment has one phase.
-function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
+function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtActivation=false){
  if(!Number.isFinite(b.vx)||!Number.isFinite(b.vy)){const launch=b.launchSpeed??cfg.launchSpeed;b.vx=b.dx*launch;b.vy=b.dy*launch;}
  b.travel=b.travel||0;b.motionSegments=[];b.damageSegments=[];b.damageWindow=null;b.endPoint=null;b.wallEnd=null;let remaining=dt,wallContacts=0;
  if(b.wallAbsorbed)return;
@@ -1459,6 +1461,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
   recordDamage(time,time,b.x,b.y,b.x,b.y);
  }
  activateAt(0);
+ if(stopAtActivation&&Number.isFinite(b.damageStart))return;
  while(remaining>1e-9){
   // Only aiming probes carry a work limit. Extremely tight forecast curls
   // must not monopolize a frame; live projectiles always finish their step.
@@ -1549,10 +1552,45 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null){
    respondProjectileWall(b,wallHit);
   }
   activateAt(dt-remaining);
+  if(stopAtActivation&&Number.isFinite(b.damageStart))return;
   // Legacy arming intervals are already field-active, so they also stop
   // being ghosts. Current gameplay keeps armingDelay at zero.
   if(motionSegment&&motionSegment.phase==='ghost'&&projectileFieldActive(b,b.travel,true))motionSegment.ghostEndExclusive=true;
  }
+}
+const activationPreviewCache=new WeakMap();
+const ACTIVATION_PREVIEW_FADE_TIME=.12;
+function predictBulletActivation(b){
+ const map=MAPS[mapId],distance=b.fieldStart-b.travel,timeLeft=12-b.age;
+ const inside=(x,y)=>map.wrap||x>=20&&x<=W-20&&y>=20&&y<=H-20;
+ if(!(distance>0&&timeLeft>0)||!inside(b.x,b.y))return null;
+ if(!map.wrap&&!WALLS.length&&!map.terrain&&!mapFields.length&&!(b.armingDelay??cfg.armingDelay)){
+  const speed=Math.hypot(b.vx,b.vy);
+  if(!(speed>0)||projectileStraightTime(distance,speed)>timeLeft)return null;
+  const x=b.x+b.vx/speed*distance,y=b.y+b.vy/speed*distance;
+  return inside(x,y)?{x,y,angle:Math.atan2(b.vy,b.vx)}:null;
+ }
+ // Future enemy movement and projectile cancellation are unknown.
+ const probe={...b,probeWorkLeft:512};
+ for(let time=0;time<timeLeft;time+=STEP){
+  integrateProjectile(probe,Math.min(STEP,timeLeft-time),null,null,true);
+  if(probe.wallAbsorbed||probe.probeTruncated||probe.endPoint||!inside(probe.x,probe.y))return null;
+  if(Number.isFinite(probe.damageStart))return{x:probe.x,y:probe.y,angle:Math.atan2(probe.vy,probe.vx)};
+ }
+ return null;
+}
+function bulletActivationPreview(b){
+ let cached=activationPreviewCache.get(b);
+ if(!cached||cached.map!==mapId||cached.propulsion!==cfg.propulsion){
+  cached={map:mapId,propulsion:cfg.propulsion,point:predictBulletActivation(b)};
+  activationPreviewCache.set(b,cached);
+ }
+ return cached.point;
+}
+function fadeActivationPreview(b,at){
+ const point=activationPreviewCache.get(b)?.point;if(!point)return;
+ activationPreviewCache.delete(b);
+ if(cfg.showActivationPreview)activationPreviewFades.push({point,r:b.r,at});
 }
 function stepBullet(b,dt){
  b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;integrateProjectile(b,dt,b.team===0?enemy:p,b.team===0?p:enemy);b.age+=dt;
@@ -1593,7 +1631,8 @@ function fire(actor,team,aim=actor.aim,range=actor.range){
  startProjectileDamage(b);bullets.push(b);
  muzzleEffect(actor,b);
  playShotSound(actor);
- if(team===0)shots++;return b;
+ if(team===0)shots++;
+ return b;
 }
 function updateWeapon(actor,pressed,dt,automatic=false,point=null){
  actor.cd=Math.max(0,actor.cd-dt);
@@ -1614,12 +1653,13 @@ function updateWeapon(actor,pressed,dt,automatic=false,point=null){
  fire(actor,actor.team,actor.aim,actor.range);group.remaining--;group.next+=group.interval;
  if(group.remaining<=0){actor.salvo=null;actor.cd=actor.reloadDuration=group.reload;}
 }
+function brightBulletAlpha(charge){return .4+.6*charge;}
 function projectilePhase(b){
  const d=b.travel||0,solid=projectileDamageActive(b,d),fieldActive=projectileFieldActive(b,d),end=projectileEnd(b);
  const expired=Number.isFinite(end)&&d>=end,arming=fieldActive&&!solid&&!expired;
  // Appearance carries the current phase only; no preview of the remaining
  // distance or time to activation, even within the last simulation step.
- return{phase:expired?'expired':solid?'solid':arming?'arming':'ghost',solid:solid&&!expired,arming,fieldActive:fieldActive&&!expired,alpha:solid&&!expired?projectileDamage(b,d):arming?.64:.30};
+ return{phase:expired?'expired':solid?'solid':arming?'arming':'ghost',solid:solid&&!expired,arming,fieldActive:fieldActive&&!expired,alpha:solid&&!expired?brightBulletAlpha(projectileDamage(b,d)):arming?.64:.30};
 }
 function activeWindow(b){
  if(Array.isArray(b.damageSegments))return b.damageWindow;
@@ -3307,6 +3347,7 @@ function simulate(dt,control){
   if(ev.kind==='annihilate'){
    if(ev.a.dead||ev.b.dead)continue;
    ev.a.dead=ev.b.dead=true;intercepts++;
+   const at=elapsed-dt*(1-ev.t);fadeActivationPreview(ev.a,at);fadeActivationPreview(ev.b,at);
    effect(ev.x,ev.y,'intercept',.55);playSound('intercept',.55,ev.x);continue;
   }
   if(ev.b.dead||ev.target!==p&&ev.target!==enemy)continue;
@@ -3315,7 +3356,13 @@ function simulate(dt,control){
  // All contacts in a fixed step use the same body geometry.
  if(p.hp!==previousPlayerHp)syncActorRadius(p);if(e&&e.hp!==previousEnemyHp)syncActorRadius(e);
  constrainActor(p);if(e){constrainActor(e);if(p.hp>0&&e.hp>0)separateActors(p,e);}
- for(const b of bullets)if(b.ended&&!b.dead){
+ for(let i=activationPreviewFades.length-1;i>=0;i--)if(elapsed-dt-activationPreviewFades[i].at>=ACTIVATION_PREVIEW_FADE_TIME)activationPreviewFades.splice(i,1);
+ for(const b of bullets){
+  if(cfg.showActivationPreview&&b.team===0&&b.prevTravel<b.fieldStart&&Number.isFinite(b.damageStart)){
+   const activation=b.damageSegments[0];
+   if(activation&&activation.from<=b.collisionEnd)fadeActivationPreview(b,elapsed-dt*(1-activation.from));
+  }
+  if(!b.ended||b.dead)continue;
   const distance=b.travel-b.prevTravel,t=distance>1e-10?clamp((projectileEnd(b)-b.prevTravel)/distance,0,1):1;
   // Keep the final bright dot and let it gently drift while fading; no trail.
   bulletFades.push({x:b.endPoint?.x??b.px+(b.x-b.px)*t,y:b.endPoint?.y??b.py+(b.y-b.py)*t,vx:b.vx*.12,vy:b.vy*.12,r:b.r,team:b.team,fadeSolid:!Number.isFinite(b.fieldStart)||Number.isFinite(b.damageStart),fadeDamage:projectileDamage(b,projectileEnd(b)),age:0,life:.14});
@@ -3533,11 +3580,37 @@ function drawBullet(b,fade=null,alpha=1){
  // Fixed geometry: charge changes fill/glow brightness, never projectile size.
  if(solid){
   const glow=bulletGlow(b.r,color),r=glow.extent;ctx.globalAlpha=fadeScale*(.12+.48*charge);ctx.drawImage(glow.image,x-r,y-r,r*2,r*2);
-  ctx.globalAlpha=fadeScale*charge;ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();
-  const line=Math.min(.8,b.r*.3);ctx.globalAlpha=fadeScale*.9;ctx.lineWidth=line;ctx.strokeStyle=palette.core;circle(x,y,Math.max(0,b.r-line/2));ctx.stroke();
- }else{ctx.globalAlpha=fadeScale*(arming?.64:.30);ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();}
+  ctx.globalAlpha=fadeScale*brightBulletAlpha(charge);ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();
+ }else{
+  const line=b.r*.5;ctx.globalAlpha=fadeScale*(arming?.64:.30);ctx.strokeStyle=color;ctx.lineWidth=line;
+  circle(x,y,b.r-line/2);ctx.stroke();
+ }
 
  ctx.restore();
+}
+let activationPreviewSprite=null;
+function getActivationPreviewSprite(){
+ if(activationPreviewSprite)return activationPreviewSprite;
+ const image=document.createElement('canvas');image.width=image.height=48;
+ const paint=image.getContext('2d');paint.strokeStyle=BULLET_COLORS[0].solid+'bb';paint.lineWidth=7;paint.lineCap='butt';
+ paint.beginPath();paint.moveTo(10,10);paint.lineTo(38,38);paint.moveTo(10,38);paint.lineTo(38,10);paint.stroke();
+ return activationPreviewSprite=image;
+}
+function drawActivationMarker(point,radius,opacity){
+ const r=radius*1.65;ctx.save();ctx.globalAlpha=opacity;ctx.translate(point.x,point.y);ctx.rotate(point.angle);
+ ctx.drawImage(getActivationPreviewSprite(),-r,-r,r*2,r*2);ctx.restore();
+}
+function drawActivationPreviews(alpha=1){
+ for(const b of bullets){
+  if(b.team!==0||b.dead||b.expired||Number.isFinite(b.damageStart)||!(b.travel<b.fieldStart))continue;
+  const point=bulletActivationPreview(b);if(!point)continue;
+  drawActivationMarker(point,b.r,1);
+ }
+ const time=elapsed-(1-alpha)*STEP;
+ for(const fade of activationPreviewFades){
+  const opacity=1-clamp((time-fade.at)/ACTIVATION_PREVIEW_FADE_TIME,0,1);
+  if(opacity>0)drawActivationMarker(fade.point,fade.r,opacity);
+ }
 }
 function drawWalls(){
  ctx.save();
@@ -3660,6 +3733,7 @@ function render(alpha=1){
   ctx.restore();}
  drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending)drawRange(visualPlayer);
  drawWalls();
+ if(!ending&&cfg.showActivationPreview)drawActivationPreviews(alpha);
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3));else drawBullet(b,null,alpha);}
  for(const fade of bulletFades)drawBullet(fade,1-Math.max(0,fade.age-(1-alpha)*STEP)/fade.life,alpha);
  for(const actor of [visualEnemy,visualPlayer]){if(actor&&!actor.shattered){const fade=ending&&actor.hp<=0?gray:0,drawing=actorDrawing(actor,actor.team,fade);drawLoopImages(actor,fade,drawing,view);drawActor(actor,actor.team,fade,false,drawing);}}
@@ -3676,7 +3750,8 @@ function render(alpha=1){
  if(state==='running'){
   const {start}=shotRangePlan(visualPlayer,visualPlayer.range),aimPoint=headingView()?null:aimSource==='mouse'?mouse:aimSource==='touch'?touch.target:null;
   const x=aimPoint?.x??visualPlayer.x+Math.cos(visualPlayer.aim)*start,y=aimPoint?.y??visualPlayer.y+Math.sin(visualPlayer.aim)*start;
-  if(state==='running'){ctx.strokeStyle='rgba(200,216,208,.75)';ctx.lineWidth=AIM_STROKE;circle(x,y,ACTOR.shotRadius+AIM_STROKE/2);ctx.stroke();}
+  ctx.strokeStyle='rgba(200,216,208,.75)';ctx.lineWidth=AIM_STROKE;
+  circle(x,y,ACTOR.shotRadius+AIM_STROKE/2);ctx.stroke();
  }
  // Counter-rotate labels so they stay upright in the heading view.
  if(cfg.showDamageNumbers)for(const n of damageNumbers){
@@ -3835,7 +3910,7 @@ function restoreSettings(){
     if(validSettingValue(name,value))cfg[name]=value;
    }
    if(!Object.hasOwn(saved.values,'knockbackScale')&&validSettingValue('knockbackScale',saved.values.baseKnockback/100))cfg.knockbackScale=saved.values.baseKnockback/100;
-   for(const name of ['sound','showField','showRange','showHealthNumbers','showDamageNumbers','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+   for(const name of ['sound','showField','showRange','showActivationPreview','showHealthNumbers','showDamageNumbers','continuousFire'])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
    if(saved.view==='world'||saved.view==='heading')cfg.view=saved.view;
    if(typeof saved.difficulty==='string'&&Object.hasOwn(BOT_LEVELS,saved.difficulty))cfg.difficulty=saved.difficulty;
    if(typeof saved.mode==='string'&&(Object.hasOwn(BOT_LEVELS,saved.mode)||saved.mode==='practice'||saved.mode==='practice-dodge')){
@@ -3847,11 +3922,12 @@ function restoreSettings(){
  for(const name of SETTING_NAMES)$(name).value=cfg[name]*settingScale(name);
  $('showDamageNumbers').checked=cfg.showDamageNumbers;$('showHealthNumbers').checked=cfg.showHealthNumbers;$('showField').checked=cfg.showField;$('showRange').checked=cfg.showRange;$('sound').setAttribute('aria-pressed',String(cfg.sound));$('continuousFire').checked=cfg.continuousFire;
  $('map').value=mapId;$('view').value=cfg.view;syncDifficultyControl();
+ $('showActivationPreview').checked=cfg.showActivationPreview;
 }
 function saveSettings(){
  if(restoringDefaults)return;
  const values={};for(const name of SETTING_NAMES)values[name]=validSettingValue(name,cfg[name])?cfg[name]:DEFAULTS[name];
- try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,showHealthNumbers:cfg.showHealthNumbers,showDamageNumbers:cfg.showDamageNumbers,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view}));}catch{}
+ try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:1,values,continuousFire:cfg.continuousFire,sound:cfg.sound,showField:cfg.showField,showRange:cfg.showRange,showActivationPreview:cfg.showActivationPreview,showHealthNumbers:cfg.showHealthNumbers,showDamageNumbers:cfg.showDamageNumbers,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view}));}catch{}
  settingsDirty=padRangeDirty=false;
 }
 function flushSettings(){if(settingsDirty)saveSettings();}
@@ -3871,9 +3947,10 @@ $('showField').addEventListener('change',()=>{cfg.showField=$('showField').check
 $('showHealthNumbers').addEventListener('change',()=>{cfg.showHealthNumbers=$('showHealthNumbers').checked;saveSettings();render();});
 $('showDamageNumbers').addEventListener('change',()=>{cfg.showDamageNumbers=$('showDamageNumbers').checked;if(!cfg.showDamageNumbers)damageNumbers=[];saveSettings();render();});
 $('showRange').addEventListener('change',()=>{cfg.showRange=$('showRange').checked;saveSettings();render();});
+$('showActivationPreview').addEventListener('change',()=>{cfg.showActivationPreview=$('showActivationPreview').checked;if(!cfg.showActivationPreview)activationPreviewFades.length=0;saveSettings();render();});
 $('continuousFire').addEventListener('change',()=>{cfg.continuousFire=$('continuousFire').checked;saveSettings();});
 $('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?AUDIO_MASTER_GAIN:0;saveSettings();$('sound').blur();});
-$('defaults').addEventListener('click',()=>{restoringDefaults=true;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;$('showDamageNumbers').checked=cfg.showDamageNumbers=DEFAULTS.showDamageNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
+$('defaults').addEventListener('click',()=>{restoringDefaults=true;$('showActivationPreview').checked=cfg.showActivationPreview=DEFAULTS.showActivationPreview;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;$('showDamageNumbers').checked=cfg.showDamageNumbers=DEFAULTS.showDamageNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();render();});
 for(const name of SETTING_NAMES){$(name).addEventListener('input',()=>{settingsDirty=true;});$(name).addEventListener('change',saveSettings);}
 window.addEventListener('pagehide',flushSettings);
