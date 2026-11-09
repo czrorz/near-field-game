@@ -580,8 +580,8 @@ const mouseLook={x:0,y:0};let pointerDistanceScale=1;
 let cameraAngle=0;const CAMERA_FOLLOW_GAIN=.02,DEFEAT_CAMERA_DISTANCE=800,DEFEAT_CAMERA_DAMP_START=500; // At range 500, the time constant is 0.1 seconds.
 let renderStepReady=false;const renderActors=[{},{}];
 let accumulator=0,last=0,hudAt=-1,toastUntil=0,shotId=0,rounds=0,renderFrames=0,renderDirty=true,renderedState=null;
-const AUDIO_MASTER_GAIN=.72;
-let audioCtx=null,audioMaster=null,audioVoices=0,audioPlayed=0;
+const AUDIO_MASTER_GAIN=5.6;
+let audioCtx=null,audioMaster=null,audioPeakLimiter=null,audioVoices=0,audioPlayed=0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
 function unit(x,y){const d=Math.hypot(x,y);return d>1e-8?{x:x/d,y:y/d,d}:{x:0,y:0,d:0};}
@@ -817,14 +817,7 @@ function createImpactSamples(rate){
   const delays=channel?[.017,.033,.049,.073]:[.013,.027,.043,.065];
   for(let i=0;i<delays.length;i++)tail[Math.round(delays[i]*rate)]+=(i%2?-1:1)*.17*Math.exp(-i*.48);
  }
- // A tiny, dry firing tick is baked once; shots reuse it without synthesis.
- const shot=new Float32Array(Math.ceil(rate*.035));let shotPhase=0,softNoise=0;
- for(let i=0;i<shot.length;i++){
-  const t=i/rate,u=t/.035,envelope=Math.min(1,t/.0015)*Math.exp(-t/.008)*Math.max(0,1-u);
-  shotPhase+=TAU*(300-160*u)/rate;softNoise+=.22*(noise[i]-softNoise);
-  shot[i]=.014*envelope*(.8*Math.sin(shotPhase)+.2*softNoise);
- }
- return{noise,impulse,shot};
+ return{noise,impulse};
 }
 // One shared, stereo reverb. Its output remains upstream of the master mute.
 let impactAudio=null;
@@ -837,14 +830,13 @@ function prepareImpactAudio(){
   noise.getChannelData(0).set(samples.noise);
   const impulse=audioCtx.createBuffer(2,samples.impulse[0].length,rate);
   for(let channel=0;channel<2;channel++)impulse.getChannelData(channel).set(samples.impulse[channel]);
-  const shot=audioCtx.createBuffer(1,samples.shot.length,rate);shot.getChannelData(0).set(samples.shot);
   const reverb=audioCtx.createConvolver();nodes.push(reverb);
   const highpass=audioCtx.createBiquadFilter();nodes.push(highpass);
   const lowpass=audioCtx.createBiquadFilter();nodes.push(lowpass);reverb.normalize=false;reverb.buffer=impulse;
   highpass.type='highpass';highpass.frequency.value=150;highpass.Q.value=.5;
   lowpass.type='lowpass';lowpass.frequency.value=2600;lowpass.Q.value=.5;
   reverb.connect(highpass);highpass.connect(lowpass);lowpass.connect(audioMaster);
-  impactAudio={context:audioCtx,noise,reverb,shot,nodes,shotVoices:0};return impactAudio;
+  impactAudio={context:audioCtx,noise,reverb,nodes};return impactAudio;
  }catch(error){for(const node of nodes)try{node.disconnect();}catch{}impactAudio=null;throw error;}
 }
 
@@ -864,14 +856,24 @@ function prepareAudioDevice(){
  if(audioCtx?.state==='closed'){
   if(impactAudio)for(const node of impactAudio.nodes)try{node.disconnect();}catch{}
   try{audioMaster?.disconnect();}catch{}
-  impactAudio=null;audioMaster=null;audioCtx=null;
+  try{audioPeakLimiter?.disconnect();}catch{}
+  impactAudio=null;audioMaster=null;audioPeakLimiter=null;audioCtx=null;
  }
  if(!audioCtx){const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;audioCtx=new Audio();}
  if(!audioMaster){
-  const master=audioCtx.createGain();
-  try{master.connect(audioCtx.destination);audioMaster=master;}catch(error){try{master.disconnect();}catch{}throw error;}
+  const master=audioCtx.createGain(),limiter=audioCtx.createWaveShaper();
+  try{
+   // Keep normal hits linear and soften only the highest overlapping peaks.
+   const curve=new Float32Array(2049),knee=.55,headroom=.14;
+   for(let i=0;i<curve.length;i++){
+    const sample=(2*i/(curve.length-1)-1)*AUDIO_MASTER_GAIN,magnitude=Math.abs(sample);
+    curve[i]=magnitude<=knee?sample:Math.sign(sample)*(knee+headroom*Math.tanh((magnitude-knee)/headroom));
+   }
+   limiter.curve=curve;limiter.oversample='4x';
+   master.connect(limiter);limiter.connect(audioCtx.destination);audioMaster=master;audioPeakLimiter=limiter;
+  }catch(error){for(const node of [master,limiter])try{node.disconnect();}catch{}throw error;}
  }
- audioMaster.gain.value=cfg.sound?AUDIO_MASTER_GAIN:0;
+ audioMaster.gain.value=cfg.sound?1:0;
  prepareImpactAudio();
 }
 function resumeExistingAudio(allowMuted=false){
@@ -920,21 +922,10 @@ function unlockAudio(){
  if(impactAudio?.context===audioCtx&&audioCtx?.state!=='closed')resumeExistingAudio();
  else queueAudioPreparation(true);
 }
-function playShotSound(actor){
- if(state!=='running'||actor!==p&&actor!==enemy||!cfg.sound||document.hidden||audioCtx?.state!=='running'||impactAudio?.context!==audioCtx||!impactAudio?.shot||impactAudio.shotVoices>=4||audioVoices>=10)return;
- const space=impactAudio,nodes=[];let source,counted=false,cleaned=false;
- const cleanup=()=>{if(cleaned)return;cleaned=true;if(counted){space.shotVoices=Math.max(0,space.shotVoices-1);counted=false;}for(const node of nodes)try{node.disconnect();}catch{}};
- try{
-  source=audioCtx.createBufferSource();nodes.push(source);const pan=audioCtx.createStereoPanner();nodes.push(pan);
-  source.buffer=space.shot;pan.pan.value=clamp((actor.x/W-.5)*1.4,-.8,.8);
-  source.connect(pan);pan.connect(audioMaster);source.onended=cleanup;
-  space.shotVoices++;counted=true;source.start(audioCtx.currentTime);audioPlayed++;
- }catch{try{source?.stop();}catch{}cleanup();}
-}
 // For hit/hurt, strength is contact damage; other cues keep their existing scale.
 function playSound(kind,strength=1,x=W/2){
  if(!Number.isFinite(strength)||((kind==='hit'||kind==='hurt')&&strength<=0))return;
- // Impact sounds keep priority over the quieter, separately limited shots.
+ // Bound the number of simultaneous impact voices.
  if(!['hit','hurt','intercept','kill'].includes(kind)||!cfg.sound||!audioCtx||audioCtx.state!=='running'||impactAudio?.context!==audioCtx||audioVoices>=12)return;
  let nodes=[],sources=[],counted=false,cleaned=false,remaining=0;
  const cleanup=()=>{if(cleaned)return;cleaned=true;if(counted){audioVoices=Math.max(0,audioVoices-1);counted=false;}for(const node of nodes)try{node.disconnect();}catch{}};
@@ -1630,7 +1621,6 @@ function fire(actor,team,aim=actor.aim,range=actor.range){
  b.collisionRandom=Math.random();
  startProjectileDamage(b);bullets.push(b);
  muzzleEffect(actor,b);
- playShotSound(actor);
  if(team===0)shots++;
  return b;
 }
@@ -3949,7 +3939,7 @@ $('showDamageNumbers').addEventListener('change',()=>{cfg.showDamageNumbers=$('s
 $('showRange').addEventListener('change',()=>{cfg.showRange=$('showRange').checked;saveSettings();render();});
 $('showActivationPreview').addEventListener('change',()=>{cfg.showActivationPreview=$('showActivationPreview').checked;if(!cfg.showActivationPreview)activationPreviewFades.length=0;saveSettings();render();});
 $('continuousFire').addEventListener('change',()=>{cfg.continuousFire=$('continuousFire').checked;saveSettings();});
-$('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?AUDIO_MASTER_GAIN:0;saveSettings();$('sound').blur();});
+$('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;$('sound').textContent=tr(cfg.sound?'声音 开':'声音 关');$('sound').setAttribute('aria-pressed',String(cfg.sound));if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?1:0;saveSettings();$('sound').blur();});
 $('defaults').addEventListener('click',()=>{restoringDefaults=true;$('showActivationPreview').checked=cfg.showActivationPreview=DEFAULTS.showActivationPreview;cfg.armingDelay=0;cfg.difficulty=DEFAULTS.difficulty;cfg.autofire=true;$('continuousFire').checked=cfg.continuousFire=DEFAULTS.continuousFire;if(enemy)enemy.bot=null;for(const [name,value] of SETTING_NAMES.map(name=>[name,DEFAULTS[name]*settingScale(name)])){$(name).value=value;$(name).dispatchEvent(new Event('input'));if(name==='maxHealth')$(name).dispatchEvent(new Event('change'));}$('showField').checked=cfg.showField=false;$('showRange').checked=cfg.showRange=DEFAULTS.showRange;$('showHealthNumbers').checked=cfg.showHealthNumbers=DEFAULTS.showHealthNumbers;$('showDamageNumbers').checked=cfg.showDamageNumbers=DEFAULTS.showDamageNumbers;syncDifficultyControl();restoringDefaults=false;saveSettings();updateHud(true);$('defaults').blur();render();});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();render();});
 for(const name of SETTING_NAMES){$(name).addEventListener('input',()=>{settingsDirty=true;});$(name).addEventListener('change',saveSettings);}
