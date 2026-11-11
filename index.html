@@ -114,12 +114,15 @@ main[data-touch] .play-area:fullscreen{
   body{padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left))}
   main{max-width:none}
 }
-@media(max-width:650px), (pointer:coarse){
+@media(max-width:650px), (any-pointer:coarse){
   .settings-panel{
     --side-padding:clamp(30px,8vw,40px);
     padding-left:max(var(--side-padding),env(safe-area-inset-left));
     padding-right:max(var(--side-padding),env(safe-area-inset-right));
   }
+}
+@media(any-pointer:coarse){
+  .settings-panel{--side-padding:50px}
 }
 .setting-help{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
 @media(prefers-reduced-motion:reduce){
