@@ -114,6 +114,13 @@ main[data-touch] .play-area:fullscreen{
   body{padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left))}
   main{max-width:none}
 }
+@media(max-width:650px), (pointer:coarse){
+  .settings-panel{
+    --side-padding:clamp(30px,8vw,40px);
+    padding-left:max(var(--side-padding),env(safe-area-inset-left));
+    padding-right:max(var(--side-padding),env(safe-area-inset-right));
+  }
+}
 .setting-help{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
 @media(prefers-reduced-motion:reduce){
   .toast{transition:none}
@@ -199,11 +206,10 @@ html[lang="en"] h1{letter-spacing:.02em}
     <aside class="settings-panel" aria-label="说明与设置">
      <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗弹无伤害</span><span><i class="dot solid"></i>亮弹能造成伤害</span></div></div>
      <p class="notes">WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，R 键重新开始。</p>
-     <p class="notes">瞄准圆会沿移动方向偏移，圆边决定子弹变亮的最短距离。准星移到圆外后，瞄得越远，子弹变亮前飞得越远。距离线标出预计的杀伤区间。子弹飞到区间末端或达到最长飞行时间就会消失。路程按实际弹道累计，暗弹在对手体内会推迟变亮。</p>
-     <p class="notes">接收场会让敌方亮弹减速和偏转。控弹场只改变己方亮弹的飞行方向。两种场都只对亮弹起作用，亮弹可以穿过其他子弹。</p>
-     <p class="notes">子弹的自旋在发射时确定。沿垂直于射击方向移动得越快，子弹的自旋越强。亮弹会因自旋在接收场内偏转，两种力场也会随人物横移带动子弹。</p>
-     <p class="notes">暗弹无法造成伤害。亮弹的伤害由爆炸伤害和动量伤害组成。弹心越亮，爆炸伤害越高。头顶数字是剩余生命值，命中时弹出的数字是本次伤害。</p>
-     <p class="notes">对战参数对双方都生效。打开设置会暂停游戏。</p>
+     <p class="notes">子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。</p>
+     <p class="notes">最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。</p>
+     <p class="notes">每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。</p>
+     <p class="notes">默认情况下，人物的生命值越低，体型越小，惯性也越低。</p>
      <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示 FPS 和 CPU 耗时</label>
      <section class="settings-group" aria-labelledby="preset-settings">
       <h2 id="preset-settings">参数方案</h2>
@@ -235,7 +241,7 @@ html[lang="en"] h1{letter-spacing:.02em}
         <label for="inertia">移动惯性<output id="inertia-value">450 ms</output></label>
         <input id="inertia" type="range" min="0" max="1000" step="10" value="450">
         <div class="range-bounds" aria-hidden="true"><span id="inertia-min">0</span><span id="inertia-max">1000</span></div>
-        <p class="setting-help">数值越大，加速、减速和转向越慢。人物变小时，惯性随半径减小。</p>
+        <p class="setting-help">数值越大，加速、减速和转向越慢。人物因生命值下降而缩小时，移动惯性也会降低。</p>
        </div>
       </div>
       <h3 class="settings-subtitle">人物属性</h3>
@@ -250,13 +256,12 @@ html[lang="en"] h1{letter-spacing:.02em}
         <label for="actorRadius">人物大小<output id="actorRadius-value">15</output></label>
         <input id="actorRadius" type="range" min="10" max="20" step="1" value="15">
         <div class="range-bounds" aria-hidden="true"><span id="actorRadius-min">10</span><span id="actorRadius-max">20</span></div>
-        <p class="setting-help">同时改变受击范围。</p>
        </div>
        <div class="setting">
         <label for="minRadiusRatio">最小半径比例<output id="minRadiusRatio-value">70%</output></label>
         <input id="minRadiusRatio" type="range" min="50" max="100" step="1" value="70">
         <div class="range-bounds" aria-hidden="true"><span id="minRadiusRatio-min">50%</span><span id="minRadiusRatio-max">100%</span></div>
-        <p class="setting-help">生命值越低，人物和受击范围就越小。设为 100% 时始终保持原大小。</p>
+        <p class="setting-help">以满血时的半径为基准。设为 100% 时，人物大小不随生命值变化。</p>
        </div>
        <div class="setting">
         <label for="actorAspect">身体长宽比<output id="actorAspect-value">1:1</output></label>
@@ -349,19 +354,17 @@ html[lang="en"] h1{letter-spacing:.02em}
         <label for="bulletLifetime">最长飞行时间<output id="bulletLifetime-value">2.0 秒</output></label>
         <input id="bulletLifetime" type="range" min="0.5" max="5" step="0.1" value="2.0">
         <div class="range-bounds" aria-hidden="true"><span id="bulletLifetime-min">0.5 秒</span><span id="bulletLifetime-max">5.0 秒</span></div>
-        <p class="setting-help">从出膛开始计时。调整时限只影响之后发射的子弹。</p>
+        <p class="setting-help">从出膛开始计时。瞄得太远，子弹可能还没变亮就消失。</p>
        </div>
        <div class="setting">
         <label for="bulletSize">子弹大小<output id="bulletSize-value">100%</output></label>
         <input id="bulletSize" type="range" min="75" max="125" step="5" value="100">
         <div class="range-bounds" aria-hidden="true"><span id="bulletSize-min">75</span><span id="bulletSize-max">125</span></div>
-        <p class="setting-help">同时改变子弹的碰撞范围，只影响之后发射的子弹。</p>
        </div>
        <div class="setting">
         <label for="annihilationChance">暗弹相消概率<output id="annihilationChance-value">50%</output></label>
         <input id="annihilationChance" type="range" min="0" max="100" step="5" value="50">
         <div class="range-bounds" aria-hidden="true"><span id="annihilationChance-min">0</span><span id="annihilationChance-max">100</span></div>
-        <p class="setting-help">双方暗弹相撞时同时消失的概率。</p>
        </div>
       </div>
       <h3 class="settings-subtitle">发射自旋</h3>
@@ -416,7 +419,6 @@ html[lang="en"] h1{letter-spacing:.02em}
         <label for="radius">接收场半径<output id="radius-value">150</output></label>
         <input id="radius" type="range" min="50" max="250" step="5" value="150">
         <div class="range-bounds" aria-hidden="true"><span id="radius-min">50</span><span id="radius-max">250</span></div>
-        <p class="setting-help">影响敌方亮弹的范围。</p>
        </div>
        <div class="setting">
         <label for="drag">阻力系数<output id="drag-value">0.020</output></label>
@@ -477,7 +479,7 @@ html[lang="en"] h1{letter-spacing:.02em}
         <label for="knockbackScale">击退系数<output id="knockbackScale-value">0.24</output></label>
         <input id="knockbackScale" type="range" min="0" max="1" step="0.01" value="0.24">
         <div class="range-bounds" aria-hidden="true"><span id="knockbackScale-min">0</span><span id="knockbackScale-max">1</span></div>
-        <p class="setting-help">击退距离 = 击退系数 × 总伤害 ÷ 目标半径比例。致命一击的击退距离加倍。</p>
+        <p class="setting-help">伤害越高、目标越小，击退越强。</p>
        </div>
       </div>
      </section>
@@ -655,15 +657,13 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 // === 03 · Text and language switching ===
 const ENGLISH={
  "显示命中伤害数字": "Show hit damage numbers",
- "暗弹无法造成伤害。亮弹的伤害由爆炸伤害和动量伤害组成。弹心越亮，爆炸伤害越高。头顶数字是剩余生命值，命中时弹出的数字是本次伤害。": "Dim bullets deal no damage. Bright bullets deal explosion and momentum damage. A brighter bullet core means more explosion damage. Numbers above characters show remaining health, and numbers that pop up on impact show damage dealt.",
  "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，R 键重新开始。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press Space to pause or resume, and R to restart.",
- "瞄准圆会沿移动方向偏移，圆边决定子弹变亮的最短距离。准星移到圆外后，瞄得越远，子弹变亮前飞得越远。距离线标出预计的杀伤区间。子弹飞到区间末端或达到最长飞行时间就会消失。路程按实际弹道累计，暗弹在对手体内会推迟变亮。": "The aim circle shifts in the direction of movement. Its edge sets the minimum activation distance. Aiming farther out delays activation. The range line marks the planned damage interval. Bullets disappear at the end of that interval or when their flight time runs out. Travel is measured along the actual trajectory, and activation is delayed inside an opponent.",
- "接收场会让敌方亮弹减速和偏转。控弹场只改变己方亮弹的飞行方向。两种场都只对亮弹起作用，亮弹可以穿过其他子弹。": "Receiving fields slow and deflect enemy bright bullets. Control fields only change the direction of friendly bright bullets. Both fields act only on bright bullets, which pass through other bullets.",
- "子弹的自旋在发射时确定。沿垂直于射击方向移动得越快，子弹的自旋越强。亮弹会因自旋在接收场内偏转，两种力场也会随人物横移带动子弹。": "Spin is set at launch. Faster movement perpendicular to the firing direction gives bullets more spin. Spin bends bright bullets in receiving fields. Moving across a bullet's path lets either field carry the bright bullets it affects.",
- "对战参数对双方都生效。打开设置会暂停游戏。": "Match settings apply to both sides. Opening settings pauses the game.",
- "数值越大，加速、减速和转向越慢。人物变小时，惯性随半径减小。": "Higher values slow acceleration, braking and turns; inertia scales with relative radius.",
+ "子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。": "Bullets start dim and turn bright after traveling the distance you aim for. Only bright bullets can hurt your opponent. When dim bullets from opposing sides collide, they can cancel each other out.",
+ "最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。": "The minimum aim circle shifts in the direction you move, and its edge marks the minimum distance a bullet must travel before turning bright. The ends of the range line show where bullets are expected to turn bright and disappear.",
+ "每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。": "Each character has two fields that act only on bright bullets. The receiving field slows and deflects enemy bright bullets, and the control field steers your own. Moving sideways relative to a bullet's path pulls it to that side through your field. Moving sideways relative to your aim when firing adds spin, which affects the bullet's path in your opponent's receiving field.",
+ "默认情况下，人物的生命值越低，体型越小，惯性也越低。": "By default, characters shrink and lose inertia as their health drops.",
+ "数值越大，加速、减速和转向越慢。人物因生命值下降而缩小时，移动惯性也会降低。": "Higher values slow acceleration, braking, and turning. Movement inertia decreases as characters shrink from losing health.",
  "调整上限时，双方剩余生命值的百分比保持不变。": "Preserves the remaining health percentage.",
- "同时改变受击范围。": "Also changes the hitbox.",
  "调整身体前后长度与左右宽度的比例，面积保持不变。": "Forward-to-sideways axis ratio; area stays constant.",
  "两个人物的中心距离小于此值时，会互相推开。": "Repulsion acts below this center-to-center distance.",
  "靠得越近，排斥越强。设为 0 可关闭排斥。": "Stronger at close range; 0 disables it.",
@@ -672,19 +672,16 @@ const ENGLISH={
  "每组最后一发打完后，需等待这段时间才能再次开火。调整弹数、射速或装填时间，从下一组起生效。": "Reload time after the last shot; burst size, fire rate and reload changes apply to the next burst.",
  "灵敏度低于 100% 时会锁定鼠标。": "Mouse is captured at settings other than 100%.",
  "无阻力和外力时，每秒增加的弹速。": "Speed gained per second without drag or external forces.",
- "同时改变子弹的碰撞范围，只影响之后发射的子弹。": "Also changes the hitbox; applies to new bullets.",
- "双方暗弹相撞时同时消失的概率。": "Chance that opposing dim bullets cancel on contact.",
  "正向时，自旋方向与发射时的横移方向一致。反向时则相反。只影响之后发射的子弹。": "Positive follows sideways launch movement; negative opposes it. Affects new bullet spin only.",
  "数值越大，发射时产生的自旋越强。设为 0 时，发射的子弹不带自旋。": "Scales launch spin on new bullets; 0 disables launch spin.",
  "不随瞄准距离变化的杀伤路程。": "Damaging travel independent of aim range.",
  "总杀伤路程 = 基础杀伤路程 + 附加杀伤路程 × 瞄准距离 ÷ 500。": "Total length = base + added length × aim range / 500.",
  "子弹刚变亮时的爆炸伤害。": "Explosion damage at activation.",
  "子弹变亮后，爆炸伤害在这段路程内从最低值均匀增加到 100。设为 0 时，变亮就达到 100。": "Explosion damage rises linearly from its minimum to 100 over this travel after activation; 0 gives full damage immediately.",
- "影响敌方亮弹的范围。": "Range affecting enemy bright bullets.",
  "子弹越快，阻力越大。顺着来弹方向移动会减小阻力，迎着来弹移动时仍按弹速计算。设为 0 可关闭阻力。": "Faster bullets face more drag. Retreating with incoming bullets reduces drag; approaching does not increase it. 0 disables it.",
  "子弹相对目标撞得越快，动量伤害越高，擦中时伤害较低。设为 0 可关闭动量伤害。": "Momentum damage increases with relative impact speed up to the cap. Glancing hits deal less. Set to 0 to disable momentum damage.",
  "设为 0 时，命中只造成爆炸伤害。": "At 0, hits deal only explosion damage.",
- "击退距离 = 击退系数 × 总伤害 ÷ 目标半径比例。致命一击的击退距离加倍。": "Knockback distance = coefficient × total damage / relative radius; lethal hits double it.",
+ "伤害越高、目标越小，击退越强。": "Higher damage and smaller targets result in stronger knockback.",
  "手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏在游戏区左侧 30% 按下出现移动摇杆，右侧 70% 拖动瞄准，默认自动开火。": "On a controller, move with the left stick, aim with the right stick, and press RT to fire. On touchscreens, press in the left 30% of the play area to place the movement stick, and drag in the right 70% to aim. Automatic fire is on by default.",
  "移动手感": "Movement response",
  "人物属性": "Character properties",
@@ -751,7 +748,7 @@ const ENGLISH={
  "人物与移动": "Character & movement",
  "人物大小": "Character size",
  "最小半径比例": "Minimum radius ratio",
- "生命值越低，人物和受击范围就越小。设为 100% 时始终保持原大小。": "Lower health shrinks the body and hitbox; 100% disables shrinking.",
+ "以满血时的半径为基准。设为 100% 时，人物大小不随生命值变化。": "Relative to the radius at full health. At 100%, character size stays the same as health drops.",
  "身体长宽比": "Body length-to-width ratio",
  "移动速度": "Movement speed",
  "射击": "Firing",
@@ -781,7 +778,7 @@ const ENGLISH={
  "反向（−）": "Negative (−)",
  "推进加速度": "Forward acceleration",
  "最长飞行时间": "Bullet lifetime",
- "从出膛开始计时。调整时限只影响之后发射的子弹。": "Time starts at launch. Each bullet uses the setting at the moment it is fired.",
+ "从出膛开始计时。瞄得太远，子弹可能还没变亮就消失。": "Time starts at launch. If you aim too far, the bullet may expire before it turns bright.",
  "基础杀伤路程": "Base damaging distance",
  "附加杀伤路程": "Added damaging distance",
  "接收场半径": "Receiving field radius",
