@@ -252,9 +252,9 @@ html[lang="en"] h1{letter-spacing:.02em}
       <h3 class="settings-subtitle">人物属性</h3>
       <div class="settings-grid">
        <div class="setting">
-        <label for="maxHealth">双方生命值上限<output id="maxHealth-value">1000</output></label>
-        <input id="maxHealth" type="range" min="500" max="5000" step="100" value="1000">
-        <div class="range-bounds" aria-hidden="true"><span id="maxHealth-min">500</span><span id="maxHealth-max">5000</span></div>
+        <label for="maxHealth">双方生命值上限<output id="maxHealth-value">10000</output></label>
+        <input id="maxHealth" type="range" min="5000" max="50000" step="1000" value="10000">
+        <div class="range-bounds" aria-hidden="true"><span id="maxHealth-min">5000</span><span id="maxHealth-max">50000</span></div>
         <p class="setting-help">调整上限时，双方剩余生命值的百分比保持不变。</p>
        </div>
        <div class="setting">
@@ -414,15 +414,15 @@ html[lang="en"] h1{letter-spacing:.02em}
        </div>
        <div class="setting">
         <label for="minimumDamage">最低爆炸伤害<output id="minimumDamage-value">0</output></label>
-        <input id="minimumDamage" type="range" min="0" max="100" step="1" value="0">
-        <div class="range-bounds" aria-hidden="true"><span id="minimumDamage-min">0</span><span id="minimumDamage-max">100</span></div>
+        <input id="minimumDamage" type="range" min="0" max="1000" step="10" value="0">
+        <div class="range-bounds" aria-hidden="true"><span id="minimumDamage-min">0</span><span id="minimumDamage-max">1000</span></div>
         <p class="setting-help">子弹刚变亮时的爆炸伤害。</p>
        </div>
        <div class="setting">
         <label for="damageRampDistance">爆炸伤害增长路程<output id="damageRampDistance-value">150</output></label>
         <input id="damageRampDistance" type="range" min="0" max="400" step="1" value="150">
         <div class="range-bounds" aria-hidden="true"><span id="damageRampDistance-min">0</span><span id="damageRampDistance-max">400</span></div>
-        <p class="setting-help">子弹变亮后，爆炸伤害在这段路程内从最低值均匀增加到 100。设为 0 时，变亮就达到 100。</p>
+        <p class="setting-help">子弹变亮后，爆炸伤害在这段路程内从最低值均匀增加到 1000。设为 0 时，变亮就达到 1000。</p>
        </div>
       </div>
      </section>
@@ -478,15 +478,15 @@ html[lang="en"] h1{letter-spacing:.02em}
       <h3 class="settings-subtitle">动量伤害</h3>
       <div class="settings-grid">
        <div class="setting">
-        <label for="momentumDamageScale">动量伤害系数<output id="momentumDamageScale-value">0.0500</output></label>
-        <input id="momentumDamageScale" type="range" min="0" max="0.1" step="0.0005" value="0.05">
-        <div class="range-bounds" aria-hidden="true"><span id="momentumDamageScale-min">0</span><span id="momentumDamageScale-max">0.1</span></div>
+        <label for="momentumDamageScale">动量伤害系数<output id="momentumDamageScale-value">0.5000</output></label>
+        <input id="momentumDamageScale" type="range" min="0" max="1" step="0.005" value="0.5">
+        <div class="range-bounds" aria-hidden="true"><span id="momentumDamageScale-min">0</span><span id="momentumDamageScale-max">1</span></div>
         <p class="setting-help">子弹相对目标撞得越快，动量伤害越高，擦中时伤害较低。设为 0 可关闭动量伤害。</p>
        </div>
        <div class="setting">
-        <label for="momentumDamageCap">动量伤害上限<output id="momentumDamageCap-value">20</output></label>
-        <input id="momentumDamageCap" type="range" min="0" max="100" step="1" value="20">
-        <div class="range-bounds" aria-hidden="true"><span id="momentumDamageCap-min">0</span><span id="momentumDamageCap-max">100</span></div>
+        <label for="momentumDamageCap">动量伤害上限<output id="momentumDamageCap-value">200</output></label>
+        <input id="momentumDamageCap" type="range" min="0" max="1000" step="10" value="200">
+        <div class="range-bounds" aria-hidden="true"><span id="momentumDamageCap-min">0</span><span id="momentumDamageCap-max">1000</span></div>
         <p class="setting-help">设为 0 时，命中只造成爆炸伤害。</p>
        </div>
        <div class="setting">
@@ -633,6 +633,7 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 // === 02 · Shared settings, runtime state and numeric helpers ===
 // Bump only when a release should apply DEFAULTS once to existing players.
 const GAMEPLAY_DEFAULTS_VERSION=1;
+const COMBAT_DISPLAY_SCALE=1000;
 const DEFAULTS={
  maxHealth:10,actorRadius:15,minRadiusRatio:.7,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
  burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,followFov:100,compensateFovSensitivity:true,
@@ -696,7 +697,7 @@ const ENGLISH={
  "不随瞄准距离变化的杀伤路程。": "Damaging travel independent of aim range.",
  "总杀伤路程 = 基础杀伤路程 + 附加杀伤路程 × 瞄准距离 ÷ 500。": "Total length = base + added length × aim range / 500.",
  "子弹刚变亮时的爆炸伤害。": "Explosion damage at activation.",
- "子弹变亮后，爆炸伤害在这段路程内从最低值均匀增加到 100。设为 0 时，变亮就达到 100。": "Explosion damage rises linearly from its minimum to 100 over this travel after activation; 0 gives full damage immediately.",
+ "子弹变亮后，爆炸伤害在这段路程内从最低值均匀增加到 1000。设为 0 时，变亮就达到 1000。": "Explosion damage rises linearly from its minimum to 1000 over this travel after activation; 0 gives full damage immediately.",
  "子弹越快，阻力越大。顺着来弹方向移动会减小阻力，迎着来弹移动时仍按弹速计算。设为 0 可关闭阻力。": "Faster bullets face more drag. Retreating with incoming bullets reduces drag; approaching does not increase it. 0 disables it.",
  "子弹相对目标撞得越快，动量伤害越高，擦中时伤害较低。设为 0 可关闭动量伤害。": "Momentum damage increases with relative impact speed up to the cap. Glancing hits deal less. Set to 0 to disable momentum damage.",
  "设为 0 时，命中只造成爆炸伤害。": "At 0, hits deal only explosion damage.",
@@ -859,7 +860,15 @@ let language='zh',staticTranslations=[],attributeTranslations=[],lastAnnouncemen
 let overlayContent={title:'',copy:'',button:'开始',values:{}};
 try{if(localStorage.getItem('near-field-language')==='en')language='en';}catch{}
 function tr(text,values={}){return(language==='en'?(ENGLISH[text]??text):text).replace(/\{(\w+)\}/g,(_,key)=>String(values[key]??''));}
-function settingScale(name){if(name==='mouseSensitivity')return AIM_DELTA_SCALE;return name==='inertia'?1000:name==='minRadiusRatio'||name==='maxHealth'||name==='minimumDamage'||name==='momentumDamageScale'||name==='momentumDamageCap'?100:1;}
+function settingScale(name){
+ switch(name){
+  case 'mouseSensitivity':return AIM_DELTA_SCALE;
+  case 'inertia':return 1000;
+  case 'minRadiusRatio':return 100;
+  case 'maxHealth':case 'minimumDamage':case 'momentumDamageScale':case 'momentumDamageCap':return COMBAT_DISPLAY_SCALE;
+  default:return 1;
+ }
+}
 function formatSetting(name,value){if(name==='reloadTime'||name==='brightBulletLifetime')return tr('{value} 秒',{value:value.toFixed(1)});if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance'||name==='minRadiusRatio'||name==='worldMouseSensitivity'||name==='mouseSensitivity'||name==='followFov')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale'||name==='controlSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='drag'?value.toFixed(3):name==='knockbackScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':String(value);}
 function updateSettingOutput(name,value){
  const output=$(name+'-value');
@@ -1034,6 +1043,20 @@ function unlockAudio(){
  if(impactAudio?.context===audioCtx&&audioCtx?.state!=='closed')resumeExistingAudio();
  else queueAudioPreparation(true);
 }
+function mapSoundPan(x){return clamp((x/W-.5)*1.4,-.8,.8);}
+function impactSoundPan(kind,point){
+ if(!point)return 0;
+ if(!headingView())return kind==='hurt'?0:mapSoundPan(point.x);
+ const heading=cameraHeading(),co=Math.cos(heading),si=Math.sin(heading);
+ if(kind==='hurt'){
+  const hitSide=unit(point.x-point.targetX,point.y-point.targetY);
+  const lateral=co*hitSide.x+si*hitSide.y;
+  return .3*clamp(lateral*1.7,-1,1);
+ }
+ // Use the same horizontal projection and zoom as the following camera.
+ const screenOffset=(co*(point.x-p.x)+si*(point.y-p.y))*followViewZoom();
+ return clamp(screenOffset*1.4/VIEW_W,-.8,.8);
+}
 function playShotSound(actor){
  const space=impactAudio;
  if(state!=='running'||!cfg.sound||document.hidden||audioCtx?.state!=='running'||space?.context!==audioCtx||space.shotVoices>=4||audioVoices>=10)return;
@@ -1045,13 +1068,13 @@ function playShotSound(actor){
  };
  try{
   source=audioCtx.createBufferSource();pan=audioCtx.createStereoPanner();
-  source.buffer=space.shot;pan.pan.value=clamp((actor.x/W-.5)*1.4,-.8,.8);
+  source.buffer=space.shot;pan.pan.value=headingView()?0:mapSoundPan(actor.x);
   source.connect(pan);pan.connect(audioMaster);source.onended=cleanup;
   space.shotVoices++;counted=true;source.start(audioCtx.currentTime);audioPlayed++;
  }catch{cleanup();}
 }
 // For hit/hurt, strength is contact damage; other cues keep their existing scale.
-function playSound(kind,strength=1,x=W/2){
+function playSound(kind,strength=1,point){
  if(!Number.isFinite(strength)||((kind==='hit'||kind==='hurt')&&strength<=0))return;
  // Bound the number of simultaneous impact voices.
  if(!['hit','hurt','intercept','kill'].includes(kind)||!cfg.sound||!audioCtx||audioCtx.state!=='running'||impactAudio?.context!==audioCtx||audioVoices>=(kind==='intercept'?10:12))return;
@@ -1061,7 +1084,7 @@ function playSound(kind,strength=1,x=W/2){
   const space=impactAudio,now=audioCtx.currentTime,scale=kind==='hit'||kind==='hurt'?Math.max(0,strength):clamp(.7+strength*.35,.7,1.26);
   const voice=audioCtx.createGain();nodes.push(voice);const pan=audioCtx.createStereoPanner();nodes.push(pan);
   voice.gain.value=1/Math.sqrt(1+audioVoices*.16);
-  pan.pan.value=kind==='hurt'?0:clamp((x/W-.5)*1.4,-.8,.8);
+  pan.pan.value=impactSoundPan(kind,point);
   voice.connect(pan);pan.connect(audioMaster);
   if(kind==='hit'||kind==='kill'){
    const send=audioCtx.createGain();nodes.push(send);send.gain.value=kind==='hit'?.19:.22;
@@ -1977,7 +2000,7 @@ function collisionEvent(b,a,shapeCache=null){
   const vx=segment.vx0+(segment.vx-segment.vx0)*localTime,vy=segment.vy0+(segment.vy-segment.vy0)*localTime;
   // Keep impulses from any earlier hits in this step by storing an offset.
   const remaining=emissionPose?0:1-t;
-  return{t,nx,ny,travel,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,
+  return{t,nx,ny,travel,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,targetX:ax,targetY:ay,
    bulletX:segment.x0+(segment.x1-segment.x0)*localTime,bulletY:segment.y0+(segment.y1-segment.y0)*localTime,vx,vy,
    targetVxOffset:((a.pvx??a.vx)-a.vx)*remaining,targetVyOffset:((a.pvy??a.vy)-a.vy)*remaining};
  }
@@ -2745,7 +2768,7 @@ function showDamageNumber(x,y,damage,team){
  const id=damageNumberIds[team]++;
  const offsetX=((id%5)-2)*11+(visualRandom()-.5)*4;
  const offsetY=(id%2?-19:-15)+(visualRandom()-.5)*2;
- const growth=Math.min(.3,.2*amount/100);
+ const growth=Math.min(.3,.2*damage);
  damageNumbers.push({x,y,text:String(amount),team,offsetX,offsetY,age:0,life:1,growth});
  if(damageNumbers.length>40)damageNumbers.shift();
 }
@@ -2754,8 +2777,7 @@ function updateDamageNumbers(dt){
  for(const n of damageNumbers)n.age+=dt;
  damageNumbers=damageNumbers.filter(n=>n.age<n.life);
 }
-// Combat math retains normalized units; displays and sliders use 100x units.
-function formatHealth(value){return Math.round(value*100);}
+function formatHealth(value){return Math.round(value*COMBAT_DISPLAY_SCALE);}
 function resolveHit(b,a,contact,contactOffset=0){
  b.dead=true;if(a.hp<=0)return;
  const explosionDamage=projectileDamage(b,contact.travel??b.travel),damage=explosionDamage+projectileMomentumDamage(b,a,contact);
@@ -2765,10 +2787,10 @@ function resolveHit(b,a,contact,contactOffset=0){
  addActorHitMark(a,contact,damage);applyImpact(a,b,contact,damage,lethal?2:1);
  const kickX=a.vx-inheritedVx,kickY=a.vy-inheritedVy;
  impactEffect(contact,damage,inheritedVx,inheritedVy,explosionDamage,b.r??ACTOR.shotRadius,b.team,contactOffset);
- playSound(own&&!spectating?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
+ playSound(own&&!spectating?'hurt':'hit',damage,contact);showDamageNumber(contact.x,contact.y,damage,a.team);
  if(own){hits++;if(!isPracticeMode()){a.hp=Math.max(0,a.hp-damage);if(a.hp===0)breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);}}
  else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
- if(lethal&&(!own||spectating))playSound('kill',1,a.x);
+ if(lethal&&(!own||spectating))playSound('kill',1,a);
  updateHud(true);
 }
 
@@ -4184,7 +4206,7 @@ function simulate(dt,control){
    if(ev.a.dead||ev.b.dead)continue;
    ev.a.dead=ev.b.dead=true;intercepts++;
    const at=elapsed-dt*(1-ev.t);fadeActivationPreview(ev.a,at);fadeActivationPreview(ev.b,at);
-   interceptEffect(ev.x,ev.y);playSound('intercept',.55,ev.x);continue;
+   interceptEffect(ev.x,ev.y);playSound('intercept',.55,ev);continue;
   }
   if(ev.b.dead||ev.target!==p&&ev.target!==enemy)continue;
   resolveHit(ev.b,ev.target,ev.contact,dt*ev.t);
