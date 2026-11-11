@@ -32,6 +32,7 @@ h1{font-size:24px;line-height:30px;letter-spacing:4px;margin:0;font-weight:500;w
 .play-area{--play-height:calc(100dvh - var(--toolbar-bottom,136px) - var(--arena-gap) - env(safe-area-inset-bottom));touch-action:none}
 .arena{position:relative;width:min(100%,calc((var(--play-height) - 2px)*1.6 + 2px));margin-inline:auto;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#20282a;isolation:isolate}
 canvas{display:block;width:100%;aspect-ratio:8/5;touch-action:none;user-select:none;cursor:none}
+main[data-spectate] canvas{cursor:default}
 main[data-touch] .play-area{
   --stick-size:clamp(72px,22vmin,92px);
   position:relative;height:var(--play-height);overflow:clip
@@ -71,16 +72,16 @@ summary::-webkit-details-marker{display:none}
 .match-options{display:grid;grid-column:-3;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:4px;width:244px}
 .match-options select{width:100%;min-width:0;height:32px;font-size:12px;padding:4px 6px;text-overflow:ellipsis}
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px;margin:12px 0 20px;align-items:start}
+.settings-checks{row-gap:8px}
 .setting{min-width:0}
 .setting label{display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:12px;line-height:1.5;color:var(--muted);margin-bottom:10px}
 .setting output{color:var(--ink);font-variant-numeric:tabular-nums;flex-shrink:0;text-align:right;white-space:nowrap}
-.setting select{width:100%}
 input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
 .check input[type=checkbox]{accent-color:var(--accent)}
-.preset-actions{display:grid;grid-template-columns:48px max-content;gap:8px;margin-top:12px}
+.preset-actions{display:grid;grid-template-columns:80px max-content;gap:8px;margin-top:12px}
 .preset-actions>select,.preset-actions>button{appearance:none;width:100%;height:32px;padding:0 10px;font-size:12px;line-height:30px;text-align:center}
 .preset-actions>select{padding-right:18px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 5'%3E%3Cpath d='m1 1 3 3 3-3' fill='none' stroke='%23e0e5df' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:8px 5px;background-position:right 8px center;background-repeat:no-repeat}
-.check{display:flex;align-items:center;gap:7px;min-height:32px;margin-top:4px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px;color:var(--muted);cursor:pointer}
+.check{display:flex;align-items:center;gap:7px;min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px;color:var(--muted);cursor:pointer}
 .check:hover{background:#303b3d}
 .check:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .notes{font-size:12px;line-height:1.9;color:var(--muted);margin:17px 0 0}
@@ -122,7 +123,7 @@ main[data-touch] .play-area:fullscreen{
   }
 }
 @media(any-pointer:coarse){
-  .settings-panel{--side-padding:50px}
+  .settings-panel{--side-padding:70px}
 }
 .setting-help{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
 @media(prefers-reduced-motion:reduce){
@@ -186,6 +187,7 @@ html[lang="en"] h1{letter-spacing:.02em}
     <option value="peaks">地图 · 三柱</option>
     <option value="crossflow">地图 · 横流带</option>
     <option value="maze">地图 · 吸收迷宫</option>
+    <option value="divided">地图 · 隔离带</option>
    </select>
    <label class="sr-only" for="mode">模式与难度</label>
    <select id="mode">
@@ -196,6 +198,7 @@ html[lang="en"] h1{letter-spacing:.02em}
     <option value="hard">人机 · 困难</option>
     <option value="practice">练习 · 固定靶</option>
     <option value="practice-dodge">练习 · 移动靶</option>
+    <option value="spectate">对局演示</option>
    </select>
   </div>
   <div class="tools">
@@ -208,26 +211,25 @@ html[lang="en"] h1{letter-spacing:.02em}
     <summary title="说明与设置" aria-label="说明与设置"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h5m3 0h4M7 2v4m-5 6h2m3 0h7M7 10v4"/></svg></summary>
     <aside class="settings-panel" aria-label="说明与设置">
      <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗弹无伤害</span><span><i class="dot solid"></i>亮弹能造成伤害</span></div></div>
-     <p class="notes">WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，R 键重新开始。</p>
+     <p class="notes">WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，结算后按空格键再来一局。R 键重新开始。</p>
      <p class="notes">子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。</p>
      <p class="notes">最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。</p>
      <p class="notes">每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。</p>
      <p class="notes">默认情况下，人物的生命值越低，体型越小，惯性也越低。</p>
-     <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示 FPS 和 CPU 耗时</label>
      <section class="settings-group" aria-labelledby="preset-settings">
       <h2 id="preset-settings">参数方案</h2>
       <div class="preset-actions">
-       <label class="sr-only" for="preset-slot">方案编号</label>
+       <label class="sr-only" for="preset-slot">参数方案</label>
        <select id="preset-slot">
         <option value="1">1</option>
         <option value="2" selected>2</option>
         <option value="3">3</option>
         <option value="4">4</option>
-        <option value="5">5</option>
+        <option value="5">默认</option>
        </select>
        <button type="button" id="defaults">恢复默认</button>
       </div>
-      <p class="setting-help">切换编号即可使用对应的参数。修改会自动保存到当前方案。</p>
+      <p class="setting-help">「默认」方案使用固定参数。1–4 号方案的修改会自动保存。</p>
       <p class="setting-help" id="preset-status" role="status"></p>
      </section>
      <section class="settings-group" aria-labelledby="movement-settings">
@@ -272,9 +274,9 @@ html[lang="en"] h1{letter-spacing:.02em}
         <div class="range-bounds" aria-hidden="true"><span id="actorAspect-min">-300</span><span id="actorAspect-max">300</span></div>
         <p class="setting-help">调整身体前后长度与左右宽度的比例，面积保持不变。</p>
        </div>
+       <label class="check"><input id="showHealthNumbers" type="checkbox" checked>在头顶显示生命值</label>
+       <label class="check"><input id="showDamageNumbers" type="checkbox" checked>显示命中伤害数字</label>
       </div>
-      <label class="check"><input id="showHealthNumbers" type="checkbox" checked>在头顶显示生命值</label>
-      <label class="check"><input id="showDamageNumbers" type="checkbox" checked>显示命中伤害数字</label>
       <h3 class="settings-subtitle">人物间排斥</h3>
       <div class="settings-grid">
        <div class="setting">
@@ -292,7 +294,17 @@ html[lang="en"] h1{letter-spacing:.02em}
       </div>
      </section>
      <section class="settings-group" aria-labelledby="aim-settings">
-      <h2 id="aim-settings">瞄准灵敏度</h2>
+      <h2 id="aim-settings">视角与瞄准</h2>
+      <div class="settings-grid">
+       <div class="setting">
+        <label for="followFov">跟随视野<output id="followFov-value">100%</output></label>
+        <input id="followFov" type="range" min="75" max="200" step="5" value="100">
+        <div class="range-bounds" aria-hidden="true"><span id="followFov-min">75%</span><span id="followFov-max">200%</span></div>
+        <p class="setting-help">仅用于随瞄准转动的视角。数值越大，看得越远。</p>
+       </div>
+       <label class="check"><input id="compensateFovSensitivity" type="checkbox" checked>按视野补偿灵敏度</label>
+      </div>
+      <h3 class="settings-subtitle">瞄准灵敏度</h3>
       <div class="settings-grid">
        <div class="setting">
         <label for="worldMouseSensitivity">固定视角<output id="worldMouseSensitivity-value">100%</output></label>
@@ -331,10 +343,13 @@ html[lang="en"] h1{letter-spacing:.02em}
        </div>
       </div>
       <h3 class="settings-subtitle">瞄准与开火</h3>
-      <label class="check"><input id="continuousFire" type="checkbox">自动开火</label>
-      <label class="check"><input id="showRange" type="checkbox" checked>显示距离线</label>
-      <label class="check"><input id="showAimCircle" type="checkbox">显示最小瞄准圈</label>
-      <label class="check"><input id="showActivationPreview" type="checkbox" checked>预览子弹变亮位置</label>
+      <div class="settings-grid settings-checks">
+       <label class="check"><input id="continuousFire" type="checkbox">自动开火</label>
+       <label class="check"><input id="playerShotSound" type="checkbox">自己的开枪声</label>
+       <label class="check"><input id="showRange" type="checkbox" checked>显示距离线</label>
+       <label class="check"><input id="showAimCircle" type="checkbox">显示最小瞄准圈</label>
+       <label class="check"><input id="showActivationPreview" type="checkbox" checked>预览子弹变亮位置</label>
+      </div>
       <p class="notes">手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏在游戏区左侧 30% 按下出现移动摇杆，右侧 70% 拖动瞄准，默认自动开火。</p>
      </section>
      <section class="settings-group" aria-labelledby="projectile-settings">
@@ -366,17 +381,13 @@ html[lang="en"] h1{letter-spacing:.02em}
       </div>
       <h3 class="settings-subtitle">发射自旋</h3>
       <div class="settings-grid">
-       <div class="setting">
-        <label for="initialSpinSign">初始自旋方向<output id="initialSpinSign-value">+1</output></label>
-        <select id="initialSpinSign" aria-describedby="initialSpinSign-help">
-         <option value="1" selected>正向（+）</option>
-         <option value="-1">反向（−）</option>
-        </select>
-        <p class="setting-help" id="initialSpinSign-help">正向时，自旋方向与发射时的横移方向一致。反向时则相反。只影响之后发射的子弹。</p>
+       <div>
+        <label class="check"><input id="initialSpinSign" type="checkbox" aria-describedby="initialSpinSign-help">反转发射自旋</label>
+        <p class="setting-help" id="initialSpinSign-help">勾选时，发射自旋的方向与横移方向相反。只影响之后发射的子弹。</p>
        </div>
        <div class="setting">
-        <label for="launchSpinScale">自旋强度<output id="launchSpinScale-value">1.0</output></label>
-        <input id="launchSpinScale" type="range" min="0" max="4" step="0.1" value="1">
+        <label for="launchSpinScale">自旋强度<output id="launchSpinScale-value">0.0</output></label>
+        <input id="launchSpinScale" type="range" min="0" max="4" step="0.1" value="0">
         <div class="range-bounds" aria-hidden="true"><span id="launchSpinScale-min">0</span><span id="launchSpinScale-max">4</span></div>
         <p class="setting-help">数值越大，发射时产生的自旋越强。设为 0 时，发射的子弹不带自旋。</p>
        </div>
@@ -442,8 +453,8 @@ html[lang="en"] h1{letter-spacing:.02em}
         <div class="range-bounds" aria-hidden="true"><span id="spinForce-min">0</span><span id="spinForce-max">10800</span></div>
         <p class="setting-help">数值越大，子弹因自旋产生的偏转越明显。设为 0 可关闭这种偏转。</p>
        </div>
+       <label class="check"><input id="showField" type="checkbox">显示力场范围</label>
       </div>
-      <label class="check"><input id="showField" type="checkbox">显示力场范围</label>
      </section>
      <section class="settings-group" aria-labelledby="control-field-settings">
       <h2 id="control-field-settings">控弹场</h2>
@@ -487,6 +498,9 @@ html[lang="en"] h1{letter-spacing:.02em}
       </div>
      </section>
   
+     <div class="settings-group">
+      <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示 FPS 和 CPU 耗时</label>
+     </div>
      <div class="hud"><div class="hud-left"><span class="sr-only" id="health"></span><span id="score">人机对战</span></div><div class="hud-right"><span id="wins">总胜场 0</span><span id="intercepts">已发射 0 发</span><span id="time">00:00</span></div></div>
      <footer class="credits" lang="en">Concept and gameplay design by czrorz. Code written by ChatGPT.</footer>
     </aside>
@@ -496,8 +510,8 @@ html[lang="en"] h1{letter-spacing:.02em}
  </header>
  <div class="play-area" id="play-area">
   <section class="arena" id="arena" aria-label="对战区域">
-   <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始。更多玩法见顶部的「说明与设置」。">请使用支持 Canvas 的现代浏览器。</canvas>
-   <div class="overlay" id="overlay"><div class="dialog"><div class="dialog-heading"><h2 id="overlay-title"></h2><p id="overlay-copy"></p></div><button class="primary" id="start" type="button">开始对战</button><div class="keys" id="keys"><div><span><kbd>WASD / 左摇杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准</span></div><div><span><kbd>R</kbd>重新开始</span><span><kbd>空格键</kbd>暂停</span></div></div></div></div>
+   <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始，结算后也可按空格键再来一局。更多玩法见顶部的「说明与设置」。">请使用支持 Canvas 的现代浏览器。</canvas>
+   <div class="overlay" id="overlay"><div class="dialog"><div class="dialog-heading"><h2 id="overlay-title"></h2><p id="overlay-copy"></p></div><button class="primary" id="start" type="button">开始</button><div class="keys" id="keys"><div><span><kbd>WASD / 左摇杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准</span></div><div><span><kbd>R</kbd>重新开始</span><span><kbd>空格键</kbd>暂停</span></div></div></div></div>
    <div class="toast" id="toast" aria-live="polite"></div>
   </section>
   <div class="touch-stick" id="touch-stick" role="group" aria-label="移动摇杆"><div class="touch-knob" aria-hidden="true"></div></div>
@@ -522,11 +536,13 @@ const gamePage=playArea.parentElement,touchStick=$('touch-stick');
 const landscapeScreen=matchMedia('(orientation:landscape)');
 const VIEW_W=1200,VIEW_H=750,STEP=1/120,TAU=Math.PI*2;
 let W=1200,H=750;
+const ARENA_FRAME_INSET=24,BULLET_OVERHANG=20;
 const AIM_CIRCLE_RADIUS=100,AIM_CIRCLE_MAX_SHIFT=30;
 const AIM_STROKE=1.8;
 const C={bg:'#20282a',edge:'#414f50',player:'#b2ceca',enemy:'#d2b49b'};
 const MAPS={
  open:{walls:[]},
+ divided:{walls:[],divider:{x0:450,x1:750}},
  hill:{walls:[],terrain:{potential:110000,actorScale:.35,peaks:[{x:600,y:375,rx:240,ry:170}]}},
  peaks:{walls:[],terrain:{potential:50000,actorScale:2.2,peaks:[
   {kind:'pillar',x:430,y:245,radius:52,falloff:80},
@@ -619,16 +635,16 @@ const BULLET_COLORS=[{ghost:'#90d5ca',solid:'#a9ffe6',core:'#e4fff5'},{ghost:'#d
 const GAMEPLAY_DEFAULTS_VERSION=1;
 const DEFAULTS={
  maxHealth:10,actorRadius:15,minRadiusRatio:.7,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
- burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,
- annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,brightBulletLifetime:5,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,controlSpinScale:1,
+ burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,followFov:100,compensateFovSensitivity:true,
+ annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,brightBulletLifetime:5,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:0,receiverSpinScale:1,controlSpinScale:1,
  radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
- difficulty:'easy',continuousFire:false,mobileAutoFire:true,sound:true,showField:false,showRange:true,showAimCircle:false,showActivationPreview:true,showHealthNumbers:true,showDamageNumbers:true,showPerformanceMonitor:false
+ difficulty:'easy',continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:true,showAimCircle:false,showActivationPreview:true,showHealthNumbers:true,showDamageNumbers:true,showPerformanceMonitor:false
 };
 const cfg={...DEFAULTS,view:'heading'};
 let autoFireSetting='continuousFire';
-const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","brightBulletLifetime","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale"];
+const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","followFov","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","brightBulletLifetime","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale"];
 const MOUSE_SETTING_NAMES=['mouseSensitivity','worldMouseSensitivity'];
-const GAMEPLAY_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name));
+const PRESET_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name));
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
@@ -660,7 +676,7 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 // === 03 · Text and language switching ===
 const ENGLISH={
  "显示命中伤害数字": "Show hit damage numbers",
- "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，R 键重新开始。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press Space to pause or resume, and R to restart.",
+ "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，结算后按空格键再来一局。R 键重新开始。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press Space to pause or resume, or to play again after the result. Press R to restart.",
  "子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。": "Bullets start dim and turn bright after traveling the distance you aim for. Only bright bullets can hurt your opponent. When dim bullets from opposing sides collide, they can cancel each other out.",
  "最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。": "The minimum aim circle shifts in the direction you move, and its edge marks the minimum distance a bullet must travel before turning bright. The ends of the range line show where bullets are expected to turn bright and disappear.",
  "每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。": "Each character has two fields that act only on bright bullets. The receiving field slows and deflects enemy bright bullets, and the control field steers your own. Moving sideways relative to a bullet's path pulls it to that side through your field. Moving sideways relative to your aim when firing adds spin, which affects the bullet's path in your opponent's receiving field.",
@@ -675,7 +691,7 @@ const ENGLISH={
  "每组最后一发打完后，需等待这段时间才能再次开火。调整弹数、射速或装填时间，从下一组起生效。": "Reload time after the last shot; burst size, fire rate and reload changes apply to the next burst.",
  "灵敏度低于 100% 时会锁定鼠标。": "Mouse is captured at settings other than 100%.",
  "无阻力和外力时，每秒增加的弹速。": "Speed gained per second without drag or external forces.",
- "正向时，自旋方向与发射时的横移方向一致。反向时则相反。只影响之后发射的子弹。": "Positive follows sideways launch movement; negative opposes it. Affects new bullet spin only.",
+ "勾选时，发射自旋的方向与横移方向相反。只影响之后发射的子弹。": "When checked, launch spin opposes sideways movement. Applies to newly fired bullets.",
  "数值越大，发射时产生的自旋越强。设为 0 时，发射的子弹不带自旋。": "Scales launch spin on new bullets; 0 disables launch spin.",
  "不随瞄准距离变化的杀伤路程。": "Damaging travel independent of aim range.",
  "总杀伤路程 = 基础杀伤路程 + 附加杀伤路程 × 瞄准距离 ÷ 500。": "Total length = base + added length × aim range / 500.",
@@ -714,8 +730,13 @@ const ENGLISH={
  "地图 · 三柱": "Map · Three pillars",
  "地图 · 横流带": "Map · Crossflow",
  "地图 · 吸收迷宫": "Map · Absorbing maze",
+ "地图 · 隔离带": "Map · Divided arena",
  "固定视角": "Fixed view",
  "随瞄准转动": "Rotate with aim",
+ "视角与瞄准": "Camera & aiming",
+ "跟随视野": "Follow view FOV",
+ "仅用于随瞄准转动的视角。数值越大，看得越远。": "Applies to the aim-following view. Higher values show more of the arena.",
+ "按视野补偿灵敏度": "Scale sensitivity with FOV",
  "无法锁定鼠标。请再点一次战场，或切换到固定视角。": "Could not capture the mouse. Click the arena again or switch to Fixed view.",
  "无法锁定鼠标。现在可以直接移动指针瞄准。": "Could not capture the mouse. You can now aim with the pointer directly.",
  "点击战场继续用鼠标瞄准。": "Click the arena to resume mouse aiming.",
@@ -734,10 +755,11 @@ const ENGLISH={
  "暂停": "Pause",
  "继续": "Resume",
  "全屏": "Fullscreen",
- "开始对战": "Start",
+ "开始": "Start",
+ "对局演示": "Match demo",
  "请使用支持 Canvas 的现代浏览器。": "Please use a modern browser that supports Canvas.",
  "对战区域": "Near Field arena",
- "用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始。更多玩法见顶部的「说明与设置」。": "Keyboard and mouse: move with WASD and aim and fire with the mouse. Controller: move with the left stick, aim with the right stick, and press RT to fire. Press R to restart. See Instructions & settings in the toolbar for more.",
+ "用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始，结算后也可按空格键再来一局。更多玩法见顶部的「说明与设置」。": "Keyboard and mouse: move with WASD and aim and fire with the mouse. Controller: move with the left stick, aim with the right stick, and press RT to fire. Press R to restart or Space to play again after the result. See Instructions & settings in the toolbar for more.",
  "WASD / 左摇杆": "WASD / left stick",
  "空格键": "Space",
  "移动": "Move",
@@ -774,11 +796,9 @@ const ENGLISH={
  "力场": "Field",
  "命中与击退": "Hits & knockback",
  "初始弹速": "Initial bullet speed",
- "初始自旋方向": "Initial spin direction",
+ "反转发射自旋": "Reverse launch spin",
  "自旋强度": "Launch spin strength",
  "暗弹相消概率": "Dim-bullet cancellation chance",
- "正向（+）": "Positive (+)",
- "反向（−）": "Negative (−)",
  "推进加速度": "Forward acceleration",
  "亮弹最长飞行时间": "Maximum bright-bullet flight time",
  "从变亮时开始计时。飞完杀伤路程或达到时间上限时消失。暗弹最多飞行 4 秒。": "Time starts when the bullet turns bright. It expires at the end of its damaging distance or when time runs out. Dim bullets can fly for up to 4 seconds.",
@@ -789,6 +809,7 @@ const ENGLISH={
  "阻力系数": "Drag coefficient",
  "显示力场范围": "Show field boundaries",
  "自动开火": "Automatic fire",
+ "自己的开枪声": "Own gunfire sound",
  "在头顶显示生命值": "Show health above characters",
  "显示距离线": "Show range line",
  "显示最小瞄准圈": "Show minimum aim circle",
@@ -801,8 +822,8 @@ const ENGLISH={
  "人机对战": "Bot duel",
  "恢复默认": "Restore defaults",
  "参数方案": "Parameter presets",
- "方案编号": "Preset number",
- "切换编号即可使用对应的参数。修改会自动保存到当前方案。": "Choose a number to switch presets. Changes are saved to the current preset automatically.",
+ "默认": "Default",
+ "「默认」方案使用固定参数。1–4 号方案的修改会自动保存。": "Default uses fixed parameters. Edits to presets 1–4 are saved automatically.",
  "请选择一个方案。": "Choose a preset.",
  "设置未能保存。": "Settings could not be saved.",
  "移动摇杆": "Movement joystick",
@@ -810,15 +831,17 @@ const ENGLISH={
  "游戏开始": "Game started",
  "暂停中": "Paused",
  "可以调整设置，也可以继续对战。": "Adjust the settings or resume the match.",
- "继续游戏": "Resume game",
  "已暂停": "Game paused",
  "平局": "Draw",
  "你输了": "You lost",
  "你赢了": "You won",
+ "青色获胜": "Teal wins",
+ "棕色获胜": "Brown wins",
  "再来一局": "Play again",
  "双方同时倒下。本局用时 {secs} 秒。": "Both players went down together. Time: {secs} seconds.",
  "本局用时 {secs} 秒，你的剩余生命值为 {hp} / {maxHp}，共发射 {shots} 发。": "Time: {secs} seconds. Health: {hp} / {maxHp}. Rounds fired: {shots}.",
  "本局用时 {secs} 秒，对手的剩余生命值为 {hp} / {maxHp}。": "Time: {secs} seconds. Opponent health: {hp} / {maxHp}.",
+ "本局用时 {secs} 秒，胜方剩余生命值为 {hp} / {maxHp}，双方共发射 {shots} 发。": "Time: {secs} seconds. Winner's health: {hp} / {maxHp}. Total rounds fired: {shots}.",
  "本局平局": "Match drawn",
  "本局获胜": "Match won",
  "本局落败": "Match lost",
@@ -826,17 +849,22 @@ const ENGLISH={
  "已击倒 {kills} 个靶": "Targets down: {kills}",
  "已发射 {shots} 发": "Fired: {shots}",
  "你的生命值为 {hp} / {maxHp}，对手的生命值为 {enemyHp} / {enemyMaxHp}。": "Your health: {hp} / {maxHp}. Opponent health: {enemyHp} / {enemyMaxHp}.",
+ "青色生命值为 {hp} / {maxHp}，棕色生命值为 {enemyHp} / {enemyMaxHp}。": "Teal health: {hp} / {maxHp}. Brown health: {enemyHp} / {enemyMaxHp}.",
  "手柄已连接": "Controller connected",
  "无法识别此手柄的按键，请使用键盘和鼠标。": "Could not recognize this controller's buttons. Use a keyboard and mouse.",
  "当前浏览器不支持全屏。": "This browser does not support fullscreen.",
  "无法进入全屏。": "Could not enter fullscreen."
 };
 let language='zh',staticTranslations=[],attributeTranslations=[],lastAnnouncement=null,lastToast=null;
-let overlayContent={title:'',copy:'',button:'开始对战',values:{}};
+let overlayContent={title:'',copy:'',button:'开始',values:{}};
 try{if(localStorage.getItem('near-field-language')==='en')language='en';}catch{}
 function tr(text,values={}){return(language==='en'?(ENGLISH[text]??text):text).replace(/\{(\w+)\}/g,(_,key)=>String(values[key]??''));}
 function settingScale(name){if(name==='mouseSensitivity')return AIM_DELTA_SCALE;return name==='inertia'?1000:name==='minRadiusRatio'||name==='maxHealth'||name==='minimumDamage'||name==='momentumDamageScale'||name==='momentumDamageCap'?100:1;}
-function formatSetting(name,value){if(name==='reloadTime'||name==='brightBulletLifetime')return tr('{value} 秒',{value:value.toFixed(1)});if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance'||name==='minRadiusRatio'||name==='worldMouseSensitivity'||name==='mouseSensitivity')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale'||name==='controlSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='initialSpinSign'?(value===1?'+1':'−1'):name==='drag'?value.toFixed(3):name==='knockbackScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':String(value);}
+function formatSetting(name,value){if(name==='reloadTime'||name==='brightBulletLifetime')return tr('{value} 秒',{value:value.toFixed(1)});if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance'||name==='minRadiusRatio'||name==='worldMouseSensitivity'||name==='mouseSensitivity'||name==='followFov')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale'||name==='controlSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='drag'?value.toFixed(3):name==='knockbackScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':String(value);}
+function updateSettingOutput(name,value){
+ const output=$(name+'-value');
+ if(output)output.textContent=formatSetting(name,value);
+}
 function refreshOverlayText(){const {title,copy,button,values}=overlayContent;$('overlay-title').textContent=tr(title,values);$('overlay-copy').textContent=tr(copy,values);$('start').textContent=tr(button);}
 function updatePauseButton(){
  const button=$('pause'),paused=state==='paused',running=state==='running';
@@ -844,7 +872,7 @@ function updatePauseButton(){
  button.title=tr(paused?'继续':'暂停');button.setAttribute('aria-label',button.title);button.setAttribute('data-paused',String(paused));
 }
 function updateSoundButton(){const button=$('sound');button.title=tr(cfg.sound?'声音已开启':'声音已关闭');button.setAttribute('aria-pressed',String(cfg.sound));}
-function updateViewButton(){const button=$('view'),follow=headingView();button.title=tr(follow?'随瞄准转动':'固定视角');button.setAttribute('aria-pressed',String(follow));}
+function updateViewButton(){const button=$('view'),follow=headingView();button.disabled=isSpectatorMode();button.title=tr(follow?'随瞄准转动':'固定视角');button.setAttribute('aria-pressed',String(follow));}
 function applyLanguage(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=tr('近场');
  for(const {node,source,key} of staticTranslations)node.nodeValue=source.replace(key,tr(key));
@@ -856,8 +884,9 @@ function applyLanguage(){
  languageButton.setAttribute('aria-label',targetEnglish?'Switch to English':'切换到中文');
  updateSoundButton();updatePauseButton();updateViewButton();
  for(const name of SETTING_NAMES){
-  $(name+'-value').textContent=formatSetting(name,cfg[name]*settingScale(name));
-  if(name!=='initialSpinSign'){const lo=$(name+'-min'),hi=$(name+'-max');if(lo&&hi){lo.textContent=formatSetting(name,Number($(name).min));hi.textContent=formatSetting(name,Number($(name).max));}}
+  updateSettingOutput(name,cfg[name]*settingScale(name));
+  const lo=$(name+'-min'),hi=$(name+'-max');
+  if(lo&&hi){lo.textContent=formatSetting(name,Number($(name).min));hi.textContent=formatSetting(name,Number($(name).max));}
  }
  refreshPresetStatus();
  refreshInput();refreshOverlayText();updateHud(true);updateWinCount();
@@ -889,7 +918,16 @@ function createImpactSamples(rate){
   const delays=channel?[.017,.033,.049,.073]:[.013,.027,.043,.065];
   for(let i=0;i<delays.length;i++)tail[Math.round(delays[i]*rate)]+=(i%2?-1:1)*.17*Math.exp(-i*.48);
  }
- return{noise,impulse};
+ // Bake the short firing tick once at the device's sample rate.
+ const shotDuration=.035,shot=new Float32Array(Math.ceil(rate*shotDuration));
+ let shotPhase=0,softNoise=0;
+ for(let i=0;i<shot.length;i++){
+  const t=i/rate,u=t/shotDuration,envelope=Math.min(1,t/.0015)*Math.exp(-t/.008)*Math.max(0,1-u);
+  shotPhase+=TAU*(300-160*u)/rate;
+  softNoise+=.22*(noise[i]-softNoise);
+  shot[i]=.0175*envelope*(.8*Math.sin(shotPhase)+.2*softNoise);
+ }
+ return{noise,impulse,shot};
 }
 // One shared, stereo reverb. Its output remains upstream of the master mute.
 let impactAudio=null;
@@ -900,6 +938,8 @@ function prepareImpactAudio(){
  try{
   const rate=audioCtx.sampleRate,samples=createImpactSamples(rate),noise=audioCtx.createBuffer(1,samples.noise.length,rate);
   noise.getChannelData(0).set(samples.noise);
+  const shot=audioCtx.createBuffer(1,samples.shot.length,rate);
+  shot.getChannelData(0).set(samples.shot);
   const impulse=audioCtx.createBuffer(2,samples.impulse[0].length,rate);
   for(let channel=0;channel<2;channel++)impulse.getChannelData(channel).set(samples.impulse[channel]);
   const reverb=audioCtx.createConvolver();nodes.push(reverb);
@@ -908,7 +948,7 @@ function prepareImpactAudio(){
   highpass.type='highpass';highpass.frequency.value=150;highpass.Q.value=.5;
   lowpass.type='lowpass';lowpass.frequency.value=2600;lowpass.Q.value=.5;
   reverb.connect(highpass);highpass.connect(lowpass);lowpass.connect(audioMaster);
-  impactAudio={context:audioCtx,noise,reverb,nodes};return impactAudio;
+  impactAudio={context:audioCtx,noise,reverb,nodes,shot,shotVoices:0};return impactAudio;
  }catch(error){for(const node of nodes)try{node.disconnect();}catch{}impactAudio=null;throw error;}
 }
 
@@ -994,6 +1034,22 @@ function unlockAudio(){
  if(impactAudio?.context===audioCtx&&audioCtx?.state!=='closed')resumeExistingAudio();
  else queueAudioPreparation(true);
 }
+function playShotSound(actor){
+ const space=impactAudio;
+ if(state!=='running'||!cfg.sound||document.hidden||audioCtx?.state!=='running'||space?.context!==audioCtx||space.shotVoices>=4||audioVoices>=10)return;
+ let source,pan,counted=false;
+ const cleanup=()=>{
+  if(counted){space.shotVoices--;counted=false;}
+  try{source?.disconnect();}catch{}
+  try{pan?.disconnect();}catch{}
+ };
+ try{
+  source=audioCtx.createBufferSource();pan=audioCtx.createStereoPanner();
+  source.buffer=space.shot;pan.pan.value=clamp((actor.x/W-.5)*1.4,-.8,.8);
+  source.connect(pan);pan.connect(audioMaster);source.onended=cleanup;
+  space.shotVoices++;counted=true;source.start(audioCtx.currentTime);audioPlayed++;
+ }catch{cleanup();}
+}
 // For hit/hurt, strength is contact damage; other cues keep their existing scale.
 function playSound(kind,strength=1,x=W/2){
  if(!Number.isFinite(strength)||((kind==='hit'||kind==='hurt')&&strength<=0))return;
@@ -1069,6 +1125,16 @@ function createActor(team,x,y){return{...impactState(),hitMarks:[],shattered:fal
 function actorSizeRatio(a){return (a.r||ACTOR.radius)/ACTOR.radius;}
 function syncActorRadius(a){a.r=ACTOR.radius*(cfg.minRadiusRatio+(1-cfg.minRadiusRatio)*Math.sqrt(clamp(a.hp/a.maxHp,0,1)));}
 function actorInset(actor){return 27+bodyShape(actor).rx;}
+function dividerLimit(divider,team,inset){
+ const clearance=inset-24;
+ return team===0?divider.x0-clearance:divider.x1+clearance;
+}
+function clampActorX(x,team,inset){
+ const divider=MAPS[mapId].divider;
+ if(!divider)return clamp(x,inset,W-inset);
+ const limit=dividerLimit(divider,team,inset);
+ return team===0?clamp(x,inset,limit):clamp(x,limit,W-inset);
+}
 // Curve queries are analytic or bounded; maps never expand into many small walls.
 function curveClosest(wall,x,y){
  const px=x-wall.cx,py=y-wall.cy,ax=Math.abs(px),ay=Math.abs(py),a=wall.rx,b=wall.ry;
@@ -1196,7 +1262,7 @@ function constrainActorWalls(a,radius=bodyShape(a).rx){
  a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy;
 }
 function constrainActor(a){
- const inset=actorInset(a),x=clamp(a.x,inset,W-inset),y=clamp(a.y,inset,H-inset);
+ const inset=actorInset(a),x=clampActorX(a.x,a.team,inset),y=clamp(a.y,inset,H-inset);
  if(x!==a.x){a.x=x;a.mvx=a.ivx=0;}if(y!==a.y){a.y=y;a.mvy=a.ivy=0;}
  constrainActorWalls(a,inset-27);
 }
@@ -1207,7 +1273,7 @@ function resizeActors(){
  for(const actor of actors){actor.px=actor.x;actor.py=actor.y;}
 }
 function applyActorRepulsion(a,b,dt){
- if(!b||cfg.bodyRepulsion<=0)return;
+ if(!b||cfg.bodyRepulsion<=0||MAPS[mapId].divider)return;
  const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy,R=cfg.bodyRepulsionRange;
  if(d2>=R*R)return;
  const d=Math.sqrt(d2),impulse=cfg.bodyRepulsion*(1-d/R)**2*dt;
@@ -1224,7 +1290,7 @@ function advanceActor(a,targetX,targetY,inertia,dt){
  const retention=Math.exp(-dt/IMPACT.decay);dx+=a.ivx*IMPACT.decay*(1-retention);dy+=a.ivy*IMPACT.decay*(1-retention);a.ivx*=retention;a.ivy*=retention;
  updateShape(a,dt);
  const x=a.x+dx,y=a.y+dy,inset=actorInset(a);
- a.x=clamp(x,inset,W-inset);a.y=clamp(y,inset,H-inset);
+ a.x=clampActorX(x,a.team,inset);a.y=clamp(y,inset,H-inset);
  if(a.x!==x)a.mvx=a.ivx=0;if(a.y!==y)a.mvy=a.ivy=0;
  return inset;
 }
@@ -1272,6 +1338,9 @@ function applyMouseMotion(dx,dy,relative=false){
 function losePad(){flushSettings();const used=moveSource==='pad'||aimSource==='pad';gamepadIndex=null;padPrev=[];rightAnchor=rightPrev={x:0,y:0,m:0};if(moveSource==='pad')moveSource='keyboard';if(aimSource==='pad')aimSource='mouse';refreshInput();if(used){pause();toast('手柄已断开');}}
 function reset(run=false){
  flushSettings();renderDirty=true;renderStepReady=false;roundMode=$('mode').value;
+ const spectating=isSpectatorMode();
+ if(spectating)releaseMouse();
+ gamePage.toggleAttribute('data-spectate',spectating);$('wins').hidden=spectating;
  if(run)stopStartupPreparation();
  seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);cameraAngle=p.aim+Math.PI/2;
  if(headingView())p.range=VIEW_H*(.8-.5);
@@ -1281,36 +1350,45 @@ function reset(run=false){
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);
  if(aimSource==='pad')Object.assign(mouse,headingAimPoint());
  state=run?'running':'ready';
- updatePauseButton();$('overlay').hidden=run;updateHud(true);
- if(run){$('settings').open=false;announce('游戏开始');deferAudioUnlock();}
+ updatePauseButton();updateViewButton();updateHud(true);
+ if(run){$('overlay').hidden=true;$('settings').open=false;announce('游戏开始');deferAudioUnlock();}
+ else showOverlay('','','开始');
 }
 function isPracticeMode(){return $('mode').value==='practice'||$('mode').value==='practice-dodge';}
+function isSpectatorMode(){return roundMode==='spectate';}
 function spawnEnemy(){
  const x=W*.75,y=H*.5;
  enemy=createActor(1,x,y);enemy.aim=Math.atan2(p.y-y,p.x-x);constrainActor(enemy);
 }
-function showOverlay(title,copy,button,values={}){overlayContent={title,copy,button,values};refreshOverlayText();$('keys').hidden=['won','lost','draw'].includes(state);$('overlay').hidden=false;}
+function showOverlay(title,copy,button,values={}){overlayContent={title,copy,button,values};refreshOverlayText();$('keys').hidden=isSpectatorMode()||['won','lost','draw'].includes(state);$('overlay').hidden=false;}
 function clearFireInput(){
  mouseLook.x=mouseLook.y=mouseTakeover.x=mouseTakeover.y=0;mouse.down=false;mouse.press=null;
  clearTouchMove();touch.aim=null;touch.target=null;
- if(p){p.triggerHeld=false;p.triggerBlocked=true;p.fireBuffered=false;}
+ if(p){p.triggerHeld=false;p.triggerBlocked=!isSpectatorMode();p.fireBuffered=false;}
 }
-function pause(){flushSettings();if(state!=='running')return;state='paused';releaseMouse();clearFireInput();keys.clear();updatePauseButton();showOverlay('暂停中','可以调整设置，也可以继续对战。','继续游戏');announce('已暂停');}
+function pause(){
+ flushSettings();if(state!=='running')return;
+ state='paused';releaseMouse();clearFireInput();keys.clear();updatePauseButton();
+ const spectating=isSpectatorMode();
+ showOverlay('暂停中',spectating?'':'可以调整设置，也可以继续对战。','继续');announce('已暂停');
+}
 function resume(){if(state!=='paused')return;state='running';renderStepReady=false;accumulator=0;last=0;$('overlay').hidden=true;updatePauseButton();$('settings').open=false;deferAudioUnlock();}
 function togglePause(){if(state==='running')pause();else if(state==='paused')resume();}
 function finish(won){
  if(state!=='running')return;
  flushSettings();
+ const spectating=isSpectatorMode();
+ const title=won===null?'平局':spectating?(won?'青色获胜':'棕色获胜'):(won?'你赢了':'你输了');
  const values={secs:elapsed.toFixed(1),hp:formatHealth(won?p.hp:enemy?.hp||0),maxHp:formatHealth(won?p.maxHp:enemy?.maxHp??cfg.maxHealth),shots};
  // Freeze the result now; the remaining movement is purely visual.
  ending={age:0,duration:.8,result:won===null?'draw':won?'won':'lost',values,cameraAnchor:p.hp<=0?{x:p.x,y:p.y}:null,
   cameraPosition:p.hp<=0?{x:p.x,y:p.y}:null,
-  title:won===null?'平局':won?'你赢了':'你输了',
-  copy:won===null?'双方同时倒下。本局用时 {secs} 秒。':won?'本局用时 {secs} 秒，你的剩余生命值为 {hp} / {maxHp}，共发射 {shots} 发。':'本局用时 {secs} 秒，对手的剩余生命值为 {hp} / {maxHp}。',
-  announcement:won===null?'本局平局':won?'本局获胜':'本局落败',
+  title,
+  copy:won===null?'双方同时倒下。本局用时 {secs} 秒。':spectating?'本局用时 {secs} 秒，胜方剩余生命值为 {hp} / {maxHp}，双方共发射 {shots} 发。':won?'本局用时 {secs} 秒，你的剩余生命值为 {hp} / {maxHp}，共发射 {shots} 发。':'本局用时 {secs} 秒，对手的剩余生命值为 {hp} / {maxHp}。',
+  announcement:spectating?title:won===null?'本局平局':won?'本局获胜':'本局落败',
   actors:[p,enemy||defeatedEnemy].map(a=>a?{...a,bot:null,salvo:a.salvo?{...a.salvo}:null}:null)};
  state='ending';releaseMouse();clearFireInput();keys.clear();updatePauseButton();$('overlay').hidden=true;
- if(won===true){
+ if(won===true&&!spectating){
   totalWins=Math.min(Number.MAX_SAFE_INTEGER,Math.max(totalWins,readWins())+1);
   try{localStorage.setItem(WINS_KEY,String(totalWins));}catch{}
   updateWinCount();
@@ -1339,7 +1417,7 @@ function pollPad(){
  gamepadIndex=gp.index;const left=stick(gp.axes[0],gp.axes[1],.2,0),right=stick(gp.axes[2],gp.axes[3],1),pressed=gp.buttons.map(b=>b.pressed||b.value>.5);
  // Only a deliberate right-stick gesture takes aim ownership. Left stick,
  // triggers and menu buttons never override the mouse, even while held.
- if(right.m>.08&&(rightPrev.m<=.08||Math.hypot(right.x-rightAnchor.x,right.y-rightAnchor.y)>.06)){
+ if(!isSpectatorMode()&&right.m>.08&&(rightPrev.m<=.08||Math.hypot(right.x-rightAnchor.x,right.y-rightAnchor.y)>.06)){
   if(aimSource!=='pad'){
    mouseTakeover.x=mouseTakeover.y=0;
    const point=headingView()?headingAimPoint():pointerAimPoint();
@@ -1380,9 +1458,13 @@ function getInput(pad,dt=STEP){
 }
 
 // Heading view changes only presentation and input coordinates, never world physics.
-function headingView(){return cfg.view==='heading';}
-function aimSensitivity(follow){const name=follow?'mouseSensitivity':'worldMouseSensitivity';return cfg[name]*settingScale(name)/100;}
-function pointerAimPoint(){return headingView()&&aimSource!=='pad'?null:aimSource==='touch'?touch.target:mouse;}
+function headingView(){return cfg.view==='heading'&&!isSpectatorMode();}
+function followViewZoom(){return 100/cfg.followFov;}
+function aimSensitivity(follow){
+ const name=follow?'mouseSensitivity':'worldMouseSensitivity',sensitivity=cfg[name]*settingScale(name)/100;
+ return follow&&cfg.compensateFovSensitivity?sensitivity/followViewZoom():sensitivity;
+}
+function pointerAimPoint(){return isSpectatorMode()||headingView()&&aimSource!=='pad'?null:aimSource==='touch'?touch.target:mouse;}
 function aimCircleOffset(actor){
  const vx=actor.mvx||0,vy=actor.mvy||0,scale=AIM_CIRCLE_MAX_SHIFT/Math.max(ACTOR.speed,Math.hypot(vx,vy));
  return{x:vx*scale,y:vy*scale};
@@ -1397,7 +1479,7 @@ function aimAt(actor,point){
  const dx=point.x-actor.x,dy=point.y-actor.y;
  actor.aim=Math.atan2(dy,dx);actor.range=selectAimRange(actor,Math.hypot(dx,dy));
 }
-function wantsMouseLock(){return headingView()||cfg.worldMouseSensitivity!==100;}
+function wantsMouseLock(){return !isSpectatorMode()&&(headingView()||cfg.worldMouseSensitivity!==100);}
 function usesMouseLock(){return wantsMouseLock()&&(headingView()||!pointerLockFailed);}
 function cameraHeading(){return headingView()?cameraAngle:0;}
 function headingCameraPosition(actor){
@@ -1738,11 +1820,33 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtA
  }
  b.lifetimeEnd=deadline<=dt+PROJECTILE_TIME_EPS?(dt>0?Math.min(deadline/dt,1):0):Infinity;
 }
+function projectileArenaExit(x0,y0,x1=x0,y1=y0){
+ if(MAPS[mapId].wrap)return 1;
+ const edge=mapId==='ellipse'?20:ARENA_FRAME_INSET-BULLET_OVERHANG;
+ if(x0<edge||x0>W-edge||y0<edge||y0>H-edge)return 0;
+ let exit=1;
+ if(x1<edge)exit=Math.min(exit,(edge-x0)/(x1-x0));else if(x1>W-edge)exit=Math.min(exit,(W-edge-x0)/(x1-x0));
+ if(y1<edge)exit=Math.min(exit,(edge-y0)/(y1-y0));else if(y1>H-edge)exit=Math.min(exit,(H-edge-y0)/(y1-y0));
+ return exit;
+}
+function clipProjectileAtArena(b){
+ b.collisionEnd=Math.min(b.endPoint?.t??Infinity,b.wallEnd?.t??Infinity,b.lifetimeEnd);
+ if(MAPS[mapId].wrap)return false;
+ for(const segment of b.motionSegments){
+  if(segment.from>=b.collisionEnd)break;
+  const exit=projectileArenaExit(segment.x0,segment.y0,segment.x1,segment.y1);
+  if(exit<1){
+   b.collisionEnd=Math.min(b.collisionEnd,segment.from+(segment.to-segment.from)*exit);
+   return true;
+  }
+ }
+ return projectileArenaExit(b.x,b.y)<1;
+}
 const activationPreviewCache=new WeakMap();
 const ACTIVATION_PREVIEW_FADE_TIME=.12;
 function predictBulletActivation(b){
  const map=MAPS[mapId],distance=b.fieldStart-b.travel,timeLeft=projectileTimeLeft(b);
- const inside=(x,y)=>map.wrap||x>=20&&x<=W-20&&y>=20&&y<=H-20;
+ const inside=(x,y)=>projectileArenaExit(x,y)===1;
  if(!(distance>0&&timeLeft>0)||projectileEnd(b)-b.fieldStart<=PROJECTILE_PATH_EPS||!inside(b.x,b.y))return null;
  if(!map.wrap&&!WALLS.length&&!map.terrain&&!mapFields.length){
   const speed=Math.hypot(b.vx,b.vy);
@@ -1755,7 +1859,7 @@ function predictBulletActivation(b){
  for(let time=0;time<timeLeft;time+=STEP){
   probe.age=(b.age||0)+time;
   integrateProjectile(probe,STEP,null,null,true);
-  if(probe.wallAbsorbed||probe.probeTruncated||probe.endPoint||!inside(probe.x,probe.y))return null;
+  if(probe.wallAbsorbed||probe.probeTruncated||probe.endPoint||clipProjectileAtArena(probe))return null;
   if(Number.isFinite(probe.damageStart))return{x:probe.x,y:probe.y,angle:Math.atan2(probe.vy,probe.vx)};
  }
  return null;
@@ -1771,7 +1875,7 @@ function bulletActivationPreview(b){
 function fadeActivationPreview(b,at){
  const point=activationPreviewCache.get(b)?.point;if(!point)return;
  activationPreviewCache.delete(b);
- if(cfg.showActivationPreview)activationPreviewFades.push({point,r:b.r,at});
+ if(cfg.showActivationPreview)activationPreviewFades.push({point,r:b.r,team:b.team,at});
 }
 function stepBullet(b,dt){
  b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;
@@ -1779,19 +1883,8 @@ function stepBullet(b,dt){
  b.age=(b.age||0)+dt*Math.min(1,b.lifetimeEnd);
  // Swept collisions before the first cutoff still count within this step.
  const end=projectileEnd(b);b.ended=Number.isFinite(end)&&b.travel>=end;
- b.expired=b.wallAbsorbed||b.ended||Number.isFinite(b.lifetimeEnd)||!MAPS[mapId].wrap&&(b.x<20||b.x>W-20||b.y<20||b.y>H-20);
- // Infinity distinguishes an ordinary frame end from a cutoff at t = 1.
- b.collisionEnd=Math.min(b.endPoint?.t??Infinity,b.wallEnd?.t??Infinity,b.lifetimeEnd);
- if(MAPS[mapId].wrap)return;
- for(const segment of b.motionSegments){
-  if(segment.from>=b.collisionEnd)break;
-  const {x0,y0,x1,y1}=segment,span=segment.to-segment.from;
-  if(x0<20||x0>W-20||y0<20||y0>H-20){b.expired=true;b.collisionEnd=segment.from;break;}
-  let exit=1;
-  if(x1<20)exit=Math.min(exit,(20-x0)/(x1-x0));else if(x1>W-20)exit=Math.min(exit,(W-20-x0)/(x1-x0));
-  if(y1<20)exit=Math.min(exit,(20-y0)/(y1-y0));else if(y1>H-20)exit=Math.min(exit,(H-20-y0)/(y1-y0));
-  if(exit<1){b.expired=true;b.collisionEnd=Math.min(b.collisionEnd,segment.from+span*exit);break;}
- }
+ const exited=clipProjectileAtArena(b);
+ b.expired=b.wallAbsorbed||b.ended||Number.isFinite(b.lifetimeEnd)||exited;
 }
 function muzzleDistance(actor,aim=actor.aim||0){const shape=bodyShape(actor),angle=aim-shape.angle;return shape.rx===shape.ry?shape.rx:1/Math.hypot(Math.cos(angle)/shape.rx,Math.sin(angle)/shape.ry);}
 // Aim selects the START; interval length has fixed and range-proportional parts.
@@ -1820,8 +1913,11 @@ function fire(actor,team,aim=actor.aim,range=actor.range){
  // Both teams draw once at launch; random values stay hidden from the bot.
  b.collisionRandom=Math.random();
  startProjectileDamage(b);bullets.push(b);
+ const coverage=actor.bot?.firedCoverage;
+ if(actor.bot?.liveCoverage&&coverage?.preparedAt===actor.bot.time)coverage.projectile=b;
  muzzleEffect(actor,b);
- if(team===0)shots++;
+ if(cfg.playerShotSound&&actor===p&&!isSpectatorMode())playShotSound(actor);
+ if(team===0||isSpectatorMode())shots++;
  return b;
 }
 function updateWeapon(actor,pressed,dt,automatic=false,point=null){
@@ -2664,23 +2760,27 @@ function resolveHit(b,a,contact,contactOffset=0){
  b.dead=true;if(a.hp<=0)return;
  const explosionDamage=projectileDamage(b,contact.travel??b.travel),damage=explosionDamage+projectileMomentumDamage(b,a,contact);
  const own=a.team===0,inheritedVx=a.vx,inheritedVy=a.vy;
+ const spectating=isSpectatorMode();
  const lethal=damage>=a.hp&&(!own||!isPracticeMode());
  addActorHitMark(a,contact,damage);applyImpact(a,b,contact,damage,lethal?2:1);
  const kickX=a.vx-inheritedVx,kickY=a.vy-inheritedVy;
  impactEffect(contact,damage,inheritedVx,inheritedVy,explosionDamage,b.r??ACTOR.shotRadius,b.team,contactOffset);
- playSound(own?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
+ playSound(own&&!spectating?'hurt':'hit',damage,contact.x);showDamageNumber(contact.x,contact.y,damage,a.team);
  if(own){hits++;if(!isPracticeMode()){a.hp=Math.max(0,a.hp-damage);if(a.hp===0)breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);}}
- else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);playSound('kill',1,a.x);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
+ else{a.hp=Math.max(0,a.hp-damage);if(a.hp===0){breakupEffect(a,contact,inheritedVx,inheritedVy,kickX,kickY);if(!isPracticeMode())defeatedEnemy=a;enemy=null;kills++;enemyDelay=.85;}}
+ if(lethal&&(!own||spectating))playSound('kill',1,a.x);
  updateHud(true);
 }
 
 // === 09 · AI perception, forecasts and bounded decisions ===
+const STANDARD_BOT_LEVEL={delay:.065,interval:.115,horizon:1.15,lead:1,aimError:0,rangeError:0,margin:9,threats:10,groupWait:0,aimAhead:.20,fullStrategy:true};
+const PRACTICE_BOT_LEVEL={delay:0,interval:.05,horizon:1.05,lead:.92,aimError:.012,rangeError:6,margin:7.5,threats:9,groupWait:.08};
 const BOT_LEVELS={
- beginner:{delay:.50,interval:.36,horizon:.55,lead:.35,aimError:.085,rangeError:36,margin:15,threats:4,groupWait:1.1},
- easy:{delay:.35,interval:.27,horizon:.70,lead:.55,aimError:.055,rangeError:24,margin:12,threats:6,groupWait:.7},
- normal:{delay:.20,interval:.19,horizon:.95,lead:.83,aimError:.025,rangeError:12,margin:9,threats:8,groupWait:.3},
- advanced:{delay:.15,interval:.165,horizon:1.05,lead:.92,aimError:.0175,rangeError:8,margin:7.5,threats:9,groupWait:.15},
- hard:{delay:.065,interval:.115,horizon:1.15,lead:1,aimError:0,rangeError:0,margin:9,threats:10,groupWait:0,aimAhead:.20}
+ beginner:{delay:.275,interval:.225,horizon:.70,lead:.68,aimError:.043,rangeError:19,margin:12,threats:6,groupWait:.48},
+ easy:{delay:.18,interval:.18,horizon:.95,lead:.87,aimError:.022,rangeError:10,margin:9,threats:8,groupWait:.22,spacingAhead:.20},
+ normal:{...STANDARD_BOT_LEVEL,lead:.94},
+ advanced:{...STANDARD_BOT_LEVEL,delay:.05,interval:.10,shotTiming:true,reactiveMovement:true},
+ hard:{...STANDARD_BOT_LEVEL,delay:0,interval:.05,midpointWeight:0,hitWeight:.30,shotTiming:true,reactiveMovement:true}
 };
 // Match-tested weights, with more engagement distance for readable duels.
 const BOT_TUNING={riskWeight:1.2,wallWeight:1,spacingWeight:1.12,attackThreshold:32,maxHold:1.1,ghostWeight:.25,rangeBias:-30,annBlockWeight:10,annDefenseWeight:14};
@@ -2745,19 +2845,19 @@ function botTargetAt(target,t){
  const tau=BOT_MOTION_DECAY,z=Math.exp(-t/tau),ax=target.ax||0,ay=target.ay||0;
  const rawX=target.x+target.vx*t+ax*tau*(t-tau*(1-z));
  const rawY=target.y+target.vy*t+ay*tau*(t-tau*(1-z));
- const inset=actorInset(target),x=clamp(rawX,inset,W-inset),y=clamp(rawY,inset,H-inset);
+ const inset=actorInset(target),x=clampActorX(rawX,target.team,inset),y=clamp(rawY,inset,H-inset);
  const result={...target,x,y,vx:x===rawX?target.vx+ax*tau*(1-z):0,vy:y===rawY?target.vy+ay*tau*(1-z):0,
   ax:x===rawX?ax*z:0,ay:y===rawY?ay*z:0};
  const hit=firstWallHit(target.x,target.y,x,y,inset-24);
  if(hit){result.x=hit.x+hit.nx*1e-5;result.y=hit.y+hit.ny*1e-5;const dot=result.vx*hit.nx+result.vy*hit.ny;if(dot<0){result.vx-=dot*hit.nx;result.vy-=dot*hit.ny;}result.ax=result.ay=0;}
  return result;
 }
-function botLearn(bot,observation){
+function botLearn(bot,observation,level){
  for(const frame of bot.history){
   if(frame.time<=bot.learnedAt||frame.time>observation.time)continue;
   for(const b of frame.bullets){
    const prev=bot.tracks.get(b.id),speed=Math.hypot(b.vx,b.vy),source=frame.target;
-   const inferSpin=!bot.hard||b.launchSpin===undefined;
+   const inferSpin=!bot.fullStrategy||b.launchSpin===undefined;
    let spin=prev?prev.spin:0,confidence=prev?prev.confidence:0,used=prev?prev.used:0,expired=prev?prev.expired:false;
    let observedPath=prev?.observedPath??(source?Math.hypot(b.x-source.x,b.y-source.y):AIM_CIRCLE_RADIUS),interval=prev?.interval;
    const from=prev||source||b,mapAffected=inferSpin&&mapFieldTouchesSegment(from.x,from.y,b.x,b.y);
@@ -2791,7 +2891,16 @@ function botLearn(bot,observation){
     used=interval*.65;
    }
    const spinLimit=1.6*Math.max(1,cfg.launchSpinScale);
-   bot.tracks.set(b.id,{...b,time:frame.time,spin:clamp(spin,-spinLimit,spinLimit),confidence,used,expired,observedPath,interval});
+   const track={...b,time:frame.time,spin:clamp(spin,-spinLimit,spinLimit),confidence,used,expired,observedPath,interval};
+   if(level===BOT_LEVELS.hard&&!b.solid&&!expired){
+    if(prev?.darkOnsets)track.darkOnsets=prev.darkOnsets;
+    else{
+     // Estimate the chosen onset once, in the shot's traveled-distance coordinates.
+     const distance=Math.hypot(b.x-frame.self.x,b.y-frame.self.y),band=shotBand(observedPath+distance);
+     track.darkOnsets=[observedPath+Math.max(0,distance-band*.70),observedPath+Math.max(0,distance-band*.12)];
+    }
+   }
+   bot.tracks.set(b.id,track);
   }
   bot.learnedAt=frame.time;
  }
@@ -2842,6 +2951,10 @@ function botForecastActiveStep(b,dt,body,source=null){
    const fraction=clamp(wallHit.t,0,1);h*=fraction;ds*=fraction;
    nextSpeed=speed+(nextSpeed-speed)*fraction;endX=wallHit.x;endY=wallHit.y;
   }
+  const exit=projectileArenaExit(oldX,oldY,endX,endY);
+  if(exit<1){
+   h*=exit;ds*=exit;endX=oldX+(endX-oldX)*exit;endY=oldY+(endY-oldY)*exit;
+  }
   b.x=endX;b.y=endY;
   b.vx=Math.cos(angle+omega*h)*nextSpeed+ax*h;b.vy=Math.sin(angle+omega*h)*nextSpeed+ay*h;
   if(!windowStopped&&h>1e-12){
@@ -2851,6 +2964,7 @@ function botForecastActiveStep(b,dt,body,source=null){
   b.charged+=ds;
   b.left=Math.max(0,b.left-ds);
   remaining-=h;
+  if(exit<1){b.left=0;break;}
   if(wallHit){
    if(wallHit.wall.type==='absorb'){b.left=0;break;}
    respondProjectileWall(b,wallHit,1e-4);
@@ -2935,6 +3049,8 @@ function botForecastStep(b,dt,body,trackGhost=false,sourcePose=null){
       }
     }
    if(wallHit){next.x=wallHit.x;next.y=wallHit.y;}
+   const exit=projectileArenaExit(b.x,b.y,next.x,next.y);
+   if(exit<1){h*=exit;next.travel*=exit;next.x=b.x+(next.x-b.x)*exit;next.y=b.y+(next.y-b.y)*exit;}
    if(trackGhost&&h>1e-12&&!ghostWindowStopped){
       if(!b.forecastGhostWindow)b.forecastGhostWindow={from:elapsed/dt,x0:b.x,y0:b.y,ghostEndExclusive:false};
       Object.assign(b.forecastGhostWindow,{to:(elapsed+h)/dt,x1:next.x,y1:next.y});
@@ -2943,6 +3059,7 @@ function botForecastStep(b,dt,body,trackGhost=false,sourcePose=null){
     if(b.before>0)b.before=Math.max(0,b.before-next.travel);
    else b.left=Math.max(0,b.left-next.travel);
    elapsed+=h;
+   if(exit<1){b.left=0;break;}
    if(wallHit){
     if(wallHit.wall.type==='absorb'){b.left=0;break;}
     respondProjectileWall(b,wallHit,1e-4);
@@ -2973,18 +3090,27 @@ function botObservedThreats(observation,actor,age,level,bot){
  const threats=[];
  for(const visible of ranked){
   const track=bot.tracks.get(visible.id)||{spin:0,confidence:0,used:0};
-  const distance=Math.hypot(visible.x-observation.self.x,visible.y-observation.self.y);
   // Ghost onset remains concealed; solid rounds are immediately dangerous.
-  const observedPath=track.observedPath??AIM_CIRCLE_RADIUS,expectedBand=shotBand(observedPath+distance);
-  const hypotheses=visible.solid?[[0,1]]:[[Math.max(0,distance-expectedBand*.70),.55],[Math.max(0,distance-expectedBand*.12),.45]];
+  const observedPath=track.observedPath??AIM_CIRCLE_RADIUS;
+  let hypotheses=[[0,1]];
+  if(!visible.solid){
+   const onsets=level===BOT_LEVELS.hard?track.darkOnsets:null;
+   if(onsets){
+    const early=Math.max(0,onsets[0]-observedPath),late=Math.max(0,onsets[1]-observedPath);
+    hypotheses=early===late?[[early,1]]:[[early,.55],[late,.45]];
+   }else{
+    const distance=Math.hypot(visible.x-observation.self.x,visible.y-observation.self.y),band=shotBand(observedPath+distance);
+    hypotheses=[[Math.max(0,distance-band*.70),.55],[Math.max(0,distance-band*.12),.45]];
+   }
+  }
   for(const [before,probability] of hypotheses){
    const interval=visible.solid?(track.interval??shotBand(observedPath-track.used)):shotBand(observedPath+before);
    const b={...visible,before,sourceField:observation.target,sourceTime:0,left:visible.solid?Math.max(0,interval-track.used):interval,
-    spin:level===BOT_LEVELS.hard?(visible.launchSpin??track.spin):track.spin,charged:visible.solid?track.used:0,
+    spin:level.fullStrategy===true?(visible.launchSpin??track.spin):track.spin,charged:visible.solid?track.used:0,
     weight:probability*(visible.solid?1:BOT_TUNING.ghostWeight),annProbability:probability};
    // Bring the delayed observation forward through our KNOWN movement. No
    // future opponent or projectile state is consulted during this forecast.
-   const steps=Math.max(1,Math.ceil(age/.04));
+   const steps=Math.ceil(age/.04);
    for(let i=0;i<steps&&b.left>0;i++){
     const q=(i+.5)/steps,old=observation.self;
     const body={...old,x:old.x+(actor.x-old.x)*q,y:old.y+(actor.y-old.y)*q,
@@ -2997,8 +3123,7 @@ function botObservedThreats(observation,actor,age,level,bot){
  return threats;
 }
 function botPracticePlan(bot,actor,target){
- // Practice movement has its own intent, chosen only on the same delayed
- // decision ticks as threat avoidance. Duels never enter this branch.
+ // Pick the practice route on the same decision ticks as threat avoidance.
  const distance=Math.hypot(target.x-actor.x,target.y-actor.y);
  const inset=actorInset(actor),wall=Math.min(actor.x-inset,W-inset-actor.x,actor.y-inset,H-inset-actor.y);
  const old=bot.practice,settled=!old||bot.time-old.started>=1.2;
@@ -3036,16 +3161,48 @@ function botClosestPass(window,old,next,radius=0,dt=0){
  const charged=window.charge0+entry*(window.charge1-window.charge0);
  return{distance,at:window.lo+entry*span,damage:projectileDamage({damageStart:0},charged)+momentumDamageAtSpeed(closing)};
 }
+function botControlForecast(shot){
+ const travel=shot.travel||0,before=Number.isFinite(shot.fieldStart)?Math.max(0,shot.fieldStart-travel):0;
+ const materialized=projectileDamageActive(shot);
+ const charged=materialized?(Number.isFinite(shot.damageStart)?Math.max(0,travel-shot.damageStart):cfg.damageRampDistance):0;
+ return{...shot,spin:shot.spin||0,before,left:(projectileEnd(shot)??Infinity)-travel-before,materialized,charged,
+  timeLeft:projectileTimeLeft(shot)};
+}
+function botControllableRounds(rounds,actor,direction,receivers,dt){
+ const horizon=(receivers.length-1)*dt,inertia=cfg.inertia*actorSizeRatio(actor);
+ const target=receivers[0],sources=[actor],carriers=[],reach=[],ranked=[];
+ const acceleration=cfg.propulsion+mapForceBound(actor.x,actor.y,Infinity),wrap=MAPS[mapId].wrap;
+ let receiverTravel=0;
+ for(let i=0;i<receivers.length-1;i++){
+  const t=(i+1)*dt,next=botBodyStep(sources[i],direction,dt);
+  sources.push(next);carriers.push(botBodyMidpoint(sources[i],next));
+  // Opposite inputs bound how far another move could shift this course.
+  reach.push(2*ACTOR.speed*(inertia>0?t+inertia*Math.expm1(-t/inertia):t));
+  receiverTravel=Math.max(receiverTravel,Math.hypot(receivers[i+1].x-target.x,receivers[i+1].y-target.y));
+ }
+ const radius=bodyShape(target).ry;
+ for(const shot of rounds){
+  const b=botControlForecast(shot),speed=Math.hypot(b.vx,b.vy);
+  const travel=Math.min(b.before+b.left,(speed+.5*acceleration*horizon)*horizon);
+  const nearTarget=Math.max(cfg.radius,radius+b.r);
+  if(b.before>travel||!wrap&&Math.hypot(b.x-target.x,b.y-target.y)>travel+receiverTravel+nearTarget)continue;
+  let canSteer=false,rank=Infinity;
+  for(let i=0;i<carriers.length&&b.left>1e-7;i++){
+   const old=receivers[i],next=receivers[i+1];
+   botForecastStep(b,dt,botBodyMidpoint(old,next),false,carriers[i]);
+   const window=b.forecastWindow;if(!window)continue;
+   canSteer||=botClosestPass(window,sources[i],sources[i+1]).distance<cfg.controlRadius+reach[i];
+   if(canSteer)rank=Math.min(rank,botClosestPass(window,old,next).distance);
+  }
+  if(rank<nearTarget)ranked.push({shot,rank});
+ }
+ return ranked.sort((a,b)=>a.rank-b.rank).map(entry=>entry.shot);
+}
 function botShotControlValue(rounds,receivers,states,carriers,dt){
  const radius=bodyShape(receivers[0]).ry,margin=32;
  let dealt=0,totalMiss=0;
  for(const shot of rounds){
-  // The shooter knows its own launch spin and selected activation range.
-  const travel=shot.travel||0,before=Number.isFinite(shot.fieldStart)?Math.max(0,shot.fieldStart-travel):0;
-  const materialized=projectileDamageActive(shot);
-  const charged=materialized?(Number.isFinite(shot.damageStart)?Math.max(0,travel-shot.damageStart):cfg.damageRampDistance):0;
-  const b={...shot,spin:shot.spin||0,before,left:(projectileEnd(shot)??Infinity)-travel-before,materialized,charged,
-   timeLeft:projectileTimeLeft(shot)};
+  const b=botControlForecast(shot);
   let miss=margin;
   for(let i=0;i<receivers.length-1&&b.left>1e-7;i++){
    const old=receivers[i],next=receivers[i+1],source=carriers[i]??=botBodyMidpoint(states[i],states[i+1]);
@@ -3061,24 +3218,28 @@ function botShotControlValue(rounds,receivers,states,carriers,dt){
 }
 function botMoveContext(actor,target,bot,level){
  const count=Math.ceil(level.horizon*22),dt=level.horizon/count,dodgeRadius=bodyShape(actor).rx;
- // Use the near-term pose for Hard's firing distance; assess threats over the full path.
- const hard=level===BOT_LEVELS.hard,positionStep=hard?Math.ceil(.4/dt):count;
- const predicted=botTargetAt(target,hard?positionStep*dt:level.horizon);
+ const fullStrategy=level.fullStrategy===true;
+ const reactive=level.reactiveMovement;
+ const spacingAhead=bot.practice?0:(level.spacingAhead??0);
+ // Use a near-term position when keeping firing distance. Threats still use the full path.
+ const keepsDistance=fullStrategy||spacingAhead>0,positionStep=keepsDistance?Math.ceil(.4/dt):count;
+ const predicted=botTargetAt(target,keepsDistance?positionStep*dt:level.horizon);
  const current=unit(target.x-actor.x,target.y-actor.y),cross=Math.abs(current.x*actor.vy-current.y*actor.vx)/ACTOR.speed;
- const recharge=bot.recharging?95:0,profile=bot.practice||hard?BOT_PROFILES[0]:bot.profile||BOT_PROFILES[0];
+ const recharge=bot.recharging?95:0,profile=bot.practice||fullStrategy?BOT_PROFILES[0]:bot.profile||BOT_PROFILES[0];
  // Leave room for a direct shot to activate and gain some damage before contact.
- const fireFloor=hard?AIM_CIRCLE_RADIUS+bodyShape(target).rx+ACTOR.shotRadius:65;
- const preferred=bot.practice?bot.practice.range:hard?
+ const fireFloor=reactive?0:keepsDistance?AIM_CIRCLE_RADIUS+bodyShape(target).rx+ACTOR.shotRadius:65;
+ const preferred=reactive?0:bot.practice?bot.practice.range:fullStrategy?
   fireFloor+Math.min(60,shotBand(AIM_CIRCLE_RADIUS)*.5,cfg.damageRampDistance*(1-cfg.minimumDamage)*.4):
   clamp(cfg.radius*(1.15+.55*cross)+shotBand(500)*.35+recharge+BOT_TUNING.rangeBias+profile.rangeOffset,130,620);
- const reserve=hard&&bot.committing&&!bot.practice?Math.min(28,ACTOR.speed*level.interval):0;
- const minRange=preferred-(bot.practice||hard?0:40)+reserve;
- const maxRange=bot.practice?preferred:hard&&bot.recharging?Infinity:preferred+(hard?cfg.launchSpeed*.14:100);
- const closing=hard?Math.max(0,current.x*(actor.vx-target.vx)+current.y*(actor.vy-target.vy)):0;
- const separation=current.d-closing*(bot.recharging||bot.committing ? .48 : .28),kiting=hard&&separation<minRange;
+ const reserve=!reactive&&fullStrategy&&bot.committing&&!bot.practice?Math.min(28,ACTOR.speed*level.interval):0;
+ const minRange=preferred-(bot.practice||fullStrategy?0:40)+reserve;
+ const maxRange=bot.practice?preferred:(reactive||fullStrategy&&bot.recharging)?Infinity:preferred+(fullStrategy?cfg.launchSpeed*.14:100);
+ const closing=keepsDistance?Math.max(0,current.x*(actor.vx-target.vx)+current.y*(actor.vy-target.vy)):0;
+ const closingAhead=fullStrategy?(bot.recharging||bot.committing ? .48 : .28):spacingAhead;
+ const separation=current.d-closing*closingAhead,kiting=!reactive&&keepsDistance&&separation<minRange;
  // The existing nine movement candidates only need a local wall-end goal.
  // Score their constrained displacement so pushing into a wall earns no gain.
- const obstruction=kiting||hard&&bot.recharging?null:firstWallHit(actor.x,actor.y,target.x,target.y,dodgeRadius+3);
+ const obstruction=kiting||fullStrategy&&bot.recharging?null:firstWallHit(actor.x,actor.y,target.x,target.y,dodgeRadius+3);
  let waypoint=null;
  if(obstruction&&!obstruction.wall.boundary){
   const wall=obstruction.wall,gap=dodgeRadius+wall.r+12;
@@ -3088,33 +3249,55 @@ function botMoveContext(actor,target,bot,level){
   const length=point=>Math.hypot(point.x-actor.x,point.y-actor.y)+Math.hypot(target.x-point.x,target.y-point.y);
   waypoint=length(top)<=length(bottom)?top:bottom;
  }
- const radial=clamp((separation-clamp(separation,minRange,maxRange))/(kiting?80:170),-1,1);
- const tangent=bot.practice?bot.practice.side*bot.practice.tangent:hard&&!bot.recharging?0:bot.side*profile.tangent;
+ const radial=reactive?0:clamp((separation-clamp(separation,minRange,maxRange))/(kiting?80:170),-1,1);
+ const tangent=bot.practice?bot.practice.side*bot.practice.tangent:(reactive||fullStrategy&&!bot.recharging)?0:bot.side*profile.tangent;
  const center=bot.practice?.kind==='reposition'?unit(W*.5-actor.x,H*.5-actor.y):{x:0,y:0};
  const desired=unit(current.x*radial-current.y*tangent+center.x*1.4,current.y*radial+current.x*tangent+center.y*1.4);
- return{count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired,positionStep,fireFloor,cramped:hard&&separation<=fireFloor};
+ return{count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired,positionStep,fireFloor,cramped:!reactive&&fullStrategy&&separation<=fireFloor};
 }
-function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveContext(actor,target,bot,level),limit=Infinity){
- const {count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired,positionStep,fireFloor}=shared,states=[actor],carriers=[];let body=actor;
- for(let i=0;i<count;i++){body=botBodyStep(body,direction,dt);states.push(body);}
+function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveContext(actor,target,bot,level),limit=Infinity,turnDelay=0){
+ const {count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired,positionStep,fireFloor}=shared,states=[actor],carriers=[];let body=actor,turnStart=actor;
+ for(let i=0;i<count;i++){
+  if(turnDelay>0){
+   const hold=Math.min(dt,turnDelay);
+   body=turnStart=botBodyStep(body,bot.output,hold);turnDelay-=hold;
+   if(hold<dt)body=botBodyStep(body,direction,dt-hold);
+  }else body=botBodyStep(body,direction,dt);
+  states.push(body);
+ }
  const position=states[positionStep],offset=unit(predicted.x-position.x,predicted.y-position.y);
  // A wall end is a near-term steering goal. Reuse an earlier predicted body
  // so a full-horizon overshoot of that corner cannot make standing still win.
  const routeIndex=waypoint?Math.min(count,Math.ceil(.35/dt)):count,routeBody=states[routeIndex];
  const routeDistance=waypoint?Math.hypot(waypoint.x-routeBody.x,waypoint.y-routeBody.y)+Math.hypot(predicted.x-waypoint.x,predicted.y-waypoint.y):offset.d;
  const distanceCost=(Math.max(minRange-routeDistance,0,routeDistance-maxRange)/210)**2*2*BOT_TUNING.spacingWeight;
- const inset=actorInset(routeBody);let wallDistance=Math.min(routeBody.x-inset,W-inset-routeBody.x,routeBody.y-inset,H-inset-routeBody.y);
- if(mapId==='ellipse'){
-  const wall=WALLS[0],radial=Math.hypot((routeBody.x-wall.cx)/wall.rx,(routeBody.y-wall.cy)/wall.ry);
-  wallDistance=Math.min(wallDistance,(1-radial)*Math.min(wall.rx,wall.ry)-(inset-24)-wall.r);
+ const reactive=level.reactiveMovement;
+ let wallCost=0;
+ if(reactive&&mapId!=='ellipse'){
+  const edgeDistance=Math.min(position.x,W-position.x,position.y,H-position.y)-actorInset(position);
+  wallCost=clamp(1-edgeDistance/50,0,1)**2*13*BOT_TUNING.wallWeight;
+ }else if(!reactive){
+  const inset=actorInset(routeBody);let wallDistance=Math.min(routeBody.x-inset,W-inset-routeBody.x,routeBody.y-inset,H-inset-routeBody.y);
+  const divider=MAPS[mapId].divider;
+  if(divider){
+   const limit=dividerLimit(divider,routeBody.team,inset);
+   const distance=routeBody.team===0?limit-routeBody.x:routeBody.x-limit;
+   wallDistance=Math.min(wallDistance,distance);
+  }
+  if(mapId==='ellipse'){
+   const wall=WALLS[0],radial=Math.hypot((routeBody.x-wall.cx)/wall.rx,(routeBody.y-wall.cy)/wall.ry);
+   wallDistance=Math.min(wallDistance,(1-radial)*Math.min(wall.rx,wall.ry)-(inset-24)-wall.r);
+  }
+  wallCost=clamp((95-wallDistance)/95,0,1)**2*13*BOT_TUNING.wallWeight;
  }
- const wallCost=clamp((95-wallDistance)/95,0,1)**2*13*BOT_TUNING.wallWeight;
- const alignment=waypoint?clamp((Math.hypot(waypoint.x-actor.x,waypoint.y-actor.y)-Math.hypot(waypoint.x-routeBody.x,waypoint.y-routeBody.y))/Math.max(1,ACTOR.speed*routeIndex*dt),-1,1):direction.x*desired.x+direction.y*desired.y;
+ let alignment=direction.x*desired.x+direction.y*desired.y;
+ if(waypoint)alignment=clamp((Math.hypot(waypoint.x-actor.x,waypoint.y-actor.y)-Math.hypot(waypoint.x-routeBody.x,waypoint.y-routeBody.y))/Math.max(1,ACTOR.speed*routeIndex*dt),-1,1);
  const change=Math.hypot(direction.x-bot.output.x,direction.y-bot.output.y);
- const requestedWall=firstWallHit(actor.x,actor.y,actor.x+direction.x*ACTOR.speed*.35,actor.y+direction.y*ACTOR.speed*.35,dodgeRadius+3);
+ const requestedWall=firstWallHit(turnStart.x,turnStart.y,turnStart.x+direction.x*ACTOR.speed*.35,turnStart.y+direction.y*ACTOR.speed*.35,dodgeRadius+3);
  const wallPushCost=requestedWall?Math.max(0,-direction.x*requestedWall.nx-direction.y*requestedWall.ny)*2.2:0;
- const crowding=Math.max(0,(fireFloor-offset.d)/15),turnCost=change*(waypoint?.12:.6);
- const hasRounds=shared.rounds?.length>0,trading=level===BOT_LEVELS.hard&&(hasRounds||shared.opening);
+ const crowding=reactive?12*Math.max(0,1-offset.d/AIM_CIRCLE_RADIUS)**2:Math.max(0,(fireFloor-offset.d)/15);
+ const turnCost=change*(waypoint?.12:.6);
+ const hasRounds=shared.rounds?.length>0,trading=level.fullStrategy===true&&(hasRounds||shared.opening);
  // Assume the largest possible return before simulating our shots, so pruning
  // still allows a candidate to take a hit in exchange for more damage.
  let dealt=trading&&hasRounds?Math.min(target.hp,shared.rounds.length*(1+cfg.momentumDamageCap)):0;
@@ -3129,15 +3312,17 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
    const old=states[i],next=states[i+1];
    const carrier=carriers[i]??=botBodyMidpoint(old,next);
    botForecastStep(b,dt,carrier);
-   const window=b.forecastWindow;if(!window)continue;
+   const window=b.forecastWindow;
+   if(!window)continue;
    // Compare damage over the same window as our shots. Later passes still
    // inform a small caution cost.
    const radius=dodgeRadius+b.r,contact=botClosestPass(window,old,next,trading&&i<positionStep?radius:0,dt);
    if(contact.damage!==null){damage=contact.damage;break;}
    const clearance=contact.distance-radius;
-   const proximity=clamp(1-clearance/(level.margin+12),0,1);
-   worst=Math.max(worst,trading?proximity*proximity*.04:
-    (proximity*proximity*75+(clearance<0?180:0))/(.65+(i+contact.at)*dt));
+   const proximity=clamp(1-clearance/(level.margin+12),0,1),time=(i+contact.at)*dt;
+   const caution=trading ? .04 : 75/(.65+time);
+   const collisionCost=!trading&&clearance<0?180/(.65+time):0;
+   worst=Math.max(worst,proximity*proximity*caution+collisionCost);
    if(limit<Infinity&&score(risk+worst*incoming.weight,taken)>=limit)return limit;
   }
   taken+=damage*incoming.weight;
@@ -3153,7 +3338,7 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
 // Forecast with the same physics as gameplay.
 // Interception forecasts use delayed observations and the launch record.
 // An opposing shot's future activation distance remains unknown.
-function botAnnihilationForecast(actor,direction,threats,age){
+function botAnnihilationForecast(actor,direction,threats,age,damageBased=false){
  const candidates=threats.slice(0,12).filter(b=>!b.materialized&&!b.solid&&b.left>1e-7);
  if(!candidates.length)return null;
  const dt=1/30,count=24,states=[actor],carriers=[],paths=[],dodgeRadius=bodyShape(actor).rx;
@@ -3167,7 +3352,13 @@ function botAnnihilationForecast(actor,direction,threats,age){
    segments.push({ghost:b.forecastGhostWindow});
    const window=b.forecastWindow;
    if(window){
-    const {distance,at}=botClosestPass(window,previous,next),clearance=distance-dodgeRadius-b.r,t=(i+at)*dt;
+    const {distance,at,damage}=botClosestPass(window,previous,next,damageBased?dodgeRadius+b.r:0,dt);
+    const t=(i+at)*dt;
+    if(damageBased){
+     if(damage!==null){danger=Math.min(actor.hp,damage);dangerTime=t;break;}
+     continue;
+    }
+    const clearance=distance-dodgeRadius-b.r;
     const importance=clamp(1-clearance/20,0,1)*Math.exp(-t*.8);
     if(importance>danger){danger=importance;dangerTime=t;}
    }
@@ -3177,12 +3368,13 @@ function botAnnihilationForecast(actor,direction,threats,age){
   const probability=incoming.annProbability??1;
   if(segments.some(segment=>segment.ghost))paths.push({id:incoming.id,r:incoming.r,probability,danger,dangerTime,segments});
  }
- return paths.length?{dt,age,paths}:null;
+ return paths.length?{dt,age,paths,damageBased}:null;
 }
 function botAnnihilationCrossings(b,index,forecast,contacts){
  if(!forecast||index>=24)return;
  const ownGhosts=(b.motionSegments||[]).filter(segment=>segment.phase==='ghost'&&!segment.solid);
  if(!ownGhosts.length)return;
+ const cutoff=projectileCollisionEnd(b);
  // A delayed launch step can overlap two steps of the incoming forecast.
  const delay=forecast.delay||0,frame=index+delay/forecast.dt;
  const first=Math.floor(frame),last=Math.ceil(frame+1);
@@ -3191,7 +3383,7 @@ function botAnnihilationCrossings(b,index,forecast,contacts){
   for(let i=first;i<last&&i<path.segments.length;i++){
    const segment=path.segments[i]?.ghost,offset=i-frame;if(!segment)continue;
    for(const own of ownGhosts){
-    const lo=Math.max(own.from,segment.from+offset),hi=Math.min(own.to,segment.to+offset);
+    const lo=Math.max(own.from,segment.from+offset),hi=Math.min(own.to,segment.to+offset,cutoff);
     if(hi-lo<1e-10)continue;
     const at=(s,u)=>{const q=(u-s.from)/Math.max(1e-12,s.to-s.from);return{x:s.x0+(s.x1-s.x0)*q,y:s.y0+(s.y1-s.y0)*q};};
     const a0=at(own,lo),a1=at(own,hi),b0=at(segment,lo-offset),b1=at(segment,hi-offset);
@@ -3205,7 +3397,7 @@ function botAnnihilationCrossings(b,index,forecast,contacts){
     }
     const u=lo+(hi-lo)*q;
     // Activation ends the ghost segment at an exclusive boundary.
-    if(own.ghostEndExclusive&&u>=own.to-1e-10||segment.ghostEndExclusive&&u>=segment.to+offset-1e-10)continue;
+    if(u>=cutoff||own.ghostEndExclusive&&u>=own.to-1e-10||segment.ghostEndExclusive&&u>=segment.to+offset-1e-10)continue;
     const t=(index+u)*forecast.dt,distance=Math.hypot(x+dx*q,y+dy*q);
     const uncertainty=Math.min(9,2+cfg.launchSpeed*.012*(forecast.age+delay+t));
     const chance=clamp(1-(distance-b.r-path.r)/uncertainty,0,1);
@@ -3217,7 +3409,8 @@ function botAnnihilationCrossings(b,index,forecast,contacts){
 function botAnnihilationScore(best,forecast,contacts){
  const groups=new Map();
  for(let k=0;k<contacts.length;k++){
-  const contact=contacts[k],path=forecast.paths[k];if(!contact||contact.time>best.time)continue;
+  const contact=contacts[k],path=forecast.paths[k];
+  if(!contact||contact.time>best.time&&(!forecast.damageBased||best.miss===0))continue;
   const group=groups.get(path.id)||{blocked:0,defense:0};
   const probability=path.probability*contact.chance*cfg.annihilationChance/100;
   group.blocked+=probability;
@@ -3229,15 +3422,17 @@ function botAnnihilationScore(best,forecast,contacts){
  for(const group of groups.values()){
   blocked=Math.max(blocked,Math.min(1,group.blocked));
   // One own round can remove at most one incoming round.
-  defense=Math.max(defense,Math.min(1,group.defense));
+  defense=Math.max(defense,forecast.damageBased?group.defense:Math.min(1,group.defense));
  }
- return{blocked,defense,score:BOT_TUNING.annBlockWeight*blocked-BOT_TUNING.annDefenseWeight*defense};
+ const score=forecast.damageBased?30*((best.damage??0)*blocked-defense):
+  BOT_TUNING.annBlockWeight*blocked-BOT_TUNING.annDefenseWeight*defense;
+ return{blocked,defense,score};
 }
 function botAnnihilationDefensiveAim(actor,forecast){
  if(!forecast)return null;
  let best=null;
  for(const path of forecast.paths){
-  if(path.danger<.25)continue;
+  if(forecast.damageBased?path.danger<=0:path.danger<.25)continue;
   for(let i=0;i<path.segments.length;i++){
    const s=path.segments[i].ghost;if(!s)continue;
    const time=(i+(s.from+s.to)*.5)*forecast.dt;if(time>=path.dangerTime)break;
@@ -3245,7 +3440,8 @@ function botAnnihilationDefensiveAim(actor,forecast){
    const x=(s.x0+s.x1)*.5,y=(s.y0+s.y1)*.5;
    const distance=Math.hypot(x-actor.x,y-actor.y);
    const travel=muzzleDistance(actor,Math.atan2(y-actor.y,x-actor.x))+3+cfg.launchSpeed*t+.5*cfg.propulsion*t*t;
-   const score=Math.abs(distance-travel)+30*(1-path.danger);
+   const danger=forecast.damageBased?path.probability*path.danger:path.danger;
+   const score=Math.abs(distance-travel)+30*(1-danger);
    // Keep this defensive round virtual until it crosses the threat. Its
    // onset is ours to choose; the opposing onset is still only a hypothesis.
    if(!best||score<best.score)best={angle:Math.atan2(y-actor.y,x-actor.x),range:distance+12,score};
@@ -3254,7 +3450,7 @@ function botAnnihilationDefensiveAim(actor,forecast){
  return best;
 }
 
-function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=null,sourceAt=null){
+function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=null,sourceAt=null,midpointWeight=.08){
  targetAt??=t=>botTargetAt(target,t);
  sourceAt??=t=>botTargetAt(actor,t);
  range=selectAimRange(actor,range,angle);
@@ -3270,19 +3466,23 @@ function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=nu
   const before=targetAt(t),after=targetAt(t+dt);
   b.age=t;
   integrateProjectile(b,dt,targetAt(t+dt*.5),sourceAt(t+dt*.5));
+  const exited=clipProjectileAtArena(b);
   if(annForecast)botAnnihilationCrossings(b,annIndex++,annForecast,annContacts);
   for(const segment of b.damageSegments){
+   if(segment.from>=b.collisionEnd)break;
    const span=segment.to-segment.from,tx=after.x-before.x,ty=after.y-before.y;
    const rx=segment.x0-before.x-tx*segment.from,ry=segment.y0-before.y-ty*segment.from;
    const rvx=segment.x1-segment.x0-tx*span,rvy=segment.y1-segment.y0-ty*span;
-   const q=clamp(-(rx*rvx+ry*rvy)/(rvx*rvx+rvy*rvy+1e-9),0,1),miss=Math.hypot(rx+rvx*q,ry+rvy*q),time=segment.from+span*q;
+   const limit=span>0?Math.min(1,(b.collisionEnd-segment.from)/span):0;
+   const q=clamp(-(rx*rvx+ry*rvy)/(rvx*rvx+rvy*rvy+1e-9),0,limit),miss=Math.hypot(rx+rvx*q,ry+rvy*q),time=segment.from+span*q;
    if(miss<best.miss)best={miss,travel:segment.travel0+(segment.travel1-segment.travel0)*q,time:t+dt*time};
   }
   const contact=collisionEvent(b,{...after,px:before.x,py:before.y});
-  if(contact)best={miss:0,travel:contact.travel,time:t+dt*contact.t,damage:projectileHitDamage(b,after,contact)};
+  if(contact)best={miss:0,travel:contact.travel,time:t+dt*contact.t,damage:projectileHitDamage(b,after,contact),
+   impact:{x:contact.bulletX,y:contact.bulletY}};
   // Continue after a first pass: a solid shot can hook back. Once its selected
   // damaging interval ends, a later harmless pass cannot improve this shot.
-  const done=contact||b.probeTruncated||b.wallAbsorbed||Number.isFinite(b.lifetimeEnd)||Number.isFinite(projectileEnd(b))&&b.travel>=projectileEnd(b)||b.x<10||b.x>W-10||b.y<10||b.y>H-10;
+  const done=contact||b.probeTruncated||b.wallAbsorbed||Number.isFinite(b.lifetimeEnd)||Number.isFinite(projectileEnd(b))&&b.travel>=projectileEnd(b)||exited;
   // Yield even at contact/expiry, so each search step integrates at most one interval.
   yield;
   if(done)break;
@@ -3290,10 +3490,12 @@ function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=nu
  // Deep enough hits are equivalent. Favor room on both sides of the active
  // interval to tolerate errors in predicted motion and activation distance.
  const {rx,ry}=bodyShape(target),hitTolerance=(ry+b.r)*.5,damage=best.damage??projectileDamage(b,best.travel);
- const phaseOffset=Number.isFinite(b.damageStart)?Math.abs(best.travel-(b.damageStart+projectileEnd(b))*.5):0;
+ const midpointCost=midpointWeight&&Number.isFinite(b.damageStart)?Math.abs(best.travel-(b.damageStart+projectileEnd(b))*.5)*midpointWeight:0;
  const ann=annForecast?botAnnihilationScore(best,annForecast,annContacts):{blocked:0,defense:0,score:0};
+ const guarding=annForecast?.damageBased&&ann.defense>0&&best.miss!==0;
+ const aimCost=guarding?30:Math.max(0,best.miss-hitTolerance)+30*(1-damage);
  return{...best,angle,range,wallBlocked:b.wallAbsorbed&&best.miss>rx+b.r,redirected:!!b.probeRedirected,annBlocked:ann.blocked,annDefense:ann.defense,
-  damage,score:Math.max(0,best.miss-hitTolerance)+phaseOffset*.08+best.time*.06+ann.score+30*(1-damage)};
+  damage,score:aimCost+midpointCost+best.time*.06+ann.score};
 }
 function botAimProbe(...args){
  const search=botAimProbeSteps(...args);let step;do{step=search.next();}while(!step.done);return step.value;
@@ -3318,18 +3520,49 @@ function botAimPath(target){
   return body;
  };
 }
+function botAimRoutes(target,angle){
+ const cuts=[-1,1].map(lane=>botCutTarget(target,angle,lane));
+ return{cuts,paths:[botAimPath(target),...cuts.map(botAimPath)]};
+}
+function botCoverageWeights(paths,coverage,launchAt,target){
+ const rounds=(coverage??[]).filter(({projectile,impacts})=>impacts?.length&&projectile&&!projectile.dead&&
+  !projectile.expired&&projectilePhase(projectile).phase!=='expired');
+ if(!rounds.length||target.hp<=0)return BOT_HIT_WEIGHTS;
+ const {shape,co,si}=collisionShape(target),maxDamage=Math.min(target.hp,1+cfg.momentumDamageCap);
+ const weights=paths.map((path,i)=>{
+  let damage=0;
+  for(const {projectile,impacts} of rounds){
+   const rx=shape.rx+projectile.r,ry=shape.ry+projectile.r;
+   let roundDamage=0;
+   for(const impact of impacts){
+    const time=impact.at-launchAt;if(time<0)continue;
+    const body=path(time),dx=impact.x-body.x,dy=impact.y-body.y;
+    const x=(co*dx+si*dy)/rx,y=(co*dy-si*dx)/ry;
+    if(x*x+y*y<=1)roundDamage=Math.max(roundDamage,impact.damage);
+   }
+   damage+=roundDamage;
+  }
+  // Each live round can hit only once, and the whole group can take at most the remaining HP.
+  return BOT_HIT_WEIGHTS[i]/(1+Math.min(target.hp,damage)/maxDamage);
+ });
+ const sum=weights.reduce((total,weight)=>total+weight,0);
+ return weights.map(weight=>weight/sum);
+}
 function* botAimSearch(actor,target,bot,level){
- const hard=level===BOT_LEVELS.hard;
+ const fullStrategy=level.fullStrategy===true;
+ const hard=level===BOT_LEVELS.hard,shotTiming=level.shotTiming;
  const distance=Math.hypot(target.x-actor.x,target.y-actor.y),prediction=botAimLead(actor,target);
  // Range now selects the interval's start. Keep the candidate intervals
  // centered around the predicted target, as before the aiming UI change.
  const base=Math.atan2(prediction.y-actor.y,prediction.x-actor.x);
  const baseRange=botLeadRange(Math.hypot(prediction.x-actor.x,prediction.y-actor.y));
  const span=Math.max(shotBand(baseRange)*.75,Math.min(cfg.radius*.55,120));
- let best=null,rangeChoice=null;const sourceCache=new Map();
- const alternatives=hard&&bot.rangePreference?[]:null,targetAt=botAimPath(target);
- const cuts=hard?[-1,1].map(lane=>botCutTarget(target,base,lane)):null;
- const paths=cuts?[targetAt,...cuts.map(botAimPath)]:null;
+ let best=null,rangeChoice=null,interceptChoice=null;const sourceCache=new Map();
+ const intercepts=shot=>shot?.annDefense>(shotTiming?0:.4);
+ const alternatives=fullStrategy&&(hard||bot.rangePreference)?[]:null,cutAngle=bot.cutAngle??base;
+ const routes=fullStrategy?(bot.routes??botAimRoutes(target,cutAngle)):null;
+ const cuts=routes?.cuts,paths=routes?.paths,targetAt=paths?.[0]??botAimPath(target);
+ const launchAt=bot.launchAt??0,weights=hard?(bot.routeWeights??botCoverageWeights(paths,bot.coverage,launchAt,target)):BOT_HIT_WEIGHTS;
  const sourceAt=t=>{
   let body=sourceCache.get(t);
   if(!body){body=bot.direction?botBodyStep(actor,bot.direction,t):botTargetAt(actor,t);sourceCache.set(t,body);}
@@ -3337,63 +3570,82 @@ function* botAimSearch(actor,target,bot,level){
  };
  function result(shot){
   const aim=shot.angle+bot.noiseAngle,range=selectAimRange(actor,shot.range+bot.noiseRange,aim);
-  const solved={aim,range,miss:shot.miss,annDefense:shot.annDefense,wallBlocked:shot.wallBlocked&&!(shot.hitChance>0),distance};
+  const solved={aim,range,miss:shot.miss,annDefense:shot.annDefense,
+   wallBlocked:shot.wallBlocked&&!(shot.hitChance>0||shotTiming&&intercepts(shot)),distance};
   if(shot.lane)solved.lane=shot.lane;
-  if(hard){
+  if(fullStrategy){
    const primary=shot.miss===0?1-shot.annBlocked:0;
-   solved.hitChance=shot.hitChance??BOT_HIT_WEIGHTS[0]*primary;
-   solved.coverage={hits:shot.hits??[primary,0,0],flightTimes:shot.flightTimes??[primary>0?shot.time:null,null,null],bearing:base};
+   solved.hitChance=shot.hitChance??weights[0]*primary;
+   if(hard){
+    const impacts=shot.impacts??(primary>0&&shot.impact?[{...shot.impact,time:shot.time,damage:primary*Math.min(target.hp,shot.damage)}]:[]);
+    solved.coverage=impacts.length?{impacts}:null;
+   }else solved.coverage={hits:shot.hits??[primary,0,0],flightTimes:shot.flightTimes??[primary>0?shot.time:null,null,null],bearing:base};
   }
-  if(bot.compact)solved.shotValue=(shot.expectedDamage??(shot.miss===0?Math.min(target.hp,shot.damage):0))/(1+(shot.hitTime??shot.time));
+  if(shotTiming&&shot.expectedDamage!==undefined){
+   solved.expectedDamage=shot.expectedDamage;solved.directDamage=shot.directDamage;solved.directDefense=shot.directDefense;
+   solved.primaryWeight=weights[0];
+  }
+  if(bot.compact){
+   const damage=shot.expectedDamage??(shot.miss===0?Math.min(target.hp,shot.damage):0);
+   solved.shotValue=hard?damage:damage/(1+(shot.hitTime??shot.time));
+  }
   // Rebase direct shots on the same movement hypothesis used by the probe.
-  if(level===BOT_LEVELS.hard&&shot.miss<=target.r&&!shot.redirected&&shot.annDefense<.25){
-   const impact=shot.lane?botTargetAt(botCutTarget(target,base,shot.lane),shot.time):targetAt(shot.time);
+  if(fullStrategy&&shot.miss<=target.r&&!shot.redirected&&(shotTiming?!intercepts(shot):shot.annDefense<.25)){
+   const impact=shot.lane?paths[shot.lane<0?1:2](shot.time):targetAt(shot.time);
    const dx=impact.x-actor.x,dy=impact.y-actor.y;
    solved.tracking={flightTime:shot.time,angleOffset:aim-Math.atan2(dy,dx),rangeOffset:range-Math.hypot(dx,dy)};
-   if(shot.lane)solved.tracking.cutAngle=base;
+   if(shot.lane)solved.tracking.cutAngle=cutAngle;
   }
   return solved;
  }
  function* estimate(shot,primary=0){
-  const launchAt=bot.launchAt??0,hits=[],flightTimes=[];
-  const recent=(bot.coverage||[]).filter(old=>Math.cos(old.bearing-base)>.8);
-  let hitChance=0,expectedDamage=0,killChance=0,weightedTime=0,uncovered=0;
+  const hits=[],flightTimes=[],impacts=[];
+  const recent=hard?null:(bot.coverage||[]).filter(({bearing,projectile})=>Math.cos(bearing-base)>.8&&
+   (!projectile||!projectile.dead&&!projectile.expired&&projectilePhase(projectile).phase!=='expired'));
+  let hitChance=0,expectedDamage=0,directDamage=0,expectedDefense=0,directDefense=0,killChance=0,weightedTime=0,uncovered=0;
   for(let i=0;i<paths.length;i++){
    const probe=i===primary?shot:(yield* botAimProbeSteps(actor,i?cuts[i-1]:target,shot.angle,shot.range,
-    bot.annForecast,paths[i],sourceAt));
-   const chance=probe.miss===0?1-probe.annBlocked:0,weight=BOT_HIT_WEIGHTS[i];
-   hits.push(chance);
-   flightTimes.push(chance>0?probe.time:null);
+    bot.annForecast,paths[i],sourceAt,level.midpointWeight));
+   const chance=probe.miss===0?1-probe.annBlocked:0,weight=weights[i];
    hitChance+=weight*chance;
    weightedTime+=weight*chance*probe.time;
-   expectedDamage+=weight*chance*Math.min(target.hp,probe.damage);
+   const damage=Math.min(target.hp,probe.damage);
+   if(i===0){directDamage=chance*damage;directDefense=probe.annDefense;}
+   expectedDamage+=weight*chance*damage;
+   expectedDefense+=weight*probe.annDefense;
    if(probe.damage>=target.hp)killChance+=weight*chance;
-   // Compare shots that cover the same movement at comparable times.
-   const covered=recent.reduce((most,old)=>{
-    const impactAt=old.impactAts[i];
-    return impactAt!==null&&impactAt>=launchAt-.065&&Math.abs(impactAt-launchAt-probe.time)<=.34?Math.max(most,old.hits[i]):most;
-   },0);
-   uncovered+=weight*Math.max(0,chance-covered);
+   if(hard){
+    if(chance>0&&probe.impact)impacts.push({...probe.impact,time:probe.time,damage:chance*damage});
+   }else{
+    hits.push(chance);flightTimes.push(chance>0?probe.time:null);
+    const covered=recent.reduce((most,old)=>{
+     const impactAt=old.impactAts[i];
+     return impactAt!==null&&impactAt>=launchAt-.065&&Math.abs(impactAt-launchAt-probe.time)<=.34?Math.max(most,old.hits[i]):most;
+    },0);
+    uncovered+=weight*Math.max(0,chance-covered);
+   }
   }
   const hitTime=hitChance>0?weightedTime/hitChance:shot.time;
-  const repeatCost=Math.min(.6*expectedDamage,.7*(1-hitChance)*(hitChance-uncovered));
-  const value=expectedDamage-repeatCost+.15*hitChance+.45*killChance+.55*(1-hitChance)*uncovered+.5*shot.annDefense;
-  return{...shot,hits,flightTimes,hitChance,hitTime,expectedDamage,value};
+  const repeatCost=hard?0:Math.min(.6*expectedDamage,.7*(1-hitChance)*(hitChance-uncovered));
+  const value=expectedDamage-repeatCost+(level.hitWeight??.15)*hitChance+.45*killChance+.55*(1-hitChance)*uncovered+(shotTiming?expectedDefense:.5*shot.annDefense);
+  return{...shot,hits,flightTimes,impacts,hitChance,hitTime,expectedDamage,directDamage,directDefense,
+   annDefense:shotTiming?expectedDefense:shot.annDefense,value};
  }
  function* consider(angle,range){
-  const shot=yield* botAimProbeSteps(actor,target,angle,range,bot.annForecast,targetAt,sourceAt);
-  if(alternatives&&shot.miss===0&&shot.annDefense<.25)alternatives.push(shot);
-  const viable=shot.miss===0||shot.annDefense>.4,bestViable=best?.miss===0||best?.annDefense>.4;
-  if(!best||(level===BOT_LEVELS.hard&&viable!==bestViable?viable:shot.score<best.score))best=shot;
+  const shot=yield* botAimProbeSteps(actor,target,angle,range,bot.annForecast,targetAt,sourceAt,level.midpointWeight);
+  if(alternatives&&shot.miss===0&&(hard||shot.annDefense<.25))alternatives.push(shot);
+  if(shotTiming&&intercepts(shot)&&(!interceptChoice||shot.score<interceptChoice.score))interceptChoice=shot;
+  const viable=shot.miss===0||intercepts(shot),bestViable=best?.miss===0||intercepts(best);
+  if(!best||(fullStrategy&&viable!==bestViable?viable:shot.score<best.score))best=shot;
  }
  // Changing range moves both endpoints; search direction and range together.
  if(bot.active){
   yield* consider(base,baseRange);
-  if(best.miss===0||best.annDefense>.4)yield result(best);
+  if(best.miss===0||intercepts(best))yield result(best);
  }
  const angles=bot.compact?[-.22,0,.22]:[-.30,0,.30],ranges=[-1,0,1];
  for(const da of angles)for(const dr of ranges){
-  if((!bot.active||da||dr)&&(!bot.compact||dr===0||da===0&&dr<0))yield* consider(base+da,baseRange+dr*span);
+  if((!bot.active||da||dr)&&(!bot.compact||dr===0||da===0&&(hard||dr<0)))yield* consider(base+da,baseRange+dr*span);
  }
  if(BOT_TUNING.annDefenseWeight>0){
   const defense=botAnnihilationDefensiveAim(actor,bot.annForecast);
@@ -3408,7 +3660,18 @@ function* botAimSearch(actor,target,bot,level){
    if((i||j)&&(!i||!j)&&(!bot.active||(varyRange?i===0:j===0)))yield* consider(angle+i*da,range+j*dr);
   }
  }
- if(alternatives&&best.miss===0&&best.annDefense<.25){
+ if(hard){
+  // Give a different activation distance the same three-path evaluation.
+  const start=shotRangePlan(actor,best.range,best.angle).start;
+  let alternateDamage=-Infinity;
+  for(const shot of alternatives){
+   if(shot===best||best.miss===0&&Math.abs(shotRangePlan(actor,shot.range,shot.angle).start-start)<12)continue;
+   const damage=Math.min(target.hp,shot.damage)*(1-shot.annBlocked);
+   if(damage>alternateDamage||damage===alternateDamage&&shot.score<rangeChoice.score){
+    rangeChoice=shot;alternateDamage=damage;
+   }
+  }
+ }else if(alternatives&&best.miss===0&&best.annDefense<.25){
   const damageFloor=best.damage>=target.hp?target.hp:best.damage-.10;
   for(const shot of alternatives){
    if((shot.range-best.range)*bot.rangePreference<12||shot.damage<damageFloor||
@@ -3416,30 +3679,31 @@ function* botAimSearch(actor,target,bot,level){
    if(!rangeChoice||shot.score<rangeChoice.score)rangeChoice=shot;
   }
  }
- if(!hard)return result(best);
- if(bot.active&&(best.miss===0||best.annDefense>.4))yield result(best);
+ if(!fullStrategy)return result(best);
+ if(bot.active&&(best.miss===0||intercepts(best)))yield result(best);
+ const initial=best;
  best=yield* estimate(best);
- if(bot.active&&best.hitChance>0)yield result(best);
- if(rangeChoice){
-  const choice=yield* estimate(rangeChoice);
-  if(choice.value>=best.value-.025){
+ if(bot.active&&(best.hitChance>0||shotTiming&&intercepts(best)))yield result(best);
+ for(const candidate of [rangeChoice,interceptChoice!==initial&&interceptChoice!==rangeChoice?interceptChoice:null]){
+  if(!candidate)continue;
+  const choice=yield* estimate(candidate);
+  if(hard?choice.value>best.value:choice.value>=best.value-.025){
    best=choice;
-   if(bot.active&&best.hitChance>0)yield result(best);
+   if(bot.active&&(best.hitChance>0||shotTiming&&intercepts(best)))yield result(best);
   }
  }
- if(bot.active&&best.hitChance<.85&&best.annDefense<=.4){
-  // Only the finalists get all three physics probes. The same scenario
-  // across multiple rounds counts once when valuing new coverage.
+ if(bot.active&&best.hitChance<.85&&(hard||!intercepts(best))){
+  // Only the finalists get all three physics probes.
   const anchor=best,time=best.hitChance>0?best.hitTime:botFlightTime(distance),expected=targetAt(time);
-  const nx=-Math.sin(base),ny=Math.cos(base),spread=.8*(bodyShape(target).ry+ACTOR.shotRadius);
+  const nx=-Math.sin(cutAngle),ny=Math.cos(cutAngle),spread=.8*(bodyShape(target).ry+ACTOR.shotRadius);
   const dx=expected.x-actor.x,dy=expected.y-actor.y,angle=Math.atan2(dy,dx),range=Math.hypot(dx,dy);
-  const lanes=rangeChoice?[bot.laneBias]:[bot.laneBias,-bot.laneBias];
+  const lanes=rangeChoice&&!hard?[bot.laneBias]:[bot.laneBias,-bot.laneBias];
   for(const lane of lanes){
    const i=lane<0?1:2,pose=paths[i](time);
    if(lane*((pose.x-expected.x)*nx+(pose.y-expected.y)*ny)<spread)continue;
    const x=pose.x-actor.x,y=pose.y-actor.y;
    const shot=yield* botAimProbeSteps(actor,cuts[i-1],anchor.angle+Math.atan2(y,x)-angle,
-    anchor.range+Math.hypot(x,y)-range,bot.annForecast,paths[i],sourceAt);
+    anchor.range+Math.hypot(x,y)-range,bot.annForecast,paths[i],sourceAt,level.midpointWeight);
    if(shot.miss!==0)continue;
    const choice=yield* estimate({...shot,lane},i);
    if(choice.value>best.value){best=choice;yield result(best);}
@@ -3454,19 +3718,51 @@ function botAim(actor,target,bot,level){
  const search=botAimSearch(actor,target,bot,level);let step;do{step=search.next();}while(!step.done);
  bot.aimResult=step.value;return{aim:step.value.aim,range:step.value.range};
 }
+function* botAimBeforeFiring(actor,target,plan,level){
+ const shot=yield* botAimSearch(actor,target,plan,level);
+ if(!level.shotTiming||plan.active||shot.directDamage===undefined)return shot;
+ const wait=level.interval,shooter=plan.direction?botBodyStep(actor,plan.direction,wait):botTargetAt(actor,wait);
+ const receiver=botTargetAt(target,wait),flight=shot.tracking?.flightTime??botFlightTime(shot.distance);
+ const now=botTargetAt(target,flight),later=botTargetAt(receiver,flight);
+ const dx=now.x-actor.x,dy=now.y-actor.y,nextX=later.x-shooter.x,nextY=later.y-shooter.y;
+ const aim=shot.annDefense>0?shot.aim:shot.aim+Math.atan2(nextY,nextX)-Math.atan2(dy,dx);
+ const range=shot.annDefense>0?shot.range:shot.range+Math.hypot(nextX,nextY)-Math.hypot(dx,dy);
+ const forecast=plan.annForecast?{...plan.annForecast,delay:(plan.annForecast.delay||0)+wait}:null;
+ const sourceAt=plan.direction?t=>botBodyStep(shooter,plan.direction,t):null;
+ const probe=yield* botAimProbeSteps(shooter,receiver,aim,range,forecast,null,sourceAt,level.midpointWeight);
+ const damage=probe.miss===0?(1-probe.annBlocked)*Math.min(receiver.hp,probe.damage):0;
+ // Recheck the main route and carry over the two cut estimates for one tick.
+ return{...shot,waitDamage:Math.max(0,shot.expectedDamage+shot.primaryWeight*(damage-shot.directDamage)),
+  waitDefense:Math.max(0,shot.annDefense+shot.primaryWeight*(probe.annDefense-shot.directDefense))};
+}
 function botAimReady(bot,actor,level,distance){
- const solution=bot.aimResult,intercept=BOT_TUNING.annDefenseWeight>0&&solution?.annDefense>.4;
+ const shotTiming=level.shotTiming,solution=bot.aimResult;
+ const intercept=!shotTiming&&BOT_TUNING.annDefenseWeight>0&&solution?.annDefense>.4;
  const ready=!actor.salvo&&actor.cd<=0&&bot.time>=bot.nextAttack&&
-  (level!==BOT_LEVELS.hard||!bot.cramped||solution?.miss===0||intercept);
+  (!level.fullStrategy||!bot.cramped||solution?.miss===0||intercept);
  if(ready){if(bot.readySince===null)bot.readySince=bot.time;}else bot.readySince=null;
+ if(shotTiming&&solution?.expectedDamage!==undefined){
+  const cycle=WEAPON.reload+(WEAPON.count-1)*WEAPON.interval;
+  const value=solution.expectedDamage+solution.annDefense,held=bot.time-bot.readySince;
+  const waitValue=(solution.waitDamage??solution.expectedDamage)+(solution.waitDefense??solution.annDefense);
+  const worthWaiting=waitValue*cycle>value*(cycle+level.interval);
+  bot.pendingShot=ready&&!solution.wallBlocked&&distance<1350&&
+   (value>0?held>=level.interval||!worthWaiting:held>=BOT_TUNING.maxHold);
+  return;
+ }
  bot.pendingShot=ready&&!solution?.wallBlocked&&distance<1350&&
   (solution?.miss<=BOT_TUNING.attackThreshold+level.rangeError*.3||bot.time-bot.readySince>=BOT_TUNING.maxHold||intercept);
 }
 function* botOpeningSearch(self,target,plan,level,moves,launchDelay){
  const receiver=botTargetAt(target,launchDelay),plans=[];
+ if(level===BOT_LEVELS.hard){
+  const lead=botAimLead(self,receiver),cutAngle=Math.atan2(lead.y-self.y,lead.x-self.x);
+  const routes=botAimRoutes(receiver,cutAngle);
+  plan={...plan,cutAngle,routes,routeWeights:botCoverageWeights(routes.paths,plan.coverage,plan.launchAt??0,receiver)};
+ }
  for(const {direction} of moves){
   const shooter=botBodyStep(self,direction,launchDelay);
-  const shot=yield* botAimSearch(shooter,receiver,{...plan,direction,compact:true},level);
+  const shot=yield* botAimBeforeFiring(shooter,receiver,{...plan,direction,compact:true},level);
   plans.push({...shot,direction});
  }
  return plans;
@@ -3503,18 +3799,18 @@ function botRoundRoll(bot,actor){
  return ((hash^(hash>>>16))>>>0)/4294967296;
 }
 function beginBotAimSearch(bot,self,target,level,direction=null,{opening=null,wait=0,actor=null}={}){
- const hard=level===BOT_LEVELS.hard,forecast=bot.annForecast;
+ const fullStrategy=level.fullStrategy===true,forecast=bot.annForecast;
  const countdown=actor?.salvo?.next??(wait+STEP);
- const delay=hard&&actor?Math.max(STEP,Math.ceil((countdown-1e-8)/STEP)*STEP):0;
- const active=hard&&!!actor?.salvo,roll=hard&&actor?botRoundRoll(bot,actor):.5;
- const plan={annForecast:hard&&forecast?{...forecast,delay:delay+Math.max(0,bot.time-(forecast.at??bot.time))}:forecast,
-  noiseAngle:bot.noiseAngle,noiseRange:bot.noiseRange,direction:hard&&direction?{x:direction.x,y:direction.y}:null,
-  rangePreference:roll<.15?-1:roll<.30?1:0,laneBias:roll<.5?-1:1,active,compact:active,
+ const delay=fullStrategy&&actor?Math.max(STEP,Math.ceil((countdown-1e-8)/STEP)*STEP):0;
+ const active=fullStrategy&&!!actor?.salvo,roll=fullStrategy&&actor?botRoundRoll(bot,actor):.5;
+ const plan={annForecast:fullStrategy&&forecast?{...forecast,delay:delay+Math.max(0,bot.time-(forecast.at??bot.time))}:forecast,
+  noiseAngle:bot.noiseAngle,noiseRange:bot.noiseRange,direction:fullStrategy&&direction?{x:direction.x,y:direction.y}:null,
+  rangePreference:level===BOT_LEVELS.hard?0:roll<.15?-1:roll<.30?1:0,laneBias:roll<.5?-1:1,active,compact:active,
   coverage:bot.aimCoverage,launchAt:bot.time+delay-STEP};
  if(active)bot.aimDirection=plan.direction;
  const search=opening?botOpeningSearch({...self},{...target},plan,level,opening.moves,delay):
-  botAimSearch(delay&&direction?botBodyStep(self,direction,delay):{...self},delay?botTargetAt(target,delay):{...target},plan,level);
- bot.aimJob={search,map:mapId,level,steps:0,opening,round:hard&&actor?botRoundKey(actor):null};
+  botAimBeforeFiring(delay&&direction?botBodyStep(self,direction,delay):{...self},delay?botTargetAt(target,delay):{...target},plan,level);
+ bot.aimJob={search,map:mapId,level,steps:0,opening,round:fullStrategy&&actor?botRoundKey(actor):null};
 }
 function runBotAimSlice(bot,actor,level){
  if(!bot.aimJob)return;
@@ -3542,32 +3838,35 @@ function runBotAimSlice(bot,actor,level){
  bot.aimSliceUsed+=performance.now()-start;
 }
 function botTrigger(bot,level,actor){
- const sequence=actor.salvoSeq||0,group=actor.salvo;
+ const sequence=actor.salvoSeq||0,group=actor.salvo,fullStrategy=level.fullStrategy===true;
  if(sequence!==bot.lastSalvoSeq){
   bot.lastSalvoSeq=sequence;
   bot.opening=null;
   // Read the actual in-flight group's remaining shots, not a mutable setting.
   // next is the countdown to its next round; cooldown begins after the tail.
   const tail=group?Math.max(0,group.next)+Math.max(0,group.remaining-1)*group.interval:0;
-  const profile=level===BOT_LEVELS.hard?BOT_PROFILES[0]:bot.profile||BOT_PROFILES[0];
+  const profile=fullStrategy?BOT_PROFILES[0]:bot.profile||BOT_PROFILES[0];
   bot.nextAttack=bot.time+tail+(group?group.reload:actor.reloadDuration)+level.groupWait*profile.waitScale+profile.waitExtra;
   bot.pendingShot=false;bot.readySince=null;
  }
  // Exactly one press edge starts each whole burst. The shared weapon owns
  // subsequent rounds and reload; no independent AI firing loop can skip them.
- if(level===BOT_LEVELS.hard&&bot.aimResult&&!group&&actor.cd<=0&&bot.time>=bot.nextAttack){
+ if(fullStrategy&&bot.aimResult&&!group&&actor.cd<=0&&bot.time>=bot.nextAttack){
   botAimReady(bot,actor,level,bot.aimResult.distance);
  }
  const release=bot.pulse;bot.pulse=false;
  const shoot=!release&&bot.pendingShot&&!group&&actor.cd<=0&&bot.time>=bot.nextAttack;
  if(shoot){bot.pulse=true;bot.pendingShot=false;}
  const output={...bot.output,shoot},solution=bot.aimResult,tracking=solution?.tracking,motion=bot.aimMotion;
- if(level!==BOT_LEVELS.hard||!motion)return output;
+ if(!fullStrategy||!motion)return output;
  const due=shoot||group?.next<=STEP+1e-8;
- const useSolved=tracking||solution?.hitChance>0||solution?.miss===0||solution?.annDefense>.4;
+ const useSolved=tracking||solution?.hitChance>0||solution?.miss===0||solution?.annDefense>(level.shotTiming?0:.4);
  if(due){
   const coverage=useSolved?solution?.coverage:null;
-  bot.firedCoverage=coverage?{hits:coverage.hits,bearing:coverage.bearing,
+  if(bot.liveCoverage){
+   bot.firedCoverage=coverage?.impacts?.length?{preparedAt:bot.time,
+    impacts:coverage.impacts.map(({time,...impact})=>({...impact,at:bot.time+time}))}:null;
+  }else bot.firedCoverage=coverage?.flightTimes?{hits:coverage.hits,bearing:coverage.bearing,
    impactAts:coverage.flightTimes.map(time=>time===null?null:bot.time+time)}:null;
  }
  if(solution?.lane&&!due||!tracking&&(!due||useSolved))return output;
@@ -3583,17 +3882,25 @@ function botTrigger(bot,level,actor){
  return output;
 }
 function botControl(actor,target,projectiles,dt,options={}){
- const bot=actor.bot||createBot(actor),level=BOT_LEVELS[options.difficulty||cfg.difficulty]||BOT_LEVELS.normal;bot.time+=dt;
- const hard=level===BOT_LEVELS.hard;
- if(bot.hard!==undefined&&bot.hard!==hard){
+ const bot=actor.bot||createBot(actor);
+ const level=options.level??BOT_LEVELS[options.difficulty||cfg.difficulty]??BOT_LEVELS.normal;
+ bot.time+=dt;
+ const fullStrategy=level.fullStrategy===true,canFire=options.fire!==false;
+ if(bot.fullStrategy!==undefined&&bot.fullStrategy!==fullStrategy){
   bot.aimJob=bot.aimResult=bot.aimMotion=bot.readySince=bot.opening=null;
   bot.aimRound=null;
   bot.pendingShot=false;bot.nextDecision=bot.nextNoise=bot.noiseAngle=bot.noiseRange=0;
  }
- bot.hard=hard;
- const round=hard?botRoundKey(actor):null,newRound=hard&&round!==bot.aimRound;
+ bot.fullStrategy=fullStrategy;
+ const liveCoverage=bot.liveCoverage=level===BOT_LEVELS.hard;
+ const round=fullStrategy&&canFire?botRoundKey(actor):null,newRound=round!==null&&round!==bot.aimRound;
  if(newRound){
-  bot.aimCoverage=actor.salvo&&bot.aimRound!=null?[...bot.aimCoverage,bot.firedCoverage].filter(Boolean).slice(-2):[];
+  const coverage=[...(bot.aimCoverage??[]),bot.firedCoverage];
+  if(liveCoverage){
+   const launchAt=bot.time+(actor.salvo?actor.salvo.next:Math.max(0,actor.cd,bot.nextAttack-bot.time));
+   bot.aimCoverage=coverage.filter(record=>record?.projectile&&!record.projectile.dead&&!record.projectile.expired&&
+    record.impacts?.some(impact=>impact.at>=launchAt));
+  }else bot.aimCoverage=actor.salvo&&bot.aimRound!=null?coverage.filter(Boolean).slice(-2):[];
   bot.firedCoverage=null;
   bot.aimRound=round;bot.aimJob=bot.aimResult=bot.aimDirection=bot.opening=null;bot.pendingShot=false;
  }
@@ -3601,30 +3908,34 @@ function botControl(actor,target,projectiles,dt,options={}){
  if(bot.opening?.moves&&bot.time>=bot.opening.expires){
   discardBotOpening(bot);bot.nextDecision=0;
  }
- if(options.fire===false)bot.aimJob=bot.opening=null;
- else if(!hard||bot.time<bot.nextDecision){
+ if(!canFire){
+  bot.aimJob=bot.aimResult=bot.aimMotion=bot.opening=null;
+  bot.annForecast=null;
+  bot.pendingShot=false;
+ }else if(!fullStrategy||bot.time<bot.nextDecision){
   if(newRound&&actor.salvo&&bot.aimMotion){
    const perceived=botTargetAt(bot.aimMotion,bot.time-bot.observedAt);
    beginBotAimSearch(bot,botBody(actor),perceived,level,bot.output,{actor});
   }
   runBotAimSlice(bot,actor,level);
  }
- if(bot.time<bot.nextSample&&bot.time<bot.nextDecision)return botTrigger(bot,level,actor);
+ const decisionDue=bot.time>=bot.nextDecision;
+ if(bot.time<bot.nextSample&&!decisionDue)return botTrigger(bot,level,actor);
  const self=botBody(actor);
- if(bot.time>=bot.nextSample){
+ // With zero delay, a decision uses a fresh snapshot even between samples.
+ if(bot.time>=bot.nextSample||(level.delay===0&&decisionDue)){
   bot.nextSample=bot.time+1/30;
-  // All projectiles are visible now. Only their CURRENT public phase is
-  // copied; a future activation distance must never enter delayed history.
+  // Only the current visible phase enters observations, never the activation distance.
   const seen=botRankThreats(projectiles.filter(b=>!b.dead&&!b.expired&&b.team!==self.team)
    .map(botBullet).filter(b=>Number.isFinite(b.vx)&&Number.isFinite(b.vy)),self,24);
   bot.history.push({time:bot.time,self:botVisibleBody(actor),target:target?botVisibleBody(target):null,bullets:seen});
   while(bot.history.length>1&&bot.history[1].time<bot.time-.85)bot.history.shift();
  }
- if(bot.time<bot.nextDecision)return botTrigger(bot,level,actor);
+ if(!decisionDue)return botTrigger(bot,level,actor);
  bot.nextDecision=bot.time+level.interval;let observation=null;
  for(let i=bot.history.length-1;i>=0;i--)if(bot.history[i].time<=bot.time-level.delay){observation=bot.history[i];break;}
  if(!observation||!observation.target||observation.target.hp<=0){bot.output={...bot.output,x:0,y:0};bot.pendingShot=false;bot.aimJob=bot.aimMotion=bot.opening=null;return botTrigger(bot,level,actor);}
- botLearn(bot,observation);
+ botLearn(bot,observation,level);
  const age=bot.time-observation.time,observedMotion={...observation.target,vx:observation.target.vx*level.lead,vy:observation.target.vy*level.lead,ax:0,ay:0};
  const previous=bot.history.findLast(frame=>frame.time<observation.time-.05&&frame.target);
  if(previous){
@@ -3633,17 +3944,17 @@ function botControl(actor,target,projectiles,dt,options={}){
   observedMotion.ay=clamp((observation.target.vy-previous.target.vy)/span,-limit,limit)*level.lead;
  }
  const perceived=botTargetAt(observedMotion,age);
- if(hard)bot.aimMotion=observedMotion;
- if(!hard&&bot.time>=bot.nextSide){
+ if(fullStrategy&&canFire)bot.aimMotion=observedMotion;
+ if(!fullStrategy&&bot.time>=bot.nextSide){
   bot.nextSide=bot.time+2+rand()*2.5;
   if(rand()<.5)bot.side*=-1;
  }
- if(!hard&&bot.time>=bot.nextNoise){bot.nextNoise=bot.time+.3+rand()*.3;bot.noiseAngle=(rand()+rand()-1)*level.aimError;bot.noiseRange=(rand()+rand()-1)*level.rangeError;}
- bot.recharging=actor.cd>(hard?0:.25);
- if(options.fire===false)botPracticePlan(bot,self,perceived);
+ if(!fullStrategy&&bot.time>=bot.nextNoise){bot.nextNoise=bot.time+.3+rand()*.3;bot.noiseAngle=(rand()+rand()-1)*level.aimError;bot.noiseRange=(rand()+rand()-1)*level.rangeError;}
+ bot.recharging=actor.cd>(fullStrategy?0:.25);
+ if(!canFire)botPracticePlan(bot,self,perceived);
  else if(bot.practice)delete bot.practice;
  const untilReady=actor.salvo?0:Math.max(0,actor.cd,bot.nextAttack-bot.time);
- bot.committing=hard&&(!!actor.salvo||untilReady<=level.aimAhead);
+ bot.committing=fullStrategy&&canFire&&(!!actor.salvo||untilReady<=level.aimAhead);
  const threats=botObservedThreats(observation,self,age,level,bot);
  let direction=BOT_DIRECTIONS[0],score=Infinity,alternate=null,alternateCost=Infinity;
  const moveContext=botMoveContext(self,perceived,bot,level);
@@ -3652,25 +3963,38 @@ function botControl(actor,target,projectiles,dt,options={}){
   bot.aimJob=bot.aimResult=null;
  }
  bot.cramped=moveContext.cramped;
- const rounds=hard&&options.fire!==false&&cfg.controlSpinScale>0&&cfg.controlRadius>0?
-  botRankThreats(projectiles.filter(b=>b.team===self.team&&!b.dead&&!b.expired&&fieldWeight(b.x,b.y,self,cfg.controlRadius)>0&&
-   botThreatRank(b,perceived)<cfg.radius&&(Number.isFinite(b.fieldStart)?b.fieldStart-(b.travel||0):0)<=Math.hypot(b.vx,b.vy)*.16),perceived,2):null;
+ let rounds=null;
+ if(fullStrategy&&canFire&&cfg.controlSpinScale>0&&cfg.controlRadius>0){
+  const own=projectiles.filter(b=>b.team===self.team&&!b.dead&&!b.expired);
+  if(level===BOT_LEVELS.hard&&own.length){
+   moveContext.receivers=Array.from({length:moveContext.positionStep+1},(_,i)=>botTargetAt(perceived,i*moveContext.dt));
+   rounds=botControllableRounds(own,self,bot.output,moveContext.receivers,moveContext.dt);
+  }else{
+   rounds=botRankThreats(own.filter(b=>fieldWeight(b.x,b.y,self,cfg.controlRadius)>0&&botThreatRank(b,perceived)<cfg.radius&&
+    (Number.isFinite(b.fieldStart)?b.fieldStart-(b.travel||0):0)<=Math.hypot(b.vx,b.vy)*.16),perceived,2);
+  }
+ }
  if(rounds?.length){
   moveContext.rounds=rounds;
-  moveContext.receivers=Array.from({length:moveContext.positionStep+1},(_,i)=>botTargetAt(perceived,i*moveContext.dt));
+  moveContext.receivers??=Array.from({length:moveContext.positionStep+1},(_,i)=>botTargetAt(perceived,i*moveContext.dt));
  }
- const openingWindow=hard&&options.fire!==false&&!actor.salvo&&!bot.cramped&&!rounds?.length&&untilReady<=level.aimAhead;
+ const openingWindow=fullStrategy&&canFire&&!actor.salvo&&!bot.cramped&&!rounds?.length&&untilReady<=level.aimAhead;
  if(bot.opening?.moves&&!openingWindow)discardBotOpening(bot);
  const shortlist=openingWindow&&(!!bot.opening?.moves||!bot.opening&&!bot.aimJob&&!bot.aimResult);
  const maxOpeningGain=shortlist?BOT_DAMAGE_WEIGHT*Math.min(perceived.hp,1+cfg.momentumDamageCap):0;
  moveContext.opening=shortlist;
  // Retain world-axis and diagonal moves, plus an exact cut across the lead shot.
- const incoming=hard&&cfg.receiverSpinScale>0&&threats.find(b=>
+ const incoming=fullStrategy&&cfg.receiverSpinScale>0&&threats.find(b=>
   b.solid&&botThreatRank(b,self)<cfg.radius&&(self.x-b.x)*b.vx+(self.y-b.y)*b.vy>0);
  const aligned=rounds?.[0]||incoming,axis=aligned&&unit(aligned.vx,aligned.vy);
  const candidates=axis?.d?[...BOT_DIRECTIONS,{x:-axis.y,y:axis.x},{x:axis.y,y:-axis.x}]:BOT_DIRECTIONS;
- for(const candidate of candidates){
-  const limit=shortlist?Math.min(alternateCost,score+maxOpeningGain):score;
+ // Break ties during reload without favoring a fixed direction.
+ const randomizeTies=level===BOT_LEVELS.hard&&bot.recharging&&!bot.practice;
+ const startIndex=randomizeTies?Math.floor(rand()*candidates.length):0;
+ const tieTolerance=randomizeTies?1e-6:0;
+ for(let i=0;i<candidates.length;i++){
+  const candidate=candidates[(startIndex+i)%candidates.length];
+  const limit=shortlist?Math.min(alternateCost,score+maxOpeningGain):score-tieTolerance;
   const cost=botMoveScore(self,perceived,threats,candidate,bot,level,moveContext,limit);
   if(cost>=limit)continue;
   const distinct=shortlist&&Math.hypot(candidate.x-direction.x,candidate.y-direction.y)>=.2;
@@ -3679,30 +4003,52 @@ function botControl(actor,target,projectiles,dt,options={}){
    score=cost;direction=candidate;
   }else if(distinct&&cost<alternateCost){alternate=candidate;alternateCost=cost;}
  }
+ if(level===BOT_LEVELS.hard&&canFire){
+  const planned=bot.delayedCut;
+  bot.delayedCut=null;
+  if(!shortlist){
+   const tolerance=.6; // One ordinary turn-cost unit.
+   const limit=score+tolerance;
+   if(planned){
+    if(botMoveScore(self,perceived,threats,planned,bot,level,moveContext,limit)<limit)direction=planned;
+   }else{
+    const dx=direction.x-bot.output.x,dy=direction.y-bot.output.y;
+    const shot=threats.find(b=>!b.solid&&b.id>(bot.lastCutShot??0)&&
+     (self.x-b.x)*b.vx+(self.y-b.y)*b.vy>0&&botThreatRank(b,self)<cfg.radius&&
+     Math.abs(b.vx*dy-b.vy*dx)>.5*Math.hypot(b.vx,b.vy));
+    if(shot){
+     bot.lastCutShot=shot.id;
+     const late=botMoveScore(self,perceived,threats,direction,bot,level,moveContext,limit,level.interval);
+     if(late<limit&&(late<score-tolerance||rand()<.5)){
+      bot.delayedCut=direction;
+      direction=bot.output;
+     }
+    }
+   }
+  }
+ }
  const moves=shortlist?[{direction,cost:score}]:null;
  if(moves&&alternate&&alternateCost<score+maxOpeningGain&&Math.hypot(alternate.x-direction.x,alternate.y-direction.y)>=.2){
   moves.push({direction:alternate,cost:alternateCost});
  }
  if(bot.opening?.moves)bot.opening.moves=moves;
  bot.observedAt=observation.time;bot.decisions++;
- // Practice targets use the same delayed movement decisions, without firing.
- if(options.fire===false){
-  bot.pendingShot=false;bot.annForecast=null;bot.aimJob=null;
+ if(!canFire){
   bot.output={x:direction.x,y:direction.y,aim:Math.atan2(perceived.y-self.y,perceived.x-self.x),range:Math.hypot(perceived.x-self.x,perceived.y-self.y),shoot:false};
   return bot.output;
  }
  bot.annForecast=cfg.annihilationChance>0&&(BOT_TUNING.annBlockWeight>0||BOT_TUNING.annDefenseWeight>0)&&untilReady===0?
-  botAnnihilationForecast(self,direction,threats,age):null;
+  botAnnihilationForecast(self,direction,threats,age,level.shotTiming):null;
  if(bot.annForecast)bot.annForecast.at=bot.time;
  const dx=perceived.x-self.x,dy=perceived.y-self.y,distance=Math.hypot(dx,dy);
  Object.assign(bot.output,direction);
- const planned=bot.aimDirection,steeringChanged=hard&&actor.salvo?.next>=.045&&planned&&
+ const planned=bot.aimDirection,steeringChanged=fullStrategy&&actor.salvo?.next>=.045&&planned&&
   Math.hypot(direction.x-planned.x,direction.y-planned.y)>.55;
  if(untilReady>(level.aimAhead??0)){
   bot.aimJob=bot.aimResult=null;
   bot.output.aim=Math.atan2(dy,dx)+bot.noiseAngle;
   bot.output.range=selectAimRange(self,botLeadRange(distance)+bot.noiseRange,bot.output.aim);
- }else if(steeringChanged||!(bot.opening?.moves&&bot.opening.plans&&applyBotOpening(bot))&&!bot.aimJob&&!(hard&&actor.salvo&&bot.aimResult)){
+ }else if(steeringChanged||!(bot.opening?.moves&&bot.opening.plans&&applyBotOpening(bot))&&!bot.aimJob&&!(fullStrategy&&actor.salvo&&bot.aimResult)){
   const opening=moves?.length===2&&!bot.opening&&!bot.annForecast?
    (bot.opening={moves,plans:null,expires:bot.time+.25}):null;
   beginBotAimSearch(bot,self,perceived,level,direction,{opening,wait:untilReady,actor});
@@ -3795,21 +4141,25 @@ function simulate(dt,control){
  updateActorHitMarks(p,dt);updateActorHitMarks(enemy,dt);
  updateBulletFades(dt);
  elapsed+=dt;const practice=isPracticeMode(),fixed=$('mode').value==='practice',e=enemy,previousPlayerHp=p.hp,previousEnemyHp=e?.hp;
+ const spectating=isSpectatorMode();
+ const botOptions=spectating?{level:BOT_LEVELS.hard}:practice?{level:PRACTICE_BOT_LEVEL,fire:false}:{};
  // Both controllers supply intentions before the shared movement/weapon update.
  // botBullet strips private projectile fields only when a sensory sample is due.
- const ai=e?(fixed?{x:0,y:0,aim:Math.atan2(p.y-e.y,p.x-e.x),range:Math.hypot(p.x-e.x,p.y-e.y)-cfg.band*.5,shoot:false}:botControl(e,p,bullets,dt,practice?{difficulty:'advanced',fire:false}:{})):null;
+ if(spectating)control=botControl(p,e,bullets,dt,botOptions);
+ const ai=e?(fixed?{x:0,y:0,aim:Math.atan2(p.y-e.y,p.x-e.x),range:Math.hypot(p.x-e.x,p.y-e.y)-cfg.band*.5,shoot:false}:botControl(e,p,bullets,dt,botOptions)):null;
  if(practice&&ai)ai.shoot=false;
  applyActorRepulsion(p,e,dt);
  moveActor(p,control.x*ACTOR.speed,control.y*ACTOR.speed,cfg.inertia,dt);
+ if(spectating)p.aim=control.aim;
  if(e){moveActor(e,ai.x*ACTOR.speed,ai.y*ACTOR.speed,cfg.inertia,dt);e.aim=ai.aim;}
  else if(practice){enemyDelay-=dt;if(enemyDelay<=0)spawnEnemy();}
  const {aimPoint}=control;
  if(aimPoint)aimAt(p,aimPoint);
  constrainActor(p);if(e){constrainActor(e);separateActors(p,e);}
  if(aimPoint)aimAt(p,aimPoint);
- else p.range=selectAimRange(p,p.range);
+ else p.range=selectAimRange(p,spectating?control.range:p.range);
  if(e)e.range=selectAimRange(e,ai.range);
- const automaticFire=cfg[autoFireSetting];
+ const automaticFire=!spectating&&cfg[autoFireSetting];
  if(automaticFire)p.triggerBlocked=false;
  updateWeapon(p,automaticFire||control.shoot,dt,automaticFire||!!control.autoFire,control.press);
  if(control.press){if(mouse.press===control.press)mouse.press=null;control.press=null;}
@@ -3846,7 +4196,7 @@ function simulate(dt,control){
  constrainActor(p);if(e){constrainActor(e);if(p.hp>0&&e.hp>0)separateActors(p,e);}
  for(let i=activationPreviewFades.length-1;i>=0;i--)if(elapsed-dt-activationPreviewFades[i].at>=ACTIVATION_PREVIEW_FADE_TIME)activationPreviewFades.splice(i,1);
  for(const b of bullets){
-  if(cfg.showActivationPreview&&b.team===0&&b.prevTravel<b.fieldStart&&Number.isFinite(b.damageStart)){
+  if(cfg.showActivationPreview&&(spectating||b.team===0)&&b.prevTravel<b.fieldStart&&Number.isFinite(b.damageStart)){
    const activation=b.damageSegments[0];
    if(activation&&activation.from<b.collisionEnd)fadeActivationPreview(b,elapsed-dt*(1-activation.from));
   }
@@ -3863,9 +4213,11 @@ function setHudText(id,text){const node=$(id);if(node.textContent!==text)node.te
 function updateWinCount(){setHudText('wins',tr('总胜场 {wins}',{wins:totalWins}));}
 function updateHud(force=false){
  const tenths=Math.floor(elapsed*10);if(!force&&tenths===hudAt)return;hudAt=tenths;
- setHudText('score',isPracticeMode()?tr('已击倒 {kills} 个靶',{kills}):tr('人机对战'));setHudText('intercepts',tr('已发射 {shots} 发',{shots}));
+ const spectating=isSpectatorMode();
+ setHudText('score',spectating?tr('对局演示'):isPracticeMode()?tr('已击倒 {kills} 个靶',{kills}):tr('人机对战'));setHudText('intercepts',tr('已发射 {shots} 发',{shots}));
  setHudText('time',`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`);
- setHudText('health',tr('你的生命值为 {hp} / {maxHp}，对手的生命值为 {enemyHp} / {enemyMaxHp}。',{hp:formatHealth(p.hp),maxHp:formatHealth(p.maxHp),enemyHp:formatHealth(enemy?.hp||0),enemyMaxHp:formatHealth(enemy?.maxHp??cfg.maxHealth)}));
+ const healthText=spectating?'青色生命值为 {hp} / {maxHp}，棕色生命值为 {enemyHp} / {enemyMaxHp}。':'你的生命值为 {hp} / {maxHp}，对手的生命值为 {enemyHp} / {enemyMaxHp}。';
+ setHudText('health',tr(healthText,{hp:formatHealth(p.hp),maxHp:formatHealth(p.maxHp),enemyHp:formatHealth(enemy?.hp||0),enemyMaxHp:formatHealth(enemy?.maxHp??cfg.maxHealth)}));
 }
 
 // === 12 · Canvas drawing ===
@@ -3874,7 +4226,7 @@ const mapDrawingCache=new Map();
 function mapDrawing(){
  const cached=mapDrawingCache.get(mapId);if(cached)return cached;
  const drawing={fields:[],walls:[],edges:[],grid:new Path2D()};
- const terrain=MAPS[mapId].terrain;
+ const {divider,terrain}=MAPS[mapId];
  if(terrain){
   // Cached shading and contours share the summed height, including saddle regions.
   const image=document.createElement('canvas');image.width=W;image.height=H;const paint=image.getContext('2d');
@@ -3906,7 +4258,15 @@ function mapDrawing(){
   drawing.terrain=image;
  }
  for(let x=W/2%60;x<W-24;x+=60)for(let y=H/2%60;y<H-24;y+=60){if(x<24||y<24)continue;drawing.grid.moveTo(x+1.15,y);drawing.grid.arc(x,y,1.15,0,TAU);}
- for(const [x0,y0,x1,y1] of [[24,24,W-24,24],[24,H-24,W-24,H-24],[24,24,24,H-24],[W-24,24,W-24,H-24]]){const path=new Path2D();path.moveTo(x0,y0);path.lineTo(x1,y1);drawing.edges.push(path);}
+ const edge=ARENA_FRAME_INSET;
+ for(const [x0,y0,x1,y1] of [[edge,edge,W-edge,edge],[edge,H-edge,W-edge,H-edge],[edge,edge,edge,H-edge],[W-edge,edge,W-edge,H-edge]]){const path=new Path2D();path.moveTo(x0,y0);path.lineTo(x1,y1);drawing.edges.push(path);}
+ if(divider){
+  const {x0,x1}=divider;
+  drawing.divider={x:x0,width:x1-x0,fill:getComputedStyle(canvas).getPropertyValue('--bg').trim()};
+  for(const x of [x0,x1]){
+   const edge=new Path2D();edge.moveTo(x,24);edge.lineTo(x,H-24);drawing.edges.push(edge);
+  }
+ }
  for(const field of mapFields){
   const area=new Path2D(),arrows=new Path2D();drawing.fields.push({area,arrows});
   const width=field.x1-field.x0,height=field.y1-field.y0;
@@ -4000,11 +4360,11 @@ function paintActorBody(drawing,paint=ctx){
  // Add only the extra light, so transparent projections keep their dark center.
  if(drawing.flash>0){paint.save();paint.globalAlpha*=drawing.flash;paint.globalCompositeOperation='lighter';paint.drawImage(drawing.flashImage,-rx,-ry,rx*2,ry*2);paint.restore();}
 }
-function drawActor(a,team,projection=false,drawing=actorDrawing(a,team)){
+function drawActor(a,team,projection=false,drawing=actorDrawing(a,team),zoom=1){
  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(drawing.shape.angle);
  paintActorBody(drawing);
  if(drawing.body){ctx.clip(drawing.body);drawActorHitMarks(a,drawing.shape);}
- ctx.restore();if(!projection&&a.hp>0)drawHealth(a,team);
+ ctx.restore();if(!projection&&a.hp>0)drawHealth(a,team,zoom);
 }
 
 function drawLoopImages(a,drawing,view=null){
@@ -4013,7 +4373,11 @@ function drawLoopImages(a,drawing,view=null){
  for(let iy=-1;iy<=1;iy++)for(let ix=-1;ix<=1;ix++){
   if(!ix&&!iy)continue;
   const dx=ix*(W-48),dy=iy*(H-48),x=a.x+dx,y=a.y+dy;
-  if(view){const dx=x-view.x,dy=y-view.y,sx=VIEW_W*.5+view.co*dx+view.si*dy,sy=VIEW_H*.8-view.si*dx+view.co*dy;if(sx+r<0||sx-r>VIEW_W||sy+r<0||sy-r>VIEW_H)continue;}
+  if(view){
+   const dx=x-view.x,dy=y-view.y,screenRadius=r*view.zoom;
+   const sx=VIEW_W*.5+view.zoom*(view.co*dx+view.si*dy),sy=VIEW_H*.8+view.zoom*(-view.si*dx+view.co*dy);
+   if(sx+screenRadius<0||sx-screenRadius>VIEW_W||sy+screenRadius<0||sy-screenRadius>VIEW_H)continue;
+  }
   else if(x+r< -ox||x-r>W+ox||y+r< -oy||y-r>H+oy)continue;
   ctx.save();ctx.translate(dx,dy);ctx.globalAlpha=.4;
   drawActor(a,a.team,true,drawing);ctx.restore();
@@ -4022,9 +4386,9 @@ function drawLoopImages(a,drawing,view=null){
 
 const HEALTH_FONT_SIZE=11,HEALTH_FONT_MIN_SCREEN_SIZE=10;
 let healthDrawScale=1;
-function drawHealth(a,team){
+function drawHealth(a,team,zoom=1){
  if(!cfg.showHealthNumbers)return;
- const scale=healthDrawScale,flash=actorFlashAmount(a);
+ const scale=healthDrawScale/zoom,flash=actorFlashAmount(a);
  const reservedRadius=a.r*Math.sqrt(1+Math.abs(cfg.actorAspect)/100)*Math.exp(.29);
  const text=String(formatHealth(a.hp)),y=-reservedRadius-7*scale;
  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());
@@ -4067,29 +4431,29 @@ function drawBullet(b,fade=null,alpha=1){
 
  ctx.restore();
 }
-let activationPreviewSprite=null;
-function getActivationPreviewSprite(){
- if(activationPreviewSprite)return activationPreviewSprite;
+const activationPreviewSprites=[];
+function getActivationPreviewSprite(team){
+ if(activationPreviewSprites[team])return activationPreviewSprites[team];
  const image=document.createElement('canvas');image.width=image.height=48;
- const paint=image.getContext('2d');paint.strokeStyle=BULLET_COLORS[0].solid+'bb';paint.lineWidth=7;paint.lineCap='butt';
+ const paint=image.getContext('2d');paint.strokeStyle=BULLET_COLORS[team].solid+'bb';paint.lineWidth=7;paint.lineCap='butt';
  paint.beginPath();paint.moveTo(10,10);paint.lineTo(38,38);paint.moveTo(10,38);paint.lineTo(38,10);paint.stroke();
- return activationPreviewSprite=image;
+ return activationPreviewSprites[team]=image;
 }
-function drawActivationMarker(point,radius,opacity){
+function drawActivationMarker(point,radius,team,opacity){
  const r=radius*1.65;ctx.save();ctx.globalAlpha=opacity;ctx.translate(point.x,point.y);ctx.rotate(point.angle);
- ctx.drawImage(getActivationPreviewSprite(),-r,-r,r*2,r*2);ctx.restore();
+ ctx.drawImage(getActivationPreviewSprite(team),-r,-r,r*2,r*2);ctx.restore();
 }
-function drawActivationPreviews(alpha=1){
+function drawActivationPreviews(alpha,spectating){
  for(const b of bullets){
-  if(b.team!==0||b.dead||b.expired||Number.isFinite(b.damageStart)||!(b.travel<b.fieldStart))continue;
+  if((!spectating&&b.team!==0)||b.dead||b.expired||Number.isFinite(b.damageStart)||!(b.travel<b.fieldStart))continue;
   const point=bulletActivationPreview(b);
   if(!point)continue;
-  drawActivationMarker(point,b.r,1);
+  drawActivationMarker(point,b.r,b.team,1);
  }
  const time=elapsed-(1-alpha)*STEP;
  for(const fade of activationPreviewFades){
   const opacity=1-clamp((time-fade.at)/ACTIVATION_PREVIEW_FADE_TIME,0,1);
-  if(opacity>0)drawActivationMarker(fade.point,fade.r,opacity);
+  if(opacity>0)drawActivationMarker(fade.point,fade.r,fade.team,opacity);
  }
 }
 function drawWalls(){
@@ -4197,29 +4561,35 @@ function drawImpactEffect(e,age=e.age){
 }
 function render(alpha=1){
  renderDirty=false;renderedState=state;
+ const spectating=isSpectatorMode();
  const visualPlayer=renderActorPose(ending?.actors[0]||p,0,alpha),visualEnemy=renderActorPose(ending?ending.actors[1]:enemy,1,alpha);
  const aimPoint=pointerAimPoint();
  if(!ending&&aimPoint)aimAt(visualPlayer,aimPoint);
  renderFrames++;const sx=canvas.width/VIEW_W,sy=canvas.height/VIEW_H,ox=(VIEW_W-W)/2,oy=(VIEW_H-H)/2;ctx.setTransform(sx,0,0,sy,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,VIEW_W,VIEW_H);
- const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,view=camera?{x:camera.x,y:camera.y,co:Math.cos(heading),si:Math.sin(heading)}:null;
+ const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,zoom=camera?followViewZoom():1;
+ const view=camera?{x:camera.x,y:camera.y,co:Math.cos(heading),si:Math.sin(heading),zoom}:null;
  if(heading!==compassHeading){compassHeading=heading;viewNeedle.style.transform=heading?`rotate(${-heading}rad)`:'';}
- if(view){ctx.translate(VIEW_W*.5,VIEW_H*.8);ctx.rotate(-heading);ctx.translate(-view.x,-view.y);}else ctx.translate(ox,oy);
+ if(view){ctx.translate(VIEW_W*.5,VIEW_H*.8);ctx.scale(zoom,zoom);ctx.rotate(-heading);ctx.translate(-view.x,-view.y);}else ctx.translate(ox,oy);
  // Keep terrain shading and contours inside the arena; draw the border separately.
- if(MAPS[mapId].terrain)ctx.drawImage(mapDrawing().terrain,24,24,W-48,H-48,24,24,W-48,H-48);
- if(view){ctx.fillStyle='rgba(160,181,177,.24)';ctx.fill(mapDrawing().grid);}
+ const drawing=mapDrawing();
+ if(drawing.terrain)ctx.drawImage(drawing.terrain,24,24,W-48,H-48,24,24,W-48,H-48);
+ if(view){ctx.fillStyle='rgba(160,181,177,.24)';ctx.fill(drawing.grid);}
+ if(drawing.divider){
+  const {x,width,fill}=drawing.divider;
+  ctx.fillStyle=fill;ctx.fillRect(x,24,width,H-48);
+ }
  if(mapId!=='ellipse'){ctx.save();ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;ctx.lineWidth=MAPS[mapId].wrap?1.2:.75;if(MAPS[mapId].wrap)ctx.setLineDash([9,6]);
-  const edges=mapDrawing().edges;ctx.stroke(edges[0]);ctx.stroke(edges[1]);
-  ctx.stroke(edges[2]);ctx.stroke(edges[3]);
+  for(const edge of drawing.edges)ctx.stroke(edge);
   ctx.restore();}
- drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending)drawRange(visualPlayer);
+ drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending&&!spectating)drawRange(visualPlayer);
  drawWalls();
- if(!ending&&cfg.showActivationPreview)drawActivationPreviews(alpha);
+ if(!ending&&cfg.showActivationPreview)drawActivationPreviews(alpha,spectating);
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3));else drawBullet(b,null,alpha);}
  for(const {bullet,t} of hitProjectiles)if(alpha<t)drawBullet(bullet,null,alpha);
  for(const fade of bulletFades)drawBullet(fade,1-Math.max(0,fade.age-(1-alpha)*STEP)/fade.life,alpha);
  for(const actor of [visualEnemy,visualPlayer])if(actor&&!actor.shattered){
   const drawing=actorDrawing(actor,actor.team);
-  drawLoopImages(actor,drawing,view);drawActor(actor,actor.team,false,drawing);
+  drawLoopImages(actor,drawing,view);drawActor(actor,actor.team,false,drawing,zoom);
  }
  ctx.save();ctx.globalAlpha=1;drawLightDust(woundParticles,null,(1-alpha)*STEP);ctx.restore();
  for(const e of effects){
@@ -4233,7 +4603,7 @@ function render(alpha=1){
   if(e.kind==='intercept'){drawInterceptEffect(e,age);continue;}
   if(e.kind==='breakup')drawBreakupEffect(e,age);
  }
- if(state==='running'){
+ if(state==='running'&&!spectating){
   const {aim,range,x,y}=visualPlayer;
   ctx.strokeStyle='rgba(200,216,208,.75)';ctx.lineWidth=AIM_STROKE;
   circle(x+Math.cos(aim)*range,y+Math.sin(aim)*range,ACTOR.shotRadius+AIM_STROKE/2);ctx.stroke();
@@ -4246,7 +4616,7 @@ function render(alpha=1){
   ctx.save();ctx.translate(n.x,n.y);if(view)ctx.rotate(heading);
   ctx.globalAlpha=.70*fade;ctx.font='500 10px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
   ctx.lineWidth=2;ctx.lineJoin='round';ctx.strokeStyle=C.bg;ctx.fillStyle=n.team===0?C.enemy:C.player;
-  ctx.translate(n.offsetX,n.offsetY-age*DAMAGE_NUMBER_RISE_SPEED);ctx.scale(scale,scale);
+  ctx.translate(n.offsetX,n.offsetY-age*DAMAGE_NUMBER_RISE_SPEED);ctx.scale(scale/zoom,scale/zoom);
   ctx.strokeText(n.text,0,0);ctx.fillText(n.text,0,0);ctx.restore();
  }
 }
@@ -4273,7 +4643,7 @@ function frame(now){
  botAimFrame++;
  // A controller can start or resume here; reset the clock before computing dt.
  const pad=pollPad(),dt=last?Math.max(0,Math.min((now-last)/1000,.05)):0;last=now;
- if(state==='running'||state==='ending'){const input=state==='running'?getInput(pad,dt):null;accumulator+=dt;while(accumulator>=STEP&&(state==='running'||state==='ending')){if(state==='running')simulate(STEP,input);else updateEnding(STEP);accumulator-=STEP;renderStepReady=true;}}
+ if(state==='running'||state==='ending'){const input=state==='running'&&!isSpectatorMode()?getInput(pad,dt):null;accumulator+=dt;while(accumulator>=STEP&&(state==='running'||state==='ending')){if(state==='running')simulate(STEP,input);else updateEnding(STEP);accumulator-=STEP;renderStepReady=true;}}
  else{
   accumulator=0;
   if(ending&&damageNumbers.length){updateDamageNumbers(dt);renderDirty=true;}
@@ -4313,7 +4683,7 @@ function dragTouchAim(e){
  aim.x=e.clientX;aim.y=e.clientY;
 }
 playArea.addEventListener('pointerdown',e=>{
- if(e.pointerType!=='touch'||state!=='running')return;
+ if(e.pointerType!=='touch'||state!=='running'||isSpectatorMode())return;
  const bounds=playArea.getBoundingClientRect(),moving=e.clientX<bounds.left+bounds.width*.3;
  e.preventDefault();
  if(moving?touch.move:touch.aim)return;
@@ -4335,7 +4705,7 @@ playArea.addEventListener('pointermove',e=>{
  else if(touch.aim?.id===e.pointerId)dragTouchAim(e);
 });
 canvas.addEventListener('pointerdown',e=>{
- if(e.pointerType==='touch'||state!=='running')return;
+ if(e.pointerType==='touch'||state!=='running'||isSpectatorMode())return;
  canvas.focus({preventScroll:true});
  const locked=document.pointerLockElement===canvas;
  if(!locked){
@@ -4352,14 +4722,14 @@ canvas.addEventListener('pointerdown',e=>{
 // Pointer events omit additional button presses while another mouse button
 // is held. Mouse events keep left-click firing reliable in either order.
 canvas.addEventListener('mousedown',e=>{
- if(state!=='running'||e.sourceCapabilities?.firesTouchEvents)return;
+ if(state!=='running'||isSpectatorMode()||e.sourceCapabilities?.firesTouchEvents)return;
  const locked=document.pointerLockElement===canvas;
  if(usesMouseLock()&&!locked)return;
  if(e.button===0&&!mouse.down){unlockAudio();beginMouseFire(e,locked,null);}
 });
 window.addEventListener('mouseup',e=>{if(e.button===0)mouse.down=false;});
 canvas.addEventListener('pointermove',e=>{
- if(e.pointerType==='touch'||usesMouseLock())return;
+ if(e.pointerType==='touch'||isSpectatorMode()||usesMouseLock())return;
  applyMouseMotion(e.movementX||0,e.movementY||0);
  if(aimSource!=='pad')Object.assign(mouse,pointerWorld(e));
  refreshInput();
@@ -4398,9 +4768,15 @@ window.addEventListener('keydown',e=>{
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
  if(e.repeat&&['Space','Escape','KeyR','Enter'].includes(e.code))return;
  if(e.code==='Escape'&&usesMouseLock()){pause();return;}
- if(e.code==='Space'||e.code==='Escape'){togglePause();if(e.code==='Space'&&aimSource==='mouse')captureMouse();return;}
+ if(e.code==='Space'||e.code==='Escape'){
+  if(e.code==='Space'&&ending?.result===state)startOrResume();
+  else togglePause();
+  if(e.code==='Space'&&aimSource==='mouse')captureMouse();
+  return;
+ }
  if(e.code==='Enter'&&state!=='running'){startOrResume();if(aimSource==='mouse')captureMouse();return;}
  if(e.code==='KeyR'){reset(true);if(aimSource==='mouse')captureMouse();return;}
+ if(isSpectatorMode())return;
  if(state==='running')unlockAudio();
  if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){moveSource='keyboard';keys.add(e.code);refreshInput();}
 });
@@ -4437,15 +4813,16 @@ $('view').addEventListener('click',e=>{
  if(e.isTrusted&&aimSource==='mouse')captureMouse();
 });
 $('mode').addEventListener('change',()=>{
- const run=state==='running',settingsOpen=$('settings').open,mode=$('mode').value;
+ const mode=$('mode').value,spectating=mode==='spectate';
+ const run=state==='running'||spectating,settingsOpen=!spectating&&$('settings').open;
  if(run)$('mode').blur();
  if(BOT_LEVELS[mode])cfg.difficulty=mode;
  if(BOT_LEVELS[mode]&&BOT_LEVELS[roundMode]){roundMode=mode;saveSettings();return;}
- saveSettings();reset(run);if(!run)showOverlay('','','开始对战');$('settings').open=settingsOpen;render();
+ saveSettings();reset(run);$('settings').open=settingsOpen;render();
 });
 $('map').addEventListener('change',()=>{
  const run=state==='running',settingsOpen=$('settings').open;
- if(setMap($('map').value)){saveSettings();reset(run);if(!run)showOverlay('','','开始对战');$('settings').open=settingsOpen;render();}
+ if(setMap($('map').value)){saveSettings();reset(run);$('settings').open=settingsOpen;render();}
  $('map').value=mapId;if(run)$('map').blur();
 });
 $('settings').addEventListener('toggle',()=>{if($('settings').open)pause();});
@@ -4453,13 +4830,13 @@ $('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenEle
 
 // === 14 · Validated local settings and controls ===
 function syncDifficultyControl(){
- if(!isPracticeMode())$('mode').value=cfg.difficulty;
+ if(Object.hasOwn(BOT_LEVELS,$('mode').value))$('mode').value=cfg.difficulty;
 }
 const SETTINGS_KEY='near-field-settings';
-const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showHealthNumbers','showDamageNumbers','showPerformanceMonitor','continuousFire'];
-const PRESET_SLOTS=[1,2,3,4,5],DEFAULT_PRESET_SLOT=2;
+const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showHealthNumbers','showDamageNumbers','showPerformanceMonitor','continuousFire','compensateFovSensitivity','playerShotSound'];
+const PRESET_SLOTS=[1,2,3,4,5],INITIAL_PRESET_SLOT=2,DEFAULT_PRESET_SLOT=5;
 const dirtySettingNames=new Set();
-let activePresetSlot=DEFAULT_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
+let activePresetSlot=INITIAL_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
 function validSettingValue(name,value){
  if(typeof value!=='number'||!Number.isFinite(value))return false;
  if(name==='initialSpinSign')return value===1||value===-1;
@@ -4475,8 +4852,10 @@ function settingValues(names,source=cfg){
 function applySettingValues(names,values){
  for(const name of names){
   cfg[name]=values[name];
+  const input=$(name);
+  if(name==='initialSpinSign'){input.checked=cfg[name]===-1;continue;}
   const display=cfg[name]*settingScale(name);
-  $(name).value=display;$(name+'-value').textContent=formatSetting(name,display);
+  input.value=display;updateSettingOutput(name,display);
  }
 }
 function readSavedSettings(){
@@ -4489,12 +4868,17 @@ function readSavedSettings(){
 function readPresets(saved=readSavedSettings()){
  const stored=saved?.presets;
  return PRESET_SLOTS.map(slot=>{
+  if(slot===DEFAULT_PRESET_SLOT)return settingValues(PRESET_SETTING_NAMES,DEFAULTS);
   const values=Array.isArray(stored)?stored[slot-1]:null;
   return values&&typeof values==='object'&&!Array.isArray(values)&&
-   GAMEPLAY_SETTING_NAMES.some(name=>validSettingValue(name,values[name]))?settingValues(GAMEPLAY_SETTING_NAMES,values):null;
+   PRESET_SETTING_NAMES.some(name=>validSettingValue(name,values[name]))?settingValues(PRESET_SETTING_NAMES,values):null;
  });
 }
-function sameGameplayValues(a,b){return GAMEPLAY_SETTING_NAMES.every(name=>a[name]===b[name]);}
+function samePresetValues(a,b){return PRESET_SETTING_NAMES.every(name=>a[name]===b[name]);}
+function updatePresetControls(){
+ const fixed=activePresetSlot===DEFAULT_PRESET_SLOT;
+ for(const name of PRESET_SETTING_NAMES)$(name).disabled=fixed;
+}
 function refreshPresetStatus(){
  $('preset-status').textContent=presetSaveFailed?tr('设置未能保存。'):activePresetSlot===null?tr('请选择一个方案。'):'';
 }
@@ -4514,45 +4898,49 @@ function restoreSettings(){
   if(!Object.hasOwn(saved.values,'knockbackScale')&&validSettingValue('knockbackScale',saved.values.baseKnockback/100))cfg.knockbackScale=saved.values.baseKnockback/100;
   const presets=readPresets(saved);
   if(resetParameters){
-   if(!sameGameplayValues(cfg,DEFAULTS))pendingPresetBackup=settingValues(GAMEPLAY_SETTING_NAMES);
-   for(const name of GAMEPLAY_SETTING_NAMES){cfg[name]=DEFAULTS[name];dirtySettingNames.add(name);}
+   if(!samePresetValues(cfg,DEFAULTS))pendingPresetBackup=settingValues(PRESET_SETTING_NAMES);
+   for(const name of PRESET_SETTING_NAMES){cfg[name]=DEFAULTS[name];dirtySettingNames.add(name);}
    rewrite=true;
   }else if(saved.autoPresets===true){
    activePresetSlot=PRESET_SLOTS.includes(saved.presetSlot)?saved.presetSlot:null;
    Object.assign(cfg,presets[activePresetSlot-1]);
   }else{
    // In manual mode the dropdown could point to a preset that had never been loaded.
-   const defaultValues=presets[DEFAULT_PRESET_SLOT-1]??DEFAULTS;
-   if(sameGameplayValues(cfg,defaultValues))activePresetSlot=DEFAULT_PRESET_SLOT;
-   else activePresetSlot=PRESET_SLOTS.find(slot=>presets[slot-1]&&sameGameplayValues(cfg,presets[slot-1]))
-    ??PRESET_SLOTS.find(slot=>slot!==DEFAULT_PRESET_SLOT&&!presets[slot-1])
+   const initialValues=presets[INITIAL_PRESET_SLOT-1]??DEFAULTS;
+   if(samePresetValues(cfg,initialValues))activePresetSlot=INITIAL_PRESET_SLOT;
+   else activePresetSlot=PRESET_SLOTS.find(slot=>presets[slot-1]&&samePresetValues(cfg,presets[slot-1]))
+    ??PRESET_SLOTS.find(slot=>slot!==INITIAL_PRESET_SLOT&&!presets[slot-1])
     ??PRESET_SLOTS.find(slot=>!presets[slot-1])??null;
    rewrite=true;
   }
   for(const name of ['sound','mobileAutoFire',...SETTING_CHECKBOXES])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
   if(saved.view==='world'||saved.view==='heading')cfg.view=saved.view;
-  if(typeof saved.difficulty==='string'&&Object.hasOwn(BOT_LEVELS,saved.difficulty))cfg.difficulty=saved.difficulty;
-  if(typeof saved.mode==='string'&&(Object.hasOwn(BOT_LEVELS,saved.mode)||saved.mode==='practice'||saved.mode==='practice-dodge')){
-   $('mode').value=saved.mode;if(Object.hasOwn(BOT_LEVELS,saved.mode))cfg.difficulty=saved.mode;
+  const difficulty=saved.difficulty==='hard1'?'hard':saved.difficulty;
+  const mode=saved.mode==='hard1'?'hard':saved.mode;
+  if(difficulty!==saved.difficulty||mode!==saved.mode)rewrite=true;
+  if(typeof difficulty==='string'&&Object.hasOwn(BOT_LEVELS,difficulty))cfg.difficulty=difficulty;
+  if(typeof mode==='string'&&(Object.hasOwn(BOT_LEVELS,mode)||mode==='practice'||mode==='practice-dodge'||mode==='spectate')){
+   $('mode').value=mode;if(Object.hasOwn(BOT_LEVELS,mode))cfg.difficulty=mode;
   }
   if(typeof saved.map==='string'&&Object.hasOwn(MAPS,saved.map))setMap(saved.map);
  }
  $('preset-slot').value=activePresetSlot===null?'':String(activePresetSlot);
- for(const name of SETTING_NAMES)$(name).value=cfg[name]*settingScale(name);
+ applySettingValues(SETTING_NAMES,cfg);
+ updatePresetControls();
  for(const name of SETTING_CHECKBOXES)$(name).checked=cfg[name];
  $('map').value=mapId;syncDifficultyControl();
  if(rewrite)saveSettings();
 }
 function mergePresetChanges(presets,slot,values){
- if(slot===null)return;
+ if(slot===null||slot===DEFAULT_PRESET_SLOT)return;
  // Another tab may have saved this slot since our local copy was loaded.
- const preset=presets[slot-1]??settingValues(GAMEPLAY_SETTING_NAMES,values);
- for(const name of GAMEPLAY_SETTING_NAMES)if(dirtySettingNames.has(name))preset[name]=values[name];
+ const preset=presets[slot-1]??settingValues(PRESET_SETTING_NAMES,values);
+ for(const name of PRESET_SETTING_NAMES)if(dirtySettingNames.has(name))preset[name]=values[name];
  presets[slot-1]=preset;
 }
 function writeSettings(presets,slot,values){
  if(pendingPresetBackup){
-  const backupSlot=PRESET_SLOTS.find(slot=>slot!==DEFAULT_PRESET_SLOT&&!presets[slot-1]);
+  const backupSlot=PRESET_SLOTS.find(slot=>slot!==INITIAL_PRESET_SLOT&&!presets[slot-1]);
   if(backupSlot!==undefined)presets[backupSlot-1]=pendingPresetBackup;
  }
  const savedValues=slot===null?values:{...values,...presets[slot-1]};
@@ -4571,14 +4959,18 @@ function saveSettings(){
  refreshPresetStatus();
 }
 function flushSettings(){if(dirtySettingNames.size)saveSettings();}
+function resetBotPlans(){if(p)p.bot=null;if(enemy)enemy.bot=null;}
 for(const name of SETTING_NAMES)$(name).addEventListener('input',()=>{
+ const input=$(name);
+ const value=name==='initialSpinSign'?(input.checked?-1:1):Number(input.value);
+ cfg[name]=value/settingScale(name);dirtySettingNames.add(name);
+ updateSettingOutput(name,value);
+ if(name==='followFov'){renderDirty=true;return;}
  stopStartupPreparation();
- const value=Number($(name).value);cfg[name]=value/settingScale(name);dirtySettingNames.add(name);
- $(name+'-value').textContent=formatSetting(name,value);
  if(name==='worldMouseSensitivity'){syncWorldMouseLock();return;}
  if(name==='mouseSensitivity')return;
  if(name==='actorRadius'||name==='minRadiusRatio'||name==='actorAspect')resizeActors();
- if(enemy)enemy.bot=null;updateHud(true);renderDirty=true;
+ resetBotPlans();updateHud(true);renderDirty=true;
 });
 // Commit health once per slider gesture, preserving fractional health ratios.
 function commitMaxHealth(){
@@ -4606,22 +4998,24 @@ $('preset-slot').addEventListener('change',()=>{
  if(!PRESET_SLOTS.includes(slot)||slot===activePresetSlot)return;
  const presets=readPresets(),values=settingValues(SETTING_NAMES);
  if(dirtySettingNames.size)mergePresetChanges(presets,activePresetSlot,values);
- const preset=presets[slot-1]??=settingValues(GAMEPLAY_SETTING_NAMES,DEFAULTS);
+ const preset=presets[slot-1]??=settingValues(PRESET_SETTING_NAMES,DEFAULTS);
  presetSaveFailed=!writeSettings(presets,slot,values);
  if(presetSaveFailed){
   $('preset-slot').value=activePresetSlot===null?'':String(activePresetSlot);
   refreshPresetStatus();return;
  }
  activePresetSlot=slot;
- if(!sameGameplayValues(cfg,preset)){
-  stopStartupPreparation();
+ updatePresetControls();
+ if(!samePresetValues(cfg,preset)){
+  const gameplayChanged=PRESET_SETTING_NAMES.some(name=>name!=='followFov'&&cfg[name]!==preset[name]);
+  if(gameplayChanged)stopStartupPreparation();
   const healthChanged=cfg.maxHealth!==preset.maxHealth;
   const shapeChanged=['actorRadius','minRadiusRatio','actorAspect'].some(name=>cfg[name]!==preset[name]);
-  applySettingValues(GAMEPLAY_SETTING_NAMES,preset);
+  applySettingValues(PRESET_SETTING_NAMES,preset);
   if(healthChanged)commitMaxHealth();
   if(healthChanged||shapeChanged)resizeActors();
-  if(enemy)enemy.bot=null;
-  updateHud(true);render();
+  if(gameplayChanged){resetBotPlans();updateHud(true);}
+  render();
  }
  refreshPresetStatus();
 });
@@ -4633,7 +5027,7 @@ $('defaults').addEventListener('click',()=>{
  resetPerformanceMonitor();
  cfg.mobileAutoFire=DEFAULTS.mobileAutoFire;$('continuousFire').checked=cfg[autoFireSetting];
  cfg.difficulty=DEFAULTS.difficulty;
- if(enemy)enemy.bot=null;
+ resetBotPlans();
  commitMaxHealth();resizeActors();syncWorldMouseLock();syncDifficultyControl();
  saveSettings();updateHud(true);$('defaults').blur();render();
 });
