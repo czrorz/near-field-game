@@ -2,4 +2,4 @@
 
 - Open [`index.html`](index.html) in a browser. No installation required.
 - Aim to choose direction and activation distance. Move to steer the bullets.
-- Design: czrorz. Code: ChatGPT.
+- Concept and gameplay design by czrorz. Code written by ChatGPT.
