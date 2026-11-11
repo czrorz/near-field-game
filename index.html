@@ -19,40 +19,42 @@ button:disabled{opacity:.4;cursor:default}
 main{--arena-gap:8px;max-width:1200px;margin:auto}
 .top{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px;padding-bottom:var(--arena-gap)}
 h1{font-size:24px;line-height:30px;letter-spacing:4px;margin:0;font-weight:500;white-space:nowrap}
-.tools{display:flex;align-items:center;gap:6px}
-.tools>button,summary{display:grid;place-items:center;width:34px;height:32px;padding:0}
-#language{width:46px;font-size:11px;white-space:nowrap}
+.tools{display:flex;align-items:center;gap:6px;grid-column:-2}
+.tools>button,summary{display:grid;place-items:center;width:32px;height:32px;padding:0}
+#language{font-size:11px;line-height:1}
 .top svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 #pause[data-paused="true"] .pause-mark,#pause:not([data-paused="true"]) .play-mark,#sound[aria-pressed="false"] .sound-waves,#sound[aria-pressed="true"] .sound-mute{display:none}
 #view[aria-pressed="false"] .compass-fill{display:none}
-.device{width:132px;font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
 .performance-monitor{display:flex;align-items:center;justify-self:end;gap:10px;color:var(--muted);font-size:11px;line-height:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.performance-monitor[hidden]{display:none}
 .performance-value{width:7ch;text-align:right}
 .performance-cpu{width:11ch;text-align:right}
-.play-area{--play-height:calc(100dvh - var(--toolbar-bottom,136px) - var(--arena-gap) - env(safe-area-inset-bottom))}
+.play-area{--play-height:calc(100dvh - var(--toolbar-bottom,136px) - var(--arena-gap) - env(safe-area-inset-bottom));touch-action:none}
 .arena{position:relative;width:min(100%,calc((var(--play-height) - 2px)*1.6 + 2px));margin-inline:auto;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#20282a;isolation:isolate}
 canvas{display:block;width:100%;aspect-ratio:8/5;touch-action:none;user-select:none;cursor:none}
-main[data-touch]{--match-width:302px}
 main[data-touch] .play-area{
   --stick-size:clamp(72px,22vmin,92px);
-  position:relative;height:var(--play-height);touch-action:none
+  position:relative;height:var(--play-height);overflow:clip
 }
-main:not([data-touch]) .touch-control{display:none}
-.touch-stick{position:absolute;z-index:1;left:var(--control-left,0px);bottom:var(--control-bottom,0px);display:grid;place-items:center;width:var(--stick-size);aspect-ratio:1;border:1px solid #4c5859;border-radius:50%;background:#242c2ea6;touch-action:none;user-select:none;-webkit-touch-callout:none}
+.touch-stick{
+  display:none;position:absolute;z-index:1;transform:translate(-50%,-50%);place-items:center;
+  width:var(--stick-size);aspect-ratio:1;border:1px solid #4c5859;border-radius:50%;background:#242c2ea6;pointer-events:none
+}
 .touch-knob{width:36%;aspect-ratio:1;border-radius:50%;background:#52605f;pointer-events:none}
+.touch-stick[data-held]{display:grid}
 .touch-stick[data-held] .touch-knob{background:var(--accent)}
-#gyro-toggle{height:32px;padding:4px 8px;font-size:12px;white-space:nowrap;touch-action:manipulation}
-#gyro-toggle[aria-pressed="true"]{color:#1b2829;background:var(--accent);border-color:var(--accent)}
-.play-area>#gyro-toggle{position:absolute;z-index:1;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
 .hud{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;font-size:12px;letter-spacing:.5px}
 .hud-left,.hud-right{display:flex;gap:19px;align-items:center}
 .hud-right{color:var(--muted);font-variant-numeric:tabular-nums}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(26,32,34,.72);backdrop-filter:blur(4px);padding:22px}
 .overlay[hidden]{display:none}
-.dialog{max-width:490px;width:100%;text-align:center}
+.dialog{display:grid;grid-template-rows:minmax(0,1fr) auto minmax(0,1fr);max-width:490px;width:100%;height:100%;text-align:center}
+.dialog-heading{align-self:end}
+.dialog>.primary{justify-self:center}
 .dialog h2{font-size:32px;font-weight:400;letter-spacing:3px;margin:0 0 16px}
 .dialog p{font-size:14px;line-height:1.9;color:#b6c0bc;margin:0 auto 21px;max-width:390px}
-.keys{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:24px 0;color:var(--muted);font-size:12px}
+.keys{display:grid;align-self:start;gap:12px;margin:24px 0;color:var(--muted);font-size:12px}
+.keys>div{display:flex;justify-content:center;gap:16px}
 .keys[hidden]{display:none}
 .keys span{white-space:nowrap}
 kbd{display:inline-block;color:var(--ink);font:inherit;padding:3px 6px;border:1px solid #4c5859;border-radius:4px;margin-right:5px}
@@ -66,8 +68,7 @@ kbd{display:inline-block;color:var(--ink);font:inherit;padding:3px 6px;border:1p
 .settings-panel{position:fixed;z-index:2;inset:var(--toolbar-bottom,136px) 0 0 auto;width:min(520px,100%);overflow:auto;overscroll-behavior:contain;padding:0 20px 20px;background:var(--bg);border:1px solid var(--line)}
 summary{list-style:none;white-space:nowrap}
 summary::-webkit-details-marker{display:none}
-.match-options{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:4px;width:var(--match-width,244px)}
-main[data-touch] .match-options{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto}
+.match-options{display:grid;grid-column:-3;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:4px;width:244px}
 .match-options select{width:100%;min-width:0;height:32px;font-size:12px;padding:4px 6px;text-overflow:ellipsis}
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px;margin:12px 0 20px;align-items:start}
 .setting{min-width:0}
@@ -75,10 +76,13 @@ main[data-touch] .match-options{grid-template-columns:minmax(0,1.1fr) minmax(0,1
 .setting output{color:var(--ink);font-variant-numeric:tabular-nums;flex-shrink:0;text-align:right;white-space:nowrap}
 .setting select{width:100%}
 input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+.check input[type=checkbox]{accent-color:var(--accent)}
 .preset-actions{display:grid;grid-template-columns:48px max-content;gap:8px;margin-top:12px}
 .preset-actions>select,.preset-actions>button{appearance:none;width:100%;height:32px;padding:0 10px;font-size:12px;line-height:30px;text-align:center}
 .preset-actions>select{padding-right:18px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 5'%3E%3Cpath d='m1 1 3 3 3-3' fill='none' stroke='%23e0e5df' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:8px 5px;background-position:right 8px center;background-repeat:no-repeat}
-.check{display:flex;align-items:center;gap:7px}
+.check{display:flex;align-items:center;gap:7px;min-height:32px;margin-top:4px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px;color:var(--muted);cursor:pointer}
+.check:hover{background:#303b3d}
+.check:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .notes{font-size:12px;line-height:1.9;color:var(--muted);margin:17px 0 0}
 .credits{margin:18px 0 0;font-size:11px;line-height:1.7;color:var(--muted)}
 .toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);pointer-events:none;width:max-content;max-width:calc(100% - 20px);text-align:center;font-size:12px;color:#c8d5cf;background:rgba(30,39,41,.88);padding:8px 13px;border-radius:5px;opacity:0;transition:opacity .15s}
@@ -88,8 +92,7 @@ main:not([data-touch]) .play-area:fullscreen{display:grid;align-items:center}
 .play-area:fullscreen .arena{width:min(100%,calc(var(--play-height)*1.6));border:0;border-radius:0}
 main[data-touch] .play-area:fullscreen{
   --play-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  --control-left:max(8px,env(safe-area-inset-left));--control-bottom:env(safe-area-inset-bottom);
-  height:100%;padding:env(safe-area-inset-top) max(8px,env(safe-area-inset-right)) var(--control-bottom) var(--control-left)
+  height:100%;padding:env(safe-area-inset-top) max(8px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px,env(safe-area-inset-left))
 }
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media(max-width:650px){
@@ -100,7 +103,7 @@ main[data-touch] .play-area:fullscreen{
   .hud-left,.hud-right{gap:9px}
   .dialog h2{font-size:22px;margin-bottom:9px}
   .dialog p{font-size:12px;margin-bottom:12px;line-height:1.7;max-width:300px}
-  .dialog .keys,#controller-help{display:none}
+  .dialog .keys{display:none}
   .dialog .primary{font-size:13px;padding:9px 19px}
   .under{font-size:11px;gap:10px}
   .overlay{padding:15px}
@@ -118,14 +121,10 @@ main[data-touch] .play-area:fullscreen{
 #wins{color:var(--ink)}
 @media(max-width:1120px){
   .top{grid-template-columns:1fr auto auto}
-  .match-options{grid-area:2/1/3/-1;justify-self:end;width:min(var(--match-width,244px),100%)}
-}
-@media(max-width:760px){
-  .device{display:none}
+  .match-options{grid-area:2/1/3/-1;justify-self:end;width:min(244px,100%)}
 }
 .settings-group{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 .settings-group h2{margin:0;color:var(--ink);font-size:13px;font-weight:500;letter-spacing:1px}
-.field-visibility{font-size:12px;color:var(--muted);margin:10px 0 4px}
 .range-bounds{display:flex;justify-content:space-between;margin:2px 2px 0;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums;line-height:1.3}
 .dialog #overlay-title:empty,.dialog #overlay-copy:empty{display:none}
 .settings .hud{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);flex-wrap:wrap}
@@ -146,15 +145,14 @@ html[lang="en"] h1{letter-spacing:.02em}
 @media(max-width:410px){
   .top{grid-template-columns:1fr 216px;row-gap:4px}
   .top h1,html[lang="en"] h1{font-size:16px}
-  .tools{grid-area:1/2}
+  .tools{grid-area:1/2;justify-self:end}
   .performance-monitor{grid-area:2/1;justify-self:start}
   .match-options{grid-area:2/2;width:100%}
 }
 @media(pointer:coarse) and (orientation:landscape) and (min-width:680px){
   .top{grid-template-columns:auto auto minmax(0,1fr) auto}
   .performance-monitor{display:grid;justify-items:end;gap:0}
-  .device{width:auto}
-  .match-options{grid-area:auto}
+  .match-options{grid-area:auto / -3}
 }
 .settings-group .settings-subtitle{margin:20px 0 0;font-size:12px;font-weight:500;color:var(--muted)}
 </style>
@@ -163,12 +161,11 @@ html[lang="en"] h1{letter-spacing:.02em}
 <main>
  <header class="top">
   <h1>近场</h1>
-  <div class="performance-monitor">
+  <div class="performance-monitor" id="performance-monitor" hidden>
    <span class="performance-value" id="fps">FPS —</span>
    <span class="performance-cpu" id="cpu-time" title="每帧平均 CPU 耗时，包含更新和绘制提交。">CPU — ms</span>
-   <span class="device" id="device">键盘 + 鼠标</span>
   </div>
-  <div class="match-options" id="match-options">
+  <div class="match-options">
    <label class="sr-only" for="map">地图</label>
    <select id="map">
     <option value="open" selected>地图 · 空场</option>
@@ -190,14 +187,13 @@ html[lang="en"] h1{letter-spacing:.02em}
     <option value="practice">练习 · 固定靶</option>
     <option value="practice-dodge">练习 · 移动靶</option>
    </select>
-   <button class="touch-control" id="gyro-toggle" type="button" aria-pressed="false">陀螺仪</button>
   </div>
   <div class="tools">
    <button id="pause" type="button" title="暂停" aria-label="暂停" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path class="pause-mark" d="M6 3v10m4-10v10"/><path class="play-mark" d="m5 3 7 5-7 5z"/></svg></button>
    <button id="restart" type="button" title="重新开始" aria-label="重新开始"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6a5 5 0 1 1 0 5M4 3v3h3"/></svg></button>
    <button id="sound" type="button" title="声音已开启" aria-label="声音" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h2l4-3v10l-4-3H2z"/><path class="sound-waves" d="M10 6q2 2 0 4m2-6q4 4 0 8"/><path class="sound-mute" d="m10 6 4 4m0-4-4 4"/></svg></button>
    <button id="view" type="button" title="随瞄准转动" aria-label="随瞄准转动" aria-pressed="true"><svg id="view-needle" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2l3.5 6L8 14 4.5 8z"/><path class="compass-fill" d="M8 2l3.5 6h-7z" fill="currentColor" stroke="none"/></svg></button>
-   <button id="language" type="button" aria-label="切换到英文">中 / EN</button>
+   <button id="language" type="button" lang="en" title="English" aria-label="Switch to English">EN</button>
    <details class="settings" id="settings">
     <summary title="说明与设置" aria-label="说明与设置"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h5m3 0h4M7 2v4m-5 6h2m3 0h7M7 10v4"/></svg></summary>
     <aside class="settings-panel" aria-label="说明与设置">
@@ -208,6 +204,7 @@ html[lang="en"] h1{letter-spacing:.02em}
      <p class="notes">子弹的自旋在发射时确定。沿垂直于射击方向移动得越快，子弹的自旋越强。亮弹会因自旋在接收场内偏转，两种力场也会随人物横移带动子弹。</p>
      <p class="notes">暗弹无法造成伤害。亮弹的伤害由爆炸伤害和动量伤害组成。弹心越亮，爆炸伤害越高。头顶数字是剩余生命值，命中时弹出的数字是本次伤害。</p>
      <p class="notes">对战参数对双方都生效。打开设置会暂停游戏。</p>
+     <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示 FPS 和 CPU 耗时</label>
      <section class="settings-group" aria-labelledby="preset-settings">
       <h2 id="preset-settings">参数方案</h2>
       <div class="preset-actions">
@@ -268,8 +265,8 @@ html[lang="en"] h1{letter-spacing:.02em}
         <p class="setting-help">调整身体前后长度与左右宽度的比例，面积保持不变。</p>
        </div>
       </div>
-      <label class="check field-visibility"><input id="showHealthNumbers" type="checkbox" checked>在头顶显示生命值</label>
-      <label class="check field-visibility"><input id="showDamageNumbers" type="checkbox" checked>显示命中伤害数字</label>
+      <label class="check"><input id="showHealthNumbers" type="checkbox" checked>在头顶显示生命值</label>
+      <label class="check"><input id="showDamageNumbers" type="checkbox" checked>显示命中伤害数字</label>
       <h3 class="settings-subtitle">人物间排斥</h3>
       <div class="settings-grid">
        <div class="setting">
@@ -326,11 +323,11 @@ html[lang="en"] h1{letter-spacing:.02em}
        </div>
       </div>
       <h3 class="settings-subtitle">瞄准与开火</h3>
-      <label class="check field-visibility"><input id="continuousFire" type="checkbox">自动开火</label>
-      <label class="check field-visibility"><input id="showRange" type="checkbox" checked>显示距离线</label>
-      <label class="check field-visibility"><input id="showAimCircle" type="checkbox">显示最小瞄准圈</label>
-      <label class="check field-visibility"><input id="showActivationPreview" type="checkbox" checked>预览子弹变亮位置</label>
-      <p class="notes">手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏用左侧摇杆移动，拖动战场调整准星，轻触屏幕右半边射击。开启陀螺仪后，转动手机瞄准。</p>
+      <label class="check"><input id="continuousFire" type="checkbox">自动开火</label>
+      <label class="check"><input id="showRange" type="checkbox" checked>显示距离线</label>
+      <label class="check"><input id="showAimCircle" type="checkbox">显示最小瞄准圈</label>
+      <label class="check"><input id="showActivationPreview" type="checkbox" checked>预览子弹变亮位置</label>
+      <p class="notes">手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏在游戏区左侧 30% 按下出现移动摇杆，右侧 70% 拖动瞄准，默认自动开火。</p>
      </section>
      <section class="settings-group" aria-labelledby="projectile-settings">
       <h2 id="projectile-settings">子弹与弹道</h2>
@@ -441,7 +438,7 @@ html[lang="en"] h1{letter-spacing:.02em}
         <p class="setting-help">数值越大，子弹因自旋产生的偏转越明显。设为 0 可关闭这种偏转。</p>
        </div>
       </div>
-      <label class="check field-visibility"><input id="showField" type="checkbox">显示力场范围</label>
+      <label class="check"><input id="showField" type="checkbox">显示力场范围</label>
      </section>
      <section class="settings-group" aria-labelledby="control-field-settings">
       <h2 id="control-field-settings">控弹场</h2>
@@ -495,10 +492,10 @@ html[lang="en"] h1{letter-spacing:.02em}
  <div class="play-area" id="play-area">
   <section class="arena" id="arena" aria-label="对战区域">
    <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始。更多玩法见顶部的「说明与设置」。">请使用支持 Canvas 的现代浏览器。</canvas>
-   <div class="overlay" id="overlay"><div class="dialog"><h2 id="overlay-title"></h2><p id="overlay-copy"></p><button class="primary" id="start" type="button">开始对战</button><div class="keys" id="keys"><span><kbd>WASD / 左摇杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准，点击发射一组子弹</span><span><kbd>R</kbd>重新开始</span><span><kbd>空格键</kbd>暂停</span></div><p id="controller-help" style="font-size:12px;margin-bottom:0">手柄的左摇杆也可搭配鼠标。触屏用左侧摇杆移动，轻触屏幕右半边射击。</p></div></div>
+   <div class="overlay" id="overlay"><div class="dialog"><div class="dialog-heading"><h2 id="overlay-title"></h2><p id="overlay-copy"></p></div><button class="primary" id="start" type="button">开始对战</button><div class="keys" id="keys"><div><span><kbd>WASD / 左摇杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准</span></div><div><span><kbd>R</kbd>重新开始</span><span><kbd>空格键</kbd>暂停</span></div></div></div></div>
    <div class="toast" id="toast" aria-live="polite"></div>
   </section>
-  <div class="touch-control touch-stick" id="touch-stick" role="group" aria-label="移动摇杆"><div class="touch-knob" id="touch-knob" aria-hidden="true"></div></div>
+  <div class="touch-stick" id="touch-stick" role="group" aria-label="移动摇杆"><div class="touch-knob" aria-hidden="true"></div></div>
  </div>
  <div id="announce" class="sr-only" aria-live="polite"></div>
 </main>
@@ -516,8 +513,8 @@ html[lang="en"] h1{letter-spacing:.02em}
 // === 01 · World, maps and static map fields ===
 const $ = id => document.getElementById(id);
 const canvas=$('game'),ctx=canvas.getContext('2d'),playArea=$('play-area'),viewNeedle=$('view-needle');
-const gamePage=playArea.parentElement,matchOptions=$('match-options');
-const touchStick=$('touch-stick'),touchKnob=$('touch-knob'),gyroButton=$('gyro-toggle');
+const gamePage=playArea.parentElement,touchStick=$('touch-stick');
+const landscapeScreen=matchMedia('(orientation:landscape)');
 const VIEW_W=1200,VIEW_H=750,STEP=1/120,TAU=Math.PI*2;
 let W=1200,H=750;
 const AIM_CIRCLE_RADIUS=100,AIM_CIRCLE_MAX_SHIFT=30;
@@ -620,9 +617,10 @@ const DEFAULTS={
  burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,bulletLifetime:2,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:1,receiverSpinScale:1,controlSpinScale:1,
  radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
- difficulty:'easy',continuousFire:false,sound:true,showField:false,showRange:true,showAimCircle:false,showActivationPreview:true,showHealthNumbers:true,showDamageNumbers:true
+ difficulty:'easy',continuousFire:false,mobileAutoFire:true,sound:true,showField:false,showRange:true,showAimCircle:false,showActivationPreview:true,showHealthNumbers:true,showDamageNumbers:true,showPerformanceMonitor:false
 };
 const cfg={...DEFAULTS,view:'heading'};
+let autoFireSetting='continuousFire';
 const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletLifetime","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale"];
 const MOUSE_SETTING_NAMES=['mouseSensitivity','worldMouseSensitivity'];
 const GAMEPLAY_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name));
@@ -630,9 +628,7 @@ const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHe
 const IMPACT={decay:.16,maxSpeed:600};
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
 const keys=new Set(),mouse={x:850,y:375,down:false,press:null};
-const touch={move:null,aim:null,target:null,fire:null};
-const gyro={timer:0,sample:null};
-const GYRO_AIM_SCALE=VIEW_W/(Math.PI/3);
+const touch={move:null,aim:null,target:null};
 let inputMode='mouse',moveSource='keyboard',aimSource='mouse',gamepadIndex=null,padPrev=[],rightPrev={x:0,y:0,m:0},rightAnchor={x:0,y:0,m:0},seed=3947;
 let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],activationPreviewFades=[],effects=[],woundParticles=[],damageNumbers=[],damageNumberIds=[0,0],elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
 const WINS_KEY='near-field-wins';
@@ -689,7 +685,7 @@ const ENGLISH={
  "子弹相对目标撞得越快，动量伤害越高，擦中时伤害较低。设为 0 可关闭动量伤害。": "Momentum damage increases with relative impact speed up to the cap. Glancing hits deal less. Set to 0 to disable momentum damage.",
  "设为 0 时，命中只造成爆炸伤害。": "At 0, hits deal only explosion damage.",
  "击退距离 = 击退系数 × 总伤害 ÷ 目标半径比例。致命一击的击退距离加倍。": "Knockback distance = coefficient × total damage / relative radius; lethal hits double it.",
- "手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏用左侧摇杆移动，拖动战场调整准星，轻触屏幕右半边射击。开启陀螺仪后，转动手机瞄准。": "On a controller, move with the left stick, aim with the right stick, and press RT to fire. On touchscreens, use the left joystick to move, drag on the arena to aim, and tap the right half of the screen to fire. With Gyro enabled, turn your phone to aim.",
+ "手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏在游戏区左侧 30% 按下出现移动摇杆，右侧 70% 拖动瞄准，默认自动开火。": "On a controller, move with the left stick, aim with the right stick, and press RT to fire. On touchscreens, press in the left 30% of the play area to place the movement stick, and drag in the right 70% to aim. Automatic fire is on by default.",
  "移动手感": "Movement response",
  "人物属性": "Character properties",
  "人物间排斥": "Character repulsion",
@@ -707,7 +703,7 @@ const ENGLISH={
  "最低爆炸伤害": "Minimum explosion damage",
  "爆炸伤害增长路程": "Distance to full damage",
  "近场": "Near Field",
- "键盘 + 鼠标": "Keyboard + mouse",
+ "显示 FPS 和 CPU 耗时": "Show FPS and CPU time",
  "每帧平均 CPU 耗时，包含更新和绘制提交。": "Average CPU time per frame; update and draw submission.",
  "地图": "Map",
  "地图 · 缓丘": "Map · Gentle hill",
@@ -746,8 +742,7 @@ const ENGLISH={
  "空格键": "Space",
  "移动": "Move",
  "鼠标": "Mouse",
- "瞄准，点击发射一组子弹": "Aim · Click to fire a burst",
- "手柄的左摇杆也可搭配鼠标。触屏用左侧摇杆移动，轻触屏幕右半边射击。": "You can use the controller's left stick with a mouse. On touchscreens, move with the left joystick and tap the right half of the screen to fire.",
+ "瞄准": "Aim",
  "说明与设置": "Instructions & settings",
  "你": "You",
  "对手": "Opponent",
@@ -810,18 +805,7 @@ const ENGLISH={
  "切换编号即可使用对应的参数。修改会自动保存到当前方案。": "Choose a number to switch presets. Changes are saved to the current preset automatically.",
  "请选择一个方案。": "Choose a preset.",
  "设置未能保存。": "Settings could not be saved.",
- "双摇杆手柄": "Controller",
- "左摇杆 + 鼠标": "Left stick + mouse",
- "键盘 + 右摇杆": "Keyboard + right stick",
- "触屏": "Touch",
  "移动摇杆": "Movement joystick",
- "陀螺仪": "Gyro",
- "请用 HTTPS 网页启用陀螺仪。": "Open the game over HTTPS to enable gyro aiming.",
- "当前浏览器不支持陀螺仪。": "This browser does not support gyro aiming.",
- "请在浏览器中允许访问运动传感器。": "Allow access to motion sensors in your browser.",
- "正在等待陀螺仪数据…": "Waiting for motion sensor data…",
- "未收到陀螺仪数据。请检查运动传感器权限。": "No motion sensor data received. Check your browser permissions.",
- "转动手机瞄准，轻触屏幕右半边射击。": "Turn your phone to aim. Tap the right half of the screen to fire.",
  "手柄已断开": "Controller disconnected",
  "游戏开始": "Game started",
  "暂停中": "Paused",
@@ -865,7 +849,11 @@ function applyLanguage(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=tr('近场');
  for(const {node,source,key} of staticTranslations)node.nodeValue=source.replace(key,tr(key));
  for(const {node,name,key} of attributeTranslations)node.setAttribute(name,tr(key));
- $('language').setAttribute('aria-label',language==='en'?'Switch to Chinese':'切换到英文');
+ const languageButton=$('language'),targetEnglish=language==='zh';
+ languageButton.textContent=targetEnglish?'EN':'中';
+ languageButton.lang=targetEnglish?'en':'zh-CN';
+ languageButton.title=targetEnglish?'English':'中文';
+ languageButton.setAttribute('aria-label',targetEnglish?'Switch to English':'切换到中文');
  updateSoundButton();updatePauseButton();updateViewButton();
  for(const name of SETTING_NAMES){
   $(name+'-value').textContent=formatSetting(name,cfg[name]*settingScale(name));
@@ -1265,16 +1253,11 @@ function separateActors(a,b){
 
 
 // === 06 · Input ownership and round lifecycle ===
-let lastDeviceLanguage=null;
-function usesTouchAim(){return aimSource==='touch'||aimSource==='gyro';}
 function refreshInput(){
- const mode=usesTouchAim()||moveSource==='touch'?'touch':aimSource==='pad'?(moveSource==='pad'?'pad':'keyboard-pad'):(moveSource==='pad'?'hybrid':'mouse');
- if(mode===inputMode&&language===lastDeviceLanguage)return;
- inputMode=mode;lastDeviceLanguage=language;renderDirty=true;
- const labels={mouse:'键盘 + 鼠标',pad:'双摇杆手柄',hybrid:'左摇杆 + 鼠标','keyboard-pad':'键盘 + 右摇杆',touch:'触屏'};
- setHudText('device',tr(labels[mode]));
+ const mode=aimSource==='touch'||moveSource==='touch'?'touch':aimSource==='pad'?(moveSource==='pad'?'pad':'keyboard-pad'):(moveSource==='pad'?'hybrid':'mouse');
+ if(mode!==inputMode){inputMode=mode;renderDirty=true;}
 }
-function claimMouseAim(){if(aimSource==='gyro')stopGyro();aimSource='mouse';mouseTakeover.x=mouseTakeover.y=0;rightAnchor=rightPrev;}
+function claimMouseAim(){aimSource='mouse';mouseTakeover.x=mouseTakeover.y=0;rightAnchor=rightPrev;}
 function applyMouseMotion(dx,dy,relative=false){
  if(!dx&&!dy)return;
  const fromPad=aimSource==='pad';
@@ -1296,7 +1279,7 @@ function reset(run=false){
  bullets=[];bulletFades=[];activationPreviewFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberIds=[0,0];elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
  hitProjectiles.length=0;
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);
- if(aimSource==='pad'||aimSource==='gyro')Object.assign(mouse,headingAimPoint());
+ if(aimSource==='pad')Object.assign(mouse,headingAimPoint());
  state=run?'running':'ready';
  updatePauseButton();$('overlay').hidden=run;updateHud(true);
  if(run){$('settings').open=false;announce('游戏开始');deferAudioUnlock();}
@@ -1306,10 +1289,10 @@ function spawnEnemy(){
  const x=W*.75,y=H*.5;
  enemy=createActor(1,x,y);enemy.aim=Math.atan2(p.y-y,p.x-x);constrainActor(enemy);
 }
-function showOverlay(title,copy,button,values={}){overlayContent={title,copy,button,values};refreshOverlayText();$('keys').hidden=['won','lost','draw'].includes(state);$('controller-help').hidden=['won','lost','draw'].includes(state);$('overlay').hidden=false;}
+function showOverlay(title,copy,button,values={}){overlayContent={title,copy,button,values};refreshOverlayText();$('keys').hidden=['won','lost','draw'].includes(state);$('overlay').hidden=false;}
 function clearFireInput(){
  mouseLook.x=mouseLook.y=mouseTakeover.x=mouseTakeover.y=0;mouse.down=false;mouse.press=null;
- clearTouchMove();touch.aim=null;touch.target=null;touch.fire=null;gyro.sample=null;
+ clearTouchMove();touch.aim=null;touch.target=null;
  if(p){p.triggerHeld=false;p.triggerBlocked=true;p.fireBuffered=false;}
 }
 function pause(){flushSettings();if(state!=='running')return;state='paused';releaseMouse();clearFireInput();keys.clear();updatePauseButton();showOverlay('暂停中','可以调整设置，也可以继续对战。','继续游戏');announce('已暂停');}
@@ -1360,7 +1343,6 @@ function pollPad(){
   if(aimSource!=='pad'){
    mouseTakeover.x=mouseTakeover.y=0;
    const point=headingView()?headingAimPoint():pointerAimPoint();
-   if(aimSource==='gyro')stopGyro();
    if(point&&point!==mouse)Object.assign(mouse,point);
    moveWorldCursor(0,0);
   }
@@ -1381,7 +1363,8 @@ function getInput(pad,dt=STEP){
   if(aimSource!=='mouse')claimMouseAim();
   turnView(mouseLook.x,mouseLook.y,pointerDistanceScale*aimSensitivity(follow));mouseLook.x=mouseLook.y=0;
  }
- let x=0,y=0,shoot=mouse.down||!!pad?.fire||touch.fire!==null;
+ let x=0,y=0;
+ const shoot=mouse.down||!!pad?.fire||(aimSource==='touch'&&!!touch.aim);
  if(touch.move){const v=stick(touch.move.x,touch.move.y,.2,0);x=v.x;y=v.y;moveSource='touch';}
  else if(keys.size){x=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);y=(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0);const v=unit(x,y);x=v.x;y=v.y;moveSource='keyboard';}
  else if(pad&&pad.left.m>0){x=pad.left.x;y=pad.left.y;moveSource='pad';}
@@ -1434,7 +1417,7 @@ function updateCamera(dt){
  cameraAngle+=difference*(-Math.expm1(-CAMERA_FOLLOW_GAIN*actor.range*dt));cameraAngle=Math.atan2(Math.sin(cameraAngle),Math.cos(cameraAngle));
 }
 function headingAimPoint(){return{x:p.x+Math.cos(p.aim)*p.range,y:p.y+Math.sin(p.aim)*p.range};}
-function turnView(dx,dy,scale=AIM_DELTA_SCALE){
+function turnView(dx,dy,scale){
  dx*=scale;dy*=scale;
  const offset=aimCircleOffset(p),range=Math.max(p.range,minAimRange(p.aim,offset));
  const a=cameraHeading(),co=Math.cos(a),si=Math.sin(a),sx=Math.cos(p.aim)*range,sy=Math.sin(p.aim)*range,vx=co*dx-si*dy,vy=si*dx+co*dy;
@@ -1455,73 +1438,19 @@ function turnView(dx,dy,scale=AIM_DELTA_SCALE){
 }
 
 function showTouchControls(){
- if(!gamePage.hasAttribute('data-touch'))gamePage.setAttribute('data-touch','');
+ if(gamePage.hasAttribute('data-touch'))return;
+ gamePage.setAttribute('data-touch','');
+ autoFireSetting='mobileAutoFire';$('continuousFire').checked=cfg[autoFireSetting];
 }
 function moveTouchStick(e){
- const {left,top,width,height}=touchStick.getBoundingClientRect(),radius=Math.min(width,height)*.3;
- if(!radius)return;
- const x=e.clientX-left-width/2,y=e.clientY-top-height/2,limit=Math.max(1,Math.hypot(x,y)/radius);
- touch.move.x=x/radius;touch.move.y=y/radius;
- touchKnob.style.transform=`translate(${x/limit}px,${y/limit}px)`;
+ const move=touch.move,{startX,startY,radius}=move;
+ const x=e.clientX-startX,y=e.clientY-startY,limit=Math.max(1,Math.hypot(x,y)/radius);
+ move.x=x/radius;move.y=y/radius;
+ touchStick.firstElementChild.style.transform=`translate(${x/limit}px,${y/limit}px)`;
 }
 function clearTouchMove(){
  if(!touch.move)return;
- touch.move=null;touchStick.removeAttribute('data-held');touchKnob.style.transform='';
-}
-function stopGyro(){
- window.removeEventListener('deviceorientation',readGyro);
- clearTimeout(gyro.timer);gyro.timer=0;gyro.sample=null;
- if(aimSource==='gyro')aimSource='touch';
- gyroButton.setAttribute('aria-busy','false');gyroButton.setAttribute('aria-pressed','false');
-}
-async function toggleGyro(){
- if(aimSource==='gyro'||gyro.timer){stopGyro();return;}
- if(!window.isSecureContext){toast('请用 HTTPS 网页启用陀螺仪。');return;}
- const sensor=window.DeviceOrientationEvent;
- if(!sensor){toast('当前浏览器不支持陀螺仪。');return;}
- gyroButton.setAttribute('aria-busy','true');
- if(typeof sensor.requestPermission==='function'){
-  gyroButton.disabled=true;
-  let permission;
-  try{permission=await sensor.requestPermission();}catch{}
-  gyroButton.disabled=false;
-  if(permission!=='granted'){
-   gyroButton.setAttribute('aria-busy','false');toast('请在浏览器中允许访问运动传感器。');return;
-  }
- }
- gyro.timer=setTimeout(()=>{stopGyro();toast('未收到陀螺仪数据。请检查运动传感器权限。');},2400);
- window.addEventListener('deviceorientation',readGyro);
- toast('正在等待陀螺仪数据…');
-}
-function orientationAxes(alpha,beta,gamma){
- const radians=Math.PI/180,a=alpha*radians,b=beta*radians,g=gamma*radians;
- const ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b),cg=Math.cos(g),sg=Math.sin(g);
- // DeviceOrientation uses intrinsic Z-X-Y rotations. These are the columns of Rz(a) Rx(b) Ry(g).
- return{right:[ca*cg-sa*sb*sg,sa*cg+ca*sb*sg,-cb*sg],up:[-sa*cb,ca*cb,sb],normal:[ca*sg+sa*sb*cg,sa*sg-ca*sb*cg,cb*cg]};
-}
-function dot3(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
-function readGyro({alpha,beta,gamma}){
- if(!Number.isFinite(alpha)||!Number.isFinite(beta)||!Number.isFinite(gamma))return;
- if(gyro.timer){
-  clearTimeout(gyro.timer);gyro.timer=0;aimSource='gyro';
-  releaseMouse();mouseLook.x=mouseLook.y=0;touch.target=null;rightAnchor=rightPrev;
-  if(!headingView()){Object.assign(mouse,headingAimPoint());moveWorldCursor(0,0);}
-  gyroButton.setAttribute('aria-busy','false');gyroButton.setAttribute('aria-pressed','true');
-  refreshInput();toast('转动手机瞄准，轻触屏幕右半边射击。');
- }
- if(state!=='running')return;
- const angle=window.screen?.orientation?.angle??window.orientation??0;
- const previous=gyro.sample,current=orientationAxes(alpha,beta,gamma);
- gyro.sample={...current,angle};
- // Rebase on screen rotation or a discontinuous sensor jump.
- if(!previous||previous.angle!==angle||dot3(previous.normal,current.normal)<Math.SQRT1_2)return;
- // Project the change in the screen normal onto the previous screen plane.
- const x=dot3(previous.right,current.normal),y=-dot3(previous.up,current.normal);
- const a=angle*Math.PI/180,co=Math.cos(a),si=Math.sin(a);
- const follow=headingView(),scale=GYRO_AIM_SCALE*aimSensitivity(follow);
- const dx=(co*x+si*y)*scale,dy=(co*y-si*x)*scale;
- if(follow)turnView(dx,dy,1);
- else moveWorldCursor(dx,dy);
+ touch.move=null;touchStick.removeAttribute('data-held');touchStick.firstElementChild.style.transform='';
 }
 function releaseMouse(){
  if(document.pointerLockElement!==canvas)return;
@@ -3876,8 +3805,9 @@ function simulate(dt,control){
  if(aimPoint)aimAt(p,aimPoint);
  else p.range=selectAimRange(p,p.range);
  if(e)e.range=selectAimRange(e,ai.range);
- if(cfg.continuousFire)p.triggerBlocked=false;
- updateWeapon(p,cfg.continuousFire||control.shoot,dt,cfg.continuousFire||!!control.autoFire,control.press);
+ const automaticFire=cfg[autoFireSetting];
+ if(automaticFire)p.triggerBlocked=false;
+ updateWeapon(p,automaticFire||control.shoot,dt,automaticFire||!!control.autoFire,control.press);
  if(control.press){if(mouse.press===control.press)mouse.press=null;control.press=null;}
  if(e)updateWeapon(e,ai.shoot,dt,false);
  for(const b of bullets)stepBullet(b,dt);
@@ -4086,6 +4016,7 @@ function drawLoopImages(a,drawing,view=null){
  }
 }
 
+const HEALTH_FONT_SIZE=11,HEALTH_FONT_MIN_SCREEN_SIZE=10;
 let healthDrawScale=1;
 function drawHealth(a,team){
  if(!cfg.showHealthNumbers)return;
@@ -4093,7 +4024,7 @@ function drawHealth(a,team){
  const reservedRadius=a.r*Math.sqrt(1+Math.abs(cfg.actorAspect)/100)*Math.exp(.29);
  const text=String(formatHealth(a.hp)),y=-reservedRadius-7*scale;
  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());
- ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.7;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${11*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+ ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.7;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${HEALTH_FONT_SIZE*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
  ctx.fillText(text,0,y);
  if(flash>0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.42*flash;ctx.fillText(text,0,y);}
  ctx.restore();
@@ -4320,6 +4251,7 @@ function render(alpha=1){
 let monitorStarted=null,monitorFrames=0,monitorCPU=0;
 function resetPerformanceMonitor(){
  monitorStarted=null;monitorFrames=0;monitorCPU=0;
+ $('performance-monitor').hidden=!cfg.showPerformanceMonitor;
  setHudText('fps','FPS —');setHudText('cpu-time','CPU — ms');
 }
 function updatePerformanceMonitor(now,cpu){
@@ -4333,7 +4265,7 @@ function updatePerformanceMonitor(now,cpu){
 }
 document.addEventListener('visibilitychange',resetPerformanceMonitor);
 function frame(now){
- const frameStarted=performance.now();
+ const frameStarted=cfg.showPerformanceMonitor?performance.now():null;
  botAimFrame++;
  // A controller can start or resume here; reset the clock before computing dt.
  const pad=pollPad(),dt=last?Math.max(0,Math.min((now-last)/1000,.05)):0;last=now;
@@ -4345,13 +4277,14 @@ function frame(now){
  if(state==='running'||state==='ending')updateCamera(dt);
  if(state==='running'||state==='ending'||renderDirty||renderedState!==state)render(renderStepReady&&(state==='running'||state==='ending')?clamp(accumulator/STEP,0,1):1);
  if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}
- updatePerformanceMonitor(now,performance.now()-frameStarted);requestAnimationFrame(frame);
+ if(frameStarted!==null)updatePerformanceMonitor(now,performance.now()-frameStarted);
+ requestAnimationFrame(frame);
 }
 function pointerWorld(e){const b=canvas.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*VIEW_W-(VIEW_W-W)/2,y:(e.clientY-b.top)/b.height*VIEW_H-(VIEW_H-H)/2};}
-function moveWorldCursor(dx,dy){
+function moveWorldCursor(dx,dy,cursor=mouse){
  const left=(W-VIEW_W)/2,top=(H-VIEW_H)/2;
- mouse.x=clamp(mouse.x+dx,left,left+VIEW_W);
- mouse.y=clamp(mouse.y+dy,top,top+VIEW_H);
+ cursor.x=clamp(cursor.x+dx,left,left+VIEW_W);
+ cursor.y=clamp(cursor.y+dy,top,top+VIEW_H);
 }
 function moveWorldMouse(dx,dy){
  const scale=aimSensitivity(false);
@@ -4362,33 +4295,47 @@ function beginMouseFire(e,locked,pointerId){
  if(!locked)Object.assign(mouse,pointerWorld(e));
  mouse.down=true;mouse.press={pointerId};
 }
-touchStick.addEventListener('pointerdown',e=>{
- if(e.pointerType!=='touch'||state!=='running'||touch.move)return;
- e.preventDefault();unlockAudio();
- touch.move={id:e.pointerId,x:0,y:0};moveSource='touch';
- touchStick.setPointerCapture(e.pointerId);touchStick.setAttribute('data-held','');
- moveTouchStick(e);refreshInput();
-});
-touchStick.addEventListener('pointermove',e=>{if(touch.move?.id===e.pointerId)moveTouchStick(e);});
+function claimTouchAim(){
+ if(aimSource!=='touch'||!touch.target)touch.target=headingAimPoint();
+ aimSource='touch';
+}
+function dragTouchAim(e){
+ const aim=touch.aim;
+ const dx=(e.clientX-aim.x)*pointerWidthScale,dy=(e.clientY-aim.y)*pointerDistanceScale;
+ claimTouchAim();
+ const follow=headingView(),scale=aimSensitivity(follow);
+ if(follow)turnView(dx,dy,scale);
+ else moveWorldCursor(dx*scale,dy*scale,touch.target);
+ aim.x=e.clientX;aim.y=e.clientY;
+}
 playArea.addEventListener('pointerdown',e=>{
- if(e.pointerType!=='touch'||state!=='running'||e.target.closest('.touch-control'))return;
- e.preventDefault();showTouchControls();
- const aiming=e.target===canvas&&!touch.aim&&aimSource!=='gyro';
- const firing=e.clientX>=window.innerWidth/2&&touch.fire===null;
- if(!aiming&&!firing)return;
- unlockAudio();
- if(aiming){
-  touch.target=pointerWorld(e);touch.aim={id:e.pointerId,...touch.target};aimSource='touch';
+ if(e.pointerType!=='touch'||state!=='running')return;
+ const bounds=playArea.getBoundingClientRect(),moving=e.clientX<bounds.left+bounds.width*.3;
+ e.preventDefault();
+ if(moving?touch.move:touch.aim)return;
+ showTouchControls();unlockAudio();
+ if(moving){
+  touchStick.style.left=`${e.clientX-bounds.left}px`;
+  touchStick.style.top=`${e.clientY-bounds.top}px`;
+  touchStick.setAttribute('data-held','');
+  touch.move={id:e.pointerId,startX:e.clientX,startY:e.clientY,x:0,y:0,radius:touchStick.offsetWidth*.3};
+  moveSource='touch';
+ }else{
+  claimTouchAim();touch.aim={id:e.pointerId,x:e.clientX,y:e.clientY};
+  mouse.press={pointerId:e.pointerId};
  }
- if(firing){touch.fire=e.pointerId;mouse.press={pointerId:e.pointerId};}
- e.target.setPointerCapture(e.pointerId);refreshInput();
+ playArea.setPointerCapture(e.pointerId);refreshInput();
+});
+playArea.addEventListener('pointermove',e=>{
+ if(touch.move?.id===e.pointerId)moveTouchStick(e);
+ else if(touch.aim?.id===e.pointerId)dragTouchAim(e);
 });
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch'||state!=='running')return;
  canvas.focus({preventScroll:true});
  const locked=document.pointerLockElement===canvas;
  if(!locked){
-  if(e.button===0){if(aimSource==='gyro')claimMouseAim();captureMouse();}
+  if(e.button===0)captureMouse();
   if(usesMouseLock()){
    if(e.button===0&&!headingView()&&aimSource!=='pad')Object.assign(mouse,pointerWorld(e));
    return;
@@ -4408,19 +4355,9 @@ canvas.addEventListener('mousedown',e=>{
 });
 window.addEventListener('mouseup',e=>{if(e.button===0)mouse.down=false;});
 canvas.addEventListener('pointermove',e=>{
- if(usesMouseLock()&&e.pointerType!=='touch')return;
- if(e.pointerType==='touch'){
-  if(touch.aim?.id!==e.pointerId)return;
-  const q=pointerWorld(e);
-  if(aimSource!=='gyro'){
-   if(headingView()&&state==='running')turnView(q.x-touch.aim.x,q.y-touch.aim.y);
-   touch.target=q;aimSource='touch';
-  }
-  Object.assign(touch.aim,q);
- }else{
-  applyMouseMotion(e.movementX||0,e.movementY||0);
-  if(aimSource!=='pad'&&aimSource!=='gyro')Object.assign(mouse,pointerWorld(e));
- }
+ if(e.pointerType==='touch'||usesMouseLock())return;
+ applyMouseMotion(e.movementX||0,e.movementY||0);
+ if(aimSource!=='pad')Object.assign(mouse,pointerWorld(e));
  refreshInput();
 });
 document.addEventListener('mousemove',e=>{
@@ -4437,19 +4374,20 @@ document.addEventListener('pointerlockchange',()=>{
 });
 document.addEventListener('pointerlockerror',handleMouseLockFailure);
 function pointerUp(e){
- const activeMove=touch.move?.id===e.pointerId,activeAim=touch.aim?.id===e.pointerId,activeFire=touch.fire===e.pointerId,heldMouse=e.pointerType!=='touch'&&mouse.down;
- if(e.type==='pointerup'&&state==='running'&&(activeMove||activeAim||activeFire||heldMouse))unlockAudio();
+ const activeMove=touch.move?.id===e.pointerId,activeAim=touch.aim?.id===e.pointerId,heldMouse=e.pointerType!=='touch'&&mouse.down;
+ if(e.type==='pointerup'&&state==='running'&&(activeMove||activeAim||heldMouse))unlockAudio();
  // Normal capture release follows pointerup: retain a queued quick tap then.
  // Unexpected capture loss or cancellation must never start another group.
- if((e.type==='pointercancel'||e.type==='lostpointercapture')&&(activeFire||heldMouse)){if(mouse.press?.pointerId===e.pointerId)mouse.press=null;p.fireBuffered=false;}
+ if((e.type==='pointercancel'||e.type==='lostpointercapture')&&(activeAim||heldMouse)){if(mouse.press?.pointerId===e.pointerId)mouse.press=null;p.fireBuffered=false;}
  if(activeMove)clearTouchMove();
  if(activeAim)touch.aim=null;
- if(activeFire)touch.fire=null;
  if(e.pointerType!=='touch'&&(e.button===0||e.type==='pointercancel'||e.type==='lostpointercapture'))mouse.down=false;
 }
 window.addEventListener('pointerup',pointerUp);window.addEventListener('pointercancel',pointerUp);
 playArea.addEventListener('lostpointercapture',pointerUp);
 playArea.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('fullscreenchange',()=>{if(touch.aim||touch.move)clearFireInput();});
+landscapeScreen.addEventListener('change',()=>{if(touch.aim||touch.move)clearFireInput();});
 document.addEventListener('focusin',e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON','SUMMARY'].includes(e.target.tagName))keys.clear();});
 window.addEventListener('keydown',e=>{
  if(['INPUT','SELECT','TEXTAREA','BUTTON','SUMMARY'].includes(document.activeElement?.tagName))return;
@@ -4469,7 +4407,7 @@ window.addEventListener('gamepadconnected',e=>{if(e.gamepad.mapping==='standard'
 window.addEventListener('gamepaddisconnected',e=>{if(e.gamepad.index===gamepadIndex)losePad();});
 for(const [id,action] of [['start',startOrResume],['restart',()=>reset(true)],['pause',togglePause]])$(id).addEventListener('click',e=>{
  action();$(id).blur();
- if(!usesTouchAim()&&e.pointerType!=='touch'&&!e.sourceCapabilities?.firesTouchEvents)captureMouse();
+ if(aimSource!=='touch'&&e.pointerType!=='touch'&&!e.sourceCapabilities?.firesTouchEvents)captureMouse();
 });
 // Touch browsers may require resume during pointerup. Only resume an already
 // prepared device here; mouse/keyboard starts still defer every audio API.
@@ -4478,7 +4416,6 @@ for(const id of ['start','restart','pause','sound'])$(id).addEventListener('poin
  showTouchControls();
  if(id!=='sound'||!cfg.sound)resumeExistingAudio(id==='sound');
 });
-gyroButton.addEventListener('click',()=>{toggleGyro();gyroButton.blur();});
 $('view').addEventListener('click',e=>{
  cfg.view=headingView()?'world':'heading';updateViewButton();cameraAngle=(ending?.actors[0]||p).aim+Math.PI/2;clearFireInput();keys.clear();
  if(aimSource!=='pad'){
@@ -4504,19 +4441,16 @@ $('map').addEventListener('change',()=>{
 });
 $('settings').addEventListener('toggle',()=>{if($('settings').open)pause();});
 $('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(playArea.requestFullscreen)await playArea.requestFullscreen();else toast('当前浏览器不支持全屏。');}catch{toast('无法进入全屏。');}$('fullscreen').blur();});
-document.addEventListener('fullscreenchange',()=>{
- const controls=document.fullscreenElement===playArea?playArea:matchOptions;
- controls.append(gyroButton);
-});
 
 // === 14 · Validated local settings and controls ===
 function syncDifficultyControl(){
  if(!isPracticeMode())$('mode').value=cfg.difficulty;
 }
 const SETTINGS_KEY='near-field-settings';
-const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showHealthNumbers','showDamageNumbers','continuousFire'];
+const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showHealthNumbers','showDamageNumbers','showPerformanceMonitor','continuousFire'];
 const PRESET_SLOTS=[1,2,3,4,5],DEFAULT_PRESET_SLOT=2;
-let settingsDirty=false,activePresetSlot=DEFAULT_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
+const dirtySettingNames=new Set();
+let activePresetSlot=DEFAULT_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
 function validSettingValue(name,value){
  if(typeof value!=='number'||!Number.isFinite(value))return false;
  if(name==='initialSpinSign')return value===1||value===-1;
@@ -4572,7 +4506,7 @@ function restoreSettings(){
   const presets=readPresets(saved);
   if(resetParameters){
    if(!sameGameplayValues(cfg,DEFAULTS))pendingPresetBackup=settingValues(GAMEPLAY_SETTING_NAMES);
-   for(const name of GAMEPLAY_SETTING_NAMES)cfg[name]=DEFAULTS[name];
+   for(const name of GAMEPLAY_SETTING_NAMES){cfg[name]=DEFAULTS[name];dirtySettingNames.add(name);}
    rewrite=true;
   }else if(saved.autoPresets===true){
    activePresetSlot=PRESET_SLOTS.includes(saved.presetSlot)?saved.presetSlot:null;
@@ -4586,7 +4520,7 @@ function restoreSettings(){
     ??PRESET_SLOTS.find(slot=>!presets[slot-1])??null;
    rewrite=true;
   }
-  for(const name of ['sound',...SETTING_CHECKBOXES])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+  for(const name of ['sound','mobileAutoFire',...SETTING_CHECKBOXES])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
   if(saved.view==='world'||saved.view==='heading')cfg.view=saved.view;
   if(typeof saved.difficulty==='string'&&Object.hasOwn(BOT_LEVELS,saved.difficulty))cfg.difficulty=saved.difficulty;
   if(typeof saved.mode==='string'&&(Object.hasOwn(BOT_LEVELS,saved.mode)||saved.mode==='practice'||saved.mode==='practice-dodge')){
@@ -4600,28 +4534,37 @@ function restoreSettings(){
  $('map').value=mapId;syncDifficultyControl();
  if(rewrite)saveSettings();
 }
-function writeSettings(presets,slot=activePresetSlot,values=settingValues(SETTING_NAMES)){
- if(slot!==null)presets[slot-1]=settingValues(GAMEPLAY_SETTING_NAMES,values);
+function mergePresetChanges(presets,slot,values){
+ if(slot===null)return;
+ // Another tab may have saved this slot since our local copy was loaded.
+ const preset=presets[slot-1]??settingValues(GAMEPLAY_SETTING_NAMES,values);
+ for(const name of GAMEPLAY_SETTING_NAMES)if(dirtySettingNames.has(name))preset[name]=values[name];
+ presets[slot-1]=preset;
+}
+function writeSettings(presets,slot,values){
  if(pendingPresetBackup){
   const backupSlot=PRESET_SLOTS.find(slot=>slot!==DEFAULT_PRESET_SLOT&&!presets[slot-1]);
   if(backupSlot!==undefined)presets[backupSlot-1]=pendingPresetBackup;
  }
- const saved={version:1,gameplayDefaultsVersion:GAMEPLAY_DEFAULTS_VERSION,values,presets,presetSlot:slot,autoPresets:true,
-  sound:cfg.sound,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view};
+ const savedValues=slot===null?values:{...values,...presets[slot-1]};
+ const saved={version:1,gameplayDefaultsVersion:GAMEPLAY_DEFAULTS_VERSION,values:savedValues,presets,presetSlot:slot,autoPresets:true,
+  sound:cfg.sound,mobileAutoFire:cfg.mobileAutoFire,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view};
  for(const name of SETTING_CHECKBOXES)saved[name]=cfg[name];
  try{
   localStorage.setItem(SETTINGS_KEY,JSON.stringify(saved));
-  pendingPresetBackup=null;settingsDirty=false;return true;
+  pendingPresetBackup=null;dirtySettingNames.clear();return true;
  }catch{return false;}
 }
 function saveSettings(){
- presetSaveFailed=!writeSettings(readPresets());
+ const presets=readPresets(),values=settingValues(SETTING_NAMES);
+ mergePresetChanges(presets,activePresetSlot,values);
+ presetSaveFailed=!writeSettings(presets,activePresetSlot,values);
  refreshPresetStatus();
 }
-function flushSettings(){if(settingsDirty)saveSettings();}
+function flushSettings(){if(dirtySettingNames.size)saveSettings();}
 for(const name of SETTING_NAMES)$(name).addEventListener('input',()=>{
  stopStartupPreparation();
- const value=Number($(name).value);cfg[name]=value/settingScale(name);settingsDirty=true;
+ const value=Number($(name).value);cfg[name]=value/settingScale(name);dirtySettingNames.add(name);
  $(name+'-value').textContent=formatSetting(name,value);
  if(name==='worldMouseSensitivity'){syncWorldMouseLock();return;}
  if(name==='mouseSensitivity')return;
@@ -4642,28 +4585,30 @@ $('maxHealth').addEventListener('change',()=>{
  updateHud(true);renderDirty=true;
 });
 for(const name of SETTING_CHECKBOXES)$(name).addEventListener('change',()=>{
- cfg[name]=$(name).checked;
+ cfg[name==='continuousFire'?autoFireSetting:name]=$(name).checked;
  if(name==='showDamageNumbers'&&!cfg[name])damageNumbers=[];
  if(name==='showActivationPreview'&&!cfg[name])activationPreviewFades.length=0;
+ if(name==='showPerformanceMonitor')resetPerformanceMonitor();
  saveSettings();if(name!=='continuousFire')renderDirty=true;
 });
 $('sound').addEventListener('click',()=>{cfg.sound=!cfg.sound;updateSoundButton();if(cfg.sound)deferAudioUnlock();else{audioPreparation.requested=false;cancelAudioPreparation();}if(audioMaster)audioMaster.gain.value=cfg.sound?1:0;saveSettings();$('sound').blur();});
 $('preset-slot').addEventListener('change',()=>{
  const slot=Number($('preset-slot').value);
  if(!PRESET_SLOTS.includes(slot)||slot===activePresetSlot)return;
- const presets=readPresets(),values=presets[slot-1]??settingValues(GAMEPLAY_SETTING_NAMES,DEFAULTS);
- if(settingsDirty&&activePresetSlot!==null)presets[activePresetSlot-1]=settingValues(GAMEPLAY_SETTING_NAMES);
- presetSaveFailed=!writeSettings(presets,slot,{...settingValues(SETTING_NAMES),...values});
+ const presets=readPresets(),values=settingValues(SETTING_NAMES);
+ if(dirtySettingNames.size)mergePresetChanges(presets,activePresetSlot,values);
+ const preset=presets[slot-1]??=settingValues(GAMEPLAY_SETTING_NAMES,DEFAULTS);
+ presetSaveFailed=!writeSettings(presets,slot,values);
  if(presetSaveFailed){
   $('preset-slot').value=activePresetSlot===null?'':String(activePresetSlot);
   refreshPresetStatus();return;
  }
  activePresetSlot=slot;
- if(!sameGameplayValues(cfg,values)){
+ if(!sameGameplayValues(cfg,preset)){
   stopStartupPreparation();
-  const healthChanged=cfg.maxHealth!==values.maxHealth;
-  const shapeChanged=['actorRadius','minRadiusRatio','actorAspect'].some(name=>cfg[name]!==values[name]);
-  applySettingValues(GAMEPLAY_SETTING_NAMES,values);
+  const healthChanged=cfg.maxHealth!==preset.maxHealth;
+  const shapeChanged=['actorRadius','minRadiusRatio','actorAspect'].some(name=>cfg[name]!==preset[name]);
+  applySettingValues(GAMEPLAY_SETTING_NAMES,preset);
   if(healthChanged)commitMaxHealth();
   if(healthChanged||shapeChanged)resizeActors();
   if(enemy)enemy.bot=null;
@@ -4674,7 +4619,10 @@ $('preset-slot').addEventListener('change',()=>{
 $('defaults').addEventListener('click',()=>{
  stopStartupPreparation();
  applySettingValues(SETTING_NAMES,DEFAULTS);
+ for(const name of SETTING_NAMES)dirtySettingNames.add(name);
  for(const name of SETTING_CHECKBOXES)$(name).checked=cfg[name]=DEFAULTS[name];
+ resetPerformanceMonitor();
+ cfg.mobileAutoFire=DEFAULTS.mobileAutoFire;$('continuousFire').checked=cfg[autoFireSetting];
  cfg.difficulty=DEFAULTS.difficulty;
  if(enemy)enemy.bot=null;
  commitMaxHealth();resizeActors();syncWorldMouseLock();syncDifficultyControl();
@@ -4685,8 +4633,16 @@ for(const name of SETTING_NAMES)$(name).addEventListener('change',saveSettings);
 window.addEventListener('pagehide',flushSettings);
 
 // === 15 · Boot and resize ===
-restoreSettings();refreshInput();
-function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);pointerWidthScale=VIEW_W/Math.max(1,rect.width);pointerDistanceScale=VIEW_H/Math.max(1,rect.height);healthDrawScale=Math.max(1,Math.min(2,VIEW_W/(canvas.clientWidth||VIEW_W)));const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;renderDirty=true;}}
+restoreSettings();refreshInput();resetPerformanceMonitor();
+function resize(){
+ const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+ const widthScale=VIEW_W/Math.max(1,rect.width);
+ pointerWidthScale=widthScale;
+ pointerDistanceScale=VIEW_H/Math.max(1,rect.height);
+ healthDrawScale=Math.max(1,Math.min(2,HEALTH_FONT_MIN_SCREEN_SIZE*widthScale/HEALTH_FONT_SIZE));
+ const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
+ if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;renderDirty=true;}
+}
 const toolbar=document.querySelector('.top');
 const resizeObserver=new ResizeObserver(entries=>{
  if(entries.some(entry=>entry.target===toolbar))document.documentElement.style.setProperty('--toolbar-bottom',`${toolbar.offsetTop+toolbar.offsetHeight}px`);
