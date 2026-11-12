@@ -211,7 +211,7 @@ html[lang="en"] h1{letter-spacing:.02em}
     <summary title="说明与设置" aria-label="说明与设置"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h5m3 0h4M7 2v4m-5 6h2m3 0h7M7 10v4"/></svg></summary>
     <aside class="settings-panel" aria-label="说明与设置">
      <div class="under"><div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗弹无伤害</span><span><i class="dot solid"></i>亮弹能造成伤害</span></div></div>
-     <p class="notes">WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，结算后按空格键再来一局。R 键重新开始。</p>
+     <p class="notes">WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。P 键暂停或继续，R 键重新开始。结算后按空格键再来一局。</p>
      <p class="notes">子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。</p>
      <p class="notes">最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。</p>
      <p class="notes">每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。</p>
@@ -231,6 +231,27 @@ html[lang="en"] h1{letter-spacing:.02em}
       </div>
       <p class="setting-help">「默认」方案使用固定参数。1–4 号方案的修改会自动保存。</p>
       <p class="setting-help" id="preset-status" role="status"></p>
+     </section>
+     <section class="settings-group" aria-labelledby="experimental-settings">
+      <h2 id="experimental-settings">实验功能</h2>
+      <div class="settings-grid">
+       <div>
+        <label class="check"><input id="implosionEnabled" type="checkbox" aria-describedby="implosion-help">内爆</label>
+        <p class="setting-help" id="implosion-help">按 Q 或 LT / L2，让己方亮弹朝对手收拢。</p>
+       </div>
+       <div>
+        <label class="check"><input id="bulletMirrorEnabled" type="checkbox" aria-describedby="bullet-mirror-help">翻转</label>
+        <p class="setting-help" id="bullet-mirror-help">按鼠标右键，把己方亮弹翻到对手对侧，速度同时掉头。</p>
+       </div>
+       <div>
+        <label class="check"><input id="dodgeEnabled" type="checkbox" aria-describedby="dodge-help">闪避</label>
+        <p class="setting-help" id="dodge-help">按 Shift 或左肩键（LB / L1），沿移动方向闪避。</p>
+       </div>
+       <div>
+        <label class="check"><input id="bulletPauseEnabled" type="checkbox" aria-describedby="bullet-pause-help">停拍</label>
+        <p class="setting-help" id="bullet-pause-help">按 E，让己方亮弹原地停 1 秒。每颗弹只能停一次，停住时仍能命中，寿命暂停计时。</p>
+       </div>
+      </div>
      </section>
      <section class="settings-group" aria-labelledby="movement-settings">
       <h2 id="movement-settings">人物与移动</h2>
@@ -349,6 +370,7 @@ html[lang="en"] h1{letter-spacing:.02em}
        <label class="check"><input id="showRange" type="checkbox" checked>显示距离线</label>
        <label class="check"><input id="showAimCircle" type="checkbox">显示最小瞄准圈</label>
        <label class="check"><input id="showActivationPreview" type="checkbox" checked>预览子弹变亮位置</label>
+       <label class="check"><input id="showActivationTrace" type="checkbox">连接同组变亮点</label>
       </div>
       <p class="notes">手柄用左摇杆移动、右摇杆瞄准，按 RT 射击。触屏在游戏区左侧 30% 按下出现移动摇杆，右侧 70% 拖动瞄准，默认自动开火。</p>
      </section>
@@ -510,8 +532,8 @@ html[lang="en"] h1{letter-spacing:.02em}
  </header>
  <div class="play-area" id="play-area">
   <section class="arena" id="arena" aria-label="对战区域">
-   <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始，结算后也可按空格键再来一局。更多玩法见顶部的「说明与设置」。">请使用支持 Canvas 的现代浏览器。</canvas>
-   <div class="overlay" id="overlay"><div class="dialog"><div class="dialog-heading"><h2 id="overlay-title"></h2><p id="overlay-copy"></p></div><button class="primary" id="start" type="button">开始</button><div class="keys" id="keys"><div><span><kbd>WASD / 左摇杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准</span></div><div><span><kbd>R</kbd>重新开始</span><span><kbd>空格键</kbd>暂停</span></div></div></div></div>
+   <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。P 键暂停或继续，R 键重新开始，结算后按空格键再来一局。更多玩法见顶部的「说明与设置」。">请使用支持 Canvas 的现代浏览器。</canvas>
+   <div class="overlay" id="overlay"><div class="dialog"><div class="dialog-heading"><h2 id="overlay-title"></h2><p id="overlay-copy"></p></div><button class="primary" id="start" type="button">开始</button><div class="keys" id="keys"><div><span><kbd>WASD / 左摇杆</kbd>移动</span><span><kbd>鼠标</kbd>瞄准</span></div><div><span><kbd>P</kbd>暂停</span><span><kbd>R</kbd>重新开始</span></div></div></div></div>
    <div class="toast" id="toast" aria-live="polite"></div>
   </section>
   <div class="touch-stick" id="touch-stick" role="group" aria-label="移动摇杆"><div class="touch-knob" aria-hidden="true"></div></div>
@@ -639,7 +661,7 @@ const DEFAULTS={
  burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,followFov:100,compensateFovSensitivity:true,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,brightBulletLifetime:5,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:0,receiverSpinScale:1,controlSpinScale:1,
  radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
- difficulty:'easy',continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:true,showAimCircle:false,showActivationPreview:true,showHealthNumbers:true,showDamageNumbers:true,showPerformanceMonitor:false
+ difficulty:'easy',continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:true,showAimCircle:false,showActivationPreview:true,showActivationTrace:false,showHealthNumbers:true,showDamageNumbers:true,showPerformanceMonitor:false,implosionEnabled:false,bulletMirrorEnabled:false,dodgeEnabled:false,bulletPauseEnabled:false
 };
 const cfg={...DEFAULTS,view:'heading'};
 let autoFireSetting='continuousFire';
@@ -648,10 +670,14 @@ const MOUSE_SETTING_NAMES=['mouseSensitivity','worldMouseSensitivity'];
 const PRESET_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name));
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
+const DODGE_IMPULSE=500;
 const WEAPON={get count(){return cfg.burstCount;},get interval(){return 1/cfg.fireRate;},get reload(){return cfg.reloadTime;}};
 const keys=new Set(),mouse={x:850,y:375,down:false,press:null};
 const touch={move:null,aim:null,target:null};
 let inputMode='mouse',moveSource='keyboard',aimSource='mouse',gamepadIndex=null,padPrev=[],rightPrev={x:0,y:0,m:0},rightAnchor={x:0,y:0,m:0},seed=3947;
+let implosionRequested=false,bulletMirrorRequested=false,dodgeRequested=false,bulletPauseRequested=false;
+const SKILL_INTERVAL=.5,skillReadyAt=new Map();
+const BULLET_PAUSE_STEPS=Math.round(1/STEP);
 let state='ready',roundMode,p,enemy,bullets=[],bulletFades=[],activationPreviewFades=[],effects=[],woundParticles=[],damageNumbers=[],damageNumberIds=[0,0],elapsed=0,kills=0,hits=0,intercepts=0,shots=0,enemyDelay=0;
 const WINS_KEY='near-field-wins';
 let totalWins=readWins();
@@ -677,7 +703,7 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 // === 03 · Text and language switching ===
 const ENGLISH={
  "显示命中伤害数字": "Show hit damage numbers",
- "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。空格键暂停或继续，结算后按空格键再来一局。R 键重新开始。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press Space to pause or resume, or to play again after the result. Press R to restart.",
+ "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。P 键暂停或继续，R 键重新开始。结算后按空格键再来一局。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press P to pause or resume, R to restart, and Space to play again after the result.",
  "子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。": "Bullets start dim and turn bright after traveling the distance you aim for. Only bright bullets can hurt your opponent. When dim bullets from opposing sides collide, they can cancel each other out.",
  "最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。": "The minimum aim circle shifts in the direction you move, and its edge marks the minimum distance a bullet must travel before turning bright. The ends of the range line show where bullets are expected to turn bright and disappear.",
  "每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。": "Each character has two fields that act only on bright bullets. The receiving field slows and deflects enemy bright bullets, and the control field steers your own. Moving sideways relative to a bullet's path pulls it to that side through your field. Moving sideways relative to your aim when firing adds spin, which affects the bullet's path in your opponent's receiving field.",
@@ -760,9 +786,18 @@ const ENGLISH={
  "对局演示": "Match demo",
  "请使用支持 Canvas 的现代浏览器。": "Please use a modern browser that supports Canvas.",
  "对战区域": "Near Field arena",
- "用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。R 键重新开始，结算后也可按空格键再来一局。更多玩法见顶部的「说明与设置」。": "Keyboard and mouse: move with WASD and aim and fire with the mouse. Controller: move with the left stick, aim with the right stick, and press RT to fire. Press R to restart or Space to play again after the result. See Instructions & settings in the toolbar for more.",
+ "用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RT 射击。P 键暂停或继续，R 键重新开始，结算后按空格键再来一局。更多玩法见顶部的「说明与设置」。": "Move with WASD and aim and fire with the mouse. On a controller, move with the left stick, aim with the right stick, and press RT to fire. Press P to pause or resume, R to restart, or Space to play again after the result. See Instructions & settings in the toolbar for more.",
  "WASD / 左摇杆": "WASD / left stick",
  "空格键": "Space",
+ "实验功能": "Experimental features",
+ "内爆": "Implosion",
+ "按 Q 或 LT / L2，让己方亮弹朝对手收拢。": "Press Q or LT / L2 to pull your bright bullets toward the opponent.",
+ "翻转": "Flip",
+ "按鼠标右键，把己方亮弹翻到对手对侧，速度同时掉头。": "Right-click to move your bright bullets to the opposite side of the opponent and reverse their velocity.",
+ "闪避": "Dodge",
+ "按 Shift 或左肩键（LB / L1），沿移动方向闪避。": "Press Shift or LB / L1 to dodge in the direction of movement.",
+ "停拍": "Freeze",
+ "按 E，让己方亮弹原地停 1 秒。每颗弹只能停一次，停住时仍能命中，寿命暂停计时。": "Press E to freeze your bright bullets in place for 1 second. Each bullet can freeze once. It can still hit, and its lifetime pauses while frozen.",
  "移动": "Move",
  "鼠标": "Mouse",
  "瞄准": "Aim",
@@ -815,6 +850,7 @@ const ENGLISH={
  "显示距离线": "Show range line",
  "显示最小瞄准圈": "Show minimum aim circle",
  "预览子弹变亮位置": "Preview where bullets turn bright",
+ "连接同组变亮点": "Connect activation points within each burst",
  "移动惯性": "Movement inertia",
  "人物排斥强度": "Character repulsion",
  "人物排斥距离": "Character repulsion range",
@@ -1310,7 +1346,8 @@ function advanceActor(a,targetX,targetY,inertia,dt){
  if(terrain&&inertia>0){const force=terrainAcceleration(a.x,a.y,mapAccelerationScratch);targetX+=force.x*terrain.actorScale*inertia;targetY+=force.y*terrain.actorScale*inertia;}
  if(inertia>0){const retain=Math.exp(-dt/inertia);dx=targetX*dt+(a.mvx-targetX)*inertia*(1-retain);dy=targetY*dt+(a.mvy-targetY)*inertia*(1-retain);a.mvx=targetX+(a.mvx-targetX)*retain;a.mvy=targetY+(a.mvy-targetY)*retain;}
  else{a.mvx=targetX;a.mvy=targetY;dx=targetX*dt;dy=targetY*dt;}
- const retention=Math.exp(-dt/IMPACT.decay);dx+=a.ivx*IMPACT.decay*(1-retention);dy+=a.ivy*IMPACT.decay*(1-retention);a.ivx*=retention;a.ivy*=retention;
+ const impactDecay=IMPACT.decay,retention=Math.exp(-dt/impactDecay);
+ dx+=a.ivx*impactDecay*(1-retention);dy+=a.ivy*impactDecay*(1-retention);a.ivx*=retention;a.ivy*=retention;
  updateShape(a,dt);
  const x=a.x+dx,y=a.y+dy,inset=actorInset(a);
  a.x=clampActorX(x,a.team,inset);a.y=clamp(y,inset,H-inset);
@@ -1369,6 +1406,8 @@ function reset(run=false){
  if(headingView())p.range=VIEW_H*(.8-.5);
  ending=null;defeatedEnemy=null;
  bullets=[];bulletFades=[];activationPreviewFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberIds=[0,0];elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
+ activationTraces.length=0;
+ skillReadyAt.clear();
  hitProjectiles.length=0;
  clearFireInput();keys.clear();spawnEnemy();constrainActor(p);
  if(aimSource==='pad')Object.assign(mouse,headingAimPoint());
@@ -1385,6 +1424,7 @@ function spawnEnemy(){
 }
 function showOverlay(title,copy,button,values={}){overlayContent={title,copy,button,values};refreshOverlayText();$('keys').hidden=isSpectatorMode()||['won','lost','draw'].includes(state);$('overlay').hidden=false;}
 function clearFireInput(){
+ implosionRequested=bulletMirrorRequested=dodgeRequested=bulletPauseRequested=false;
  mouseLook.x=mouseLook.y=mouseTakeover.x=mouseTakeover.y=0;mouse.down=false;mouse.press=null;
  clearTouchMove();touch.aim=null;touch.target=null;
  if(p){p.triggerHeld=false;p.triggerBlocked=!isSpectatorMode();p.fireBuffered=false;}
@@ -1450,6 +1490,10 @@ function pollPad(){
   aimSource='pad';rightAnchor=right;
  }
  rightPrev=right;
+ if(state==='running'&&!isSpectatorMode()){
+  if(cfg.dodgeEnabled&&pressed[4]&&!padPrev[4])dodgeRequested='pad';
+  if(cfg.implosionEnabled&&pressed[6]&&!padPrev[6])implosionRequested=true;
+ }
  const startPressed=pressed[9]&&!padPrev[9];
  if(startPressed&&state==='running')pause();
  else if(startPressed||pressed[0]&&!padPrev[0]&&state!=='running'){
@@ -1471,13 +1515,15 @@ function getInput(pad,dt=STEP){
  else if(pad&&pad.left.m>0){x=pad.left.x;y=pad.left.y;moveSource='pad';}
  const angle=cameraHeading(),co=angle?Math.cos(angle):1,si=angle?Math.sin(angle):0;
  if(angle){const oldX=x;x=co*x-si*y;y=si*oldX+co*y;}
+ const dodgeStick=dodgeRequested==='pad'?pad?.left:null;
+ const padDodge=dodgeStick?{x:co*dodgeStick.x-si*dodgeStick.y,y:si*dodgeStick.x+co*dodgeStick.y}:null;
  if(aimSource==='pad'&&pad?.right.m>0){
   const {x:rx,y:ry}=pad.right,speed=VIEW_W*dt*aimSensitivity(follow);
   moveWorldCursor((co*rx-si*ry)*speed,(si*rx+co*ry)*speed);
  }
  const aimPoint=pointerAimPoint();
  if(aimPoint)aimAt(p,aimPoint);
- refreshInput();return{x,y,shoot,press:mouse.press,autoFire:true,aimPoint};
+ refreshInput();return{x,y,shoot,press:mouse.press,autoFire:true,aimPoint,padDodge};
 }
 
 // Heading view changes only presentation and input coordinates, never world physics.
@@ -1599,6 +1645,7 @@ const PROJECTILE_PATH_EPS=1e-8;
 const PROJECTILE_ENTRY_EPS=1e-6;
 const PROJECTILE_TIME_EPS=1e-10;
 const DARK_BULLET_LIFETIME=4;
+const IMPLOSION_IMPULSE=800;
 function projectileActivationOverlap(b,carrier){
  if(!carrier||(Number.isFinite(b.team)&&carrier.team===b.team))return false;
  const shape=bodyShape(carrier),co=Math.cos(shape.angle),si=Math.sin(shape.angle),x=b.x-carrier.x,y=b.y-carrier.y;
@@ -1867,6 +1914,8 @@ function clipProjectileAtArena(b){
 }
 const activationPreviewCache=new WeakMap();
 const ACTIVATION_PREVIEW_FADE_TIME=.12;
+const ACTIVATION_TRACE_HOLD=.65,ACTIVATION_TRACE_FADE=.55;
+const activationTraces=[];
 function predictBulletActivation(b){
  const map=MAPS[mapId],distance=b.fieldStart-b.travel,timeLeft=projectileTimeLeft(b);
  const inside=(x,y)=>projectileArenaExit(x,y)===1;
@@ -1895,15 +1944,63 @@ function bulletActivationPreview(b){
  }
  return cached.point;
 }
+function recordActivationTrace(actor,bullet){
+ const point=bulletActivationPreview(bullet);
+ if(!point)return;
+ for(let i=activationTraces.length-1;i>=0;i--){
+  if(elapsed-activationTraces[i].at>=ACTIVATION_TRACE_HOLD+ACTIVATION_TRACE_FADE)activationTraces.splice(i,1);
+ }
+ let trace=activationTraces.findLast(entry=>entry.team===bullet.team&&entry.salvo===actor.salvoSeq);
+ if(!trace){trace={team:bullet.team,salvo:actor.salvoSeq,points:[],at:elapsed};activationTraces.push(trace);}
+ trace.points.push(point);trace.at=elapsed;
+}
 function fadeActivationPreview(b,at){
  const point=activationPreviewCache.get(b)?.point;if(!point)return;
  activationPreviewCache.delete(b);
  if(cfg.showActivationPreview)activationPreviewFades.push({point,r:b.r,team:b.team,at});
 }
+function isPlayerBrightBullet(b){return b.team===p.team&&!b.dead&&!b.expired&&projectileDamageActive(b,b.travel,true);}
+function implodePlayerBullets(){
+ const center=enemy;if(!center)return;
+ for(const b of bullets){
+  if(b.pauseSteps>0||!isPlayerBrightBullet(b))continue;
+  const toward=unit(center.x-b.x,center.y-b.y);
+  b.vx+=toward.x*IMPLOSION_IMPULSE;b.vy+=toward.y*IMPLOSION_IMPULSE;
+ }
+}
+function mirrorPlayerBullets(){
+ if(!enemy)return;
+ const wrap=MAPS[mapId].wrap,edge=ARENA_FRAME_INSET;
+ for(const b of bullets){
+  if(b.pauseSteps>0||!isPlayerBrightBullet(b))continue;
+  const x=2*enemy.x-b.x,y=2*enemy.y-b.y;
+  const outside=wrap?x<edge||x>W-edge||y<edge||y>H-edge:projectileArenaExit(x,y)<1;
+  if(outside||firstWallHit(x,y,x,y,b.r,true)){b.dead=true;continue;}
+  b.x=x;b.y=y;b.freshSpawn=true;
+  b.vx=-b.vx;b.vy=-b.vy;b.dx=-b.dx;b.dy=-b.dy;
+ }
+}
+function pausePlayerBullets(){
+ for(const b of bullets){
+  if(b.pauseSteps!==undefined||!isPlayerBrightBullet(b))continue;
+  b.pauseSteps=BULLET_PAUSE_STEPS;
+  b.pausedVelocity=[b.vx,b.vy];b.vx=b.vy=0;
+ }
+}
 function stepBullet(b,dt){
  b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;
- integrateProjectile(b,dt,b.team===0?enemy:p,b.team===0?p:enemy);
- b.age=(b.age||0)+dt*Math.min(1,b.lifetimeEnd);
+ const target=b.team===0?enemy:p;
+ if(b.pauseSteps>0){
+  // A stationary segment still sweeps against the moving target.
+  b.motionSegments=b.damageSegments=[{from:0,to:1,x0:b.x,y0:b.y,x1:b.x,y1:b.y,
+   travel0:b.prevTravel,travel1:b.prevTravel,phase:'solid',solid:true,vx0:0,vy0:0,vx:0,vy:0}];
+  b.damageCarrierStart=b.freshSpawn&&target?{x:target.x,y:target.y,team:target.team}:null;
+  b.freshSpawn=false;b.endPoint=b.wallEnd=null;b.lifetimeEnd=Infinity;
+  if(--b.pauseSteps===0){[b.vx,b.vy]=b.pausedVelocity;b.pausedVelocity=null;}
+ }else{
+  integrateProjectile(b,dt,target,b.team===0?p:enemy);
+  b.age=(b.age||0)+dt*Math.min(1,b.lifetimeEnd);
+ }
  // Swept collisions before the first cutoff still count within this step.
  const end=projectileEnd(b);b.ended=Number.isFinite(end)&&b.travel>=end;
  const exited=clipProjectileAtArena(b);
@@ -1936,6 +2033,7 @@ function fire(actor,team,aim=actor.aim,range=actor.range){
  // Both teams draw once at launch; random values stay hidden from the bot.
  b.collisionRandom=Math.random();
  startProjectileDamage(b);bullets.push(b);
+ if(cfg.showActivationTrace&&(team===0||isSpectatorMode()))recordActivationTrace(actor,b);
  const coverage=actor.bot?.firedCoverage;
  if(actor.bot?.liveCoverage&&coverage?.preparedAt===actor.bot.time)coverage.projectile=b;
  muzzleEffect(actor,b);
@@ -2805,7 +2903,7 @@ const BOT_LEVELS={
  hard:{...STANDARD_BOT_LEVEL,delay:0,interval:.05,midpointWeight:0,hitWeight:.30,shotTiming:true,reactiveMovement:true}
 };
 // Match-tested weights, with more engagement distance for readable duels.
-const BOT_TUNING={riskWeight:1.2,wallWeight:1,spacingWeight:1.12,attackThreshold:32,maxHold:1.1,ghostWeight:.25,rangeBias:-30,annBlockWeight:10,annDefenseWeight:14};
+const BOT_TUNING={riskWeight:1.2,wallWeight:1,spacingWeight:1.12,attackThreshold:32,maxHold:1.1,ghostWeight:.25,rangeBias:-30};
 const BOT_DAMAGE_WEIGHT=80;
 // Preferences change existing scores without adding search candidates.
 // Difficulty still owns perception, prediction and weapon timing limits.
@@ -2999,14 +3097,14 @@ function botForecastActiveStep(b,dt,body,source=null){
  return b;
 }
 // Only the visible phase initializes materialization in forecasts.
-function botForecastStep(b,dt,body,trackGhost=false,sourcePose=null){
+function botForecastStep(b,dt,body,sourcePose=null){
    const sourceTime=b.sourceTime||0;b.sourceTime=sourceTime+dt;
   const timeLeft=b.timeLeft??Infinity,expires=timeLeft<=dt+PROJECTILE_TIME_EPS;
   const limit=timeLeft<dt-PROJECTILE_TIME_EPS?timeLeft:dt;
   if(Number.isFinite(timeLeft))b.timeLeft=expires?0:timeLeft-dt;
   if(typeof b.materialized!=='boolean')b.materialized=!!b.solid;
-  b.forecastWindow=null;b.forecastGhostWindow=null;
-  let elapsed=0,wallContacts=0,ghostWindowStopped=false;
+  b.forecastWindow=null;
+  let elapsed=0,wallContacts=0;
   const bodyAt=t=>({...body,r:body.r||ACTOR.radius,team:body.team??(b.team===0?1:0),x:body.x+(body.vx||0)*(t-dt*.5),
     y:body.y+(body.vy||0)*(t-dt*.5)});
   const freeState=h=>{
@@ -3029,7 +3127,6 @@ function botForecastStep(b,dt,body,trackGhost=false,sourcePose=null){
       if(!b.materialized&&!projectileActivationOverlap(b,bodyAt(elapsed)))b.materialized=true;
     }
     if(b.materialized){
-      if(b.forecastGhostWindow)b.forecastGhostWindow.ghostEndExclusive=true;
       const owner=b.sourceField,t=sourceTime+elapsed+remaining*.5;
       const source=sourcePose??(owner?{x:owner.x+(owner.vx||0)*t,y:owner.y+(owner.vy||0)*t,vx:owner.vx,vy:owner.vy}:null);
       botForecastActiveStep(b,remaining,bodyAt(elapsed+remaining*.5),source);
@@ -3073,10 +3170,6 @@ function botForecastStep(b,dt,body,trackGhost=false,sourcePose=null){
    if(wallHit){next.x=wallHit.x;next.y=wallHit.y;}
    const exit=projectileArenaExit(b.x,b.y,next.x,next.y);
    if(exit<1){h*=exit;next.travel*=exit;next.x=b.x+(next.x-b.x)*exit;next.y=b.y+(next.y-b.y)*exit;}
-   if(trackGhost&&h>1e-12&&!ghostWindowStopped){
-      if(!b.forecastGhostWindow)b.forecastGhostWindow={from:elapsed/dt,x0:b.x,y0:b.y,ghostEndExclusive:false};
-      Object.assign(b.forecastGhostWindow,{to:(elapsed+h)/dt,x1:next.x,y1:next.y});
-    }
     b.x=next.x;b.y=next.y;b.vx=next.vx;b.vy=next.vy;
     if(b.before>0)b.before=Math.max(0,b.before-next.travel);
    else b.left=Math.max(0,b.left-next.travel);
@@ -3085,17 +3178,12 @@ function botForecastStep(b,dt,body,trackGhost=false,sourcePose=null){
    if(wallHit){
     if(wallHit.wall.type==='absorb'){b.left=0;break;}
     respondProjectileWall(b,wallHit,1e-4);
-    // Interception scoring uses the first straight leg only in this step.
-    // Reflected velocity and remaining distance carry into subsequent steps.
-    ghostWindowStopped=true;
     if(++wallContacts>=4)break;
     continue;
    }
     if(h<1e-12)break;
   }
   if(expires||b.left<1e-7)b.left=0;
-  if(b.forecastGhostWindow&&(b.left===0||b.before<=1e-7&&!projectileActivationOverlap(b,bodyAt(elapsed))))
-    b.forecastGhostWindow.ghostEndExclusive=true;
   return b;
 }
 
@@ -3129,7 +3217,7 @@ function botObservedThreats(observation,actor,age,level,bot){
    const interval=visible.solid?(track.interval??shotBand(observedPath-track.used)):shotBand(observedPath+before);
    const b={...visible,before,sourceField:observation.target,sourceTime:0,left:visible.solid?Math.max(0,interval-track.used):interval,
     spin:level.fullStrategy===true?(visible.launchSpin??track.spin):track.spin,charged:visible.solid?track.used:0,
-    weight:probability*(visible.solid?1:BOT_TUNING.ghostWeight),annProbability:probability};
+    weight:probability*(visible.solid?1:BOT_TUNING.ghostWeight)};
    // Bring the delayed observation forward through our KNOWN movement. No
    // future opponent or projectile state is consulted during this forecast.
    const steps=Math.ceil(age/.04);
@@ -3211,7 +3299,7 @@ function botControllableRounds(rounds,actor,direction,receivers,dt){
   let canSteer=false,rank=Infinity;
   for(let i=0;i<carriers.length&&b.left>1e-7;i++){
    const old=receivers[i],next=receivers[i+1];
-   botForecastStep(b,dt,botBodyMidpoint(old,next),false,carriers[i]);
+   botForecastStep(b,dt,botBodyMidpoint(old,next),carriers[i]);
    const window=b.forecastWindow;if(!window)continue;
    canSteer||=botClosestPass(window,sources[i],sources[i+1]).distance<cfg.controlRadius+reach[i];
    if(canSteer)rank=Math.min(rank,botClosestPass(window,old,next).distance);
@@ -3228,7 +3316,7 @@ function botShotControlValue(rounds,receivers,states,carriers,dt){
   let miss=margin;
   for(let i=0;i<receivers.length-1&&b.left>1e-7;i++){
    const old=receivers[i],next=receivers[i+1],source=carriers[i]??=botBodyMidpoint(states[i],states[i+1]);
-   botForecastStep(b,dt,botBodyMidpoint(old,next),false,source);
+   botForecastStep(b,dt,botBodyMidpoint(old,next),source);
    if(!b.forecastWindow)continue;
    const {distance,damage}=botClosestPass(b.forecastWindow,old,next,radius+b.r,dt);
    miss=Math.min(miss,Math.max(0,distance-radius-b.r));
@@ -3356,123 +3444,7 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
  dealt=attack.dealt;
  return score(risk,taken)+attack.miss;
 }
-// Own shots select the start and proportional length of the effective interval.
-// Forecast with the same physics as gameplay.
-// Interception forecasts use delayed observations and the launch record.
-// An opposing shot's future activation distance remains unknown.
-function botAnnihilationForecast(actor,direction,threats,age,damageBased=false){
- const candidates=threats.slice(0,12).filter(b=>!b.materialized&&!b.solid&&b.left>1e-7);
- if(!candidates.length)return null;
- const dt=1/30,count=24,states=[actor],carriers=[],paths=[],dodgeRadius=bodyShape(actor).rx;
- for(let i=0;i<count;i++)states.push(botBodyStep(states[i],direction,dt));
- for(const incoming of candidates){
-  const b={...incoming},segments=[];let danger=0,dangerTime=Infinity;
-  for(let i=0;i<count&&b.left>1e-7;i++){
-   const previous=states[i],next=states[i+1];
-   const body=carriers[i]??=botBodyMidpoint(previous,next);
-   botForecastStep(b,dt,body,true);
-   segments.push({ghost:b.forecastGhostWindow});
-   const window=b.forecastWindow;
-   if(window){
-    const {distance,at,damage}=botClosestPass(window,previous,next,damageBased?dodgeRadius+b.r:0,dt);
-    const t=(i+at)*dt;
-    if(damageBased){
-     if(damage!==null){danger=Math.min(actor.hp,damage);dangerTime=t;break;}
-     continue;
-    }
-    const clearance=distance-dodgeRadius-b.r;
-    const importance=clamp(1-clearance/20,0,1)*Math.exp(-t*.8);
-    if(importance>danger){danger=importance;dangerTime=t;}
-   }
-  }
-  // Probabilities belong to alternative phase-onset hypotheses, not to
-  // separate bullets. Keep each id so aim scoring cannot count it twice.
-  const probability=incoming.annProbability??1;
-  if(segments.some(segment=>segment.ghost))paths.push({id:incoming.id,r:incoming.r,probability,danger,dangerTime,segments});
- }
- return paths.length?{dt,age,paths,damageBased}:null;
-}
-function botAnnihilationCrossings(b,index,forecast,contacts){
- if(!forecast||index>=24)return;
- const ownGhosts=(b.motionSegments||[]).filter(segment=>segment.phase==='ghost'&&!segment.solid);
- if(!ownGhosts.length)return;
- const cutoff=projectileCollisionEnd(b);
- // A delayed launch step can overlap two steps of the incoming forecast.
- const delay=forecast.delay||0,frame=index+delay/forecast.dt;
- const first=Math.floor(frame),last=Math.ceil(frame+1);
- for(let k=0;k<forecast.paths.length;k++){
-  const path=forecast.paths[k];
-  for(let i=first;i<last&&i<path.segments.length;i++){
-   const segment=path.segments[i]?.ghost,offset=i-frame;if(!segment)continue;
-   for(const own of ownGhosts){
-    const lo=Math.max(own.from,segment.from+offset),hi=Math.min(own.to,segment.to+offset,cutoff);
-    if(hi-lo<1e-10)continue;
-    const at=(s,u)=>{const q=(u-s.from)/Math.max(1e-12,s.to-s.from);return{x:s.x0+(s.x1-s.x0)*q,y:s.y0+(s.y1-s.y0)*q};};
-    const a0=at(own,lo),a1=at(own,hi),b0=at(segment,lo-offset),b1=at(segment,hi-offset);
-    const x=a0.x-b0.x,y=a0.y-b0.y,dx=a1.x-a0.x-b1.x+b0.x,dy=a1.y-a0.y-b1.y+b0.y;
-    const speed2=dx*dx+dy*dy,radius=b.r+path.r,c=x*x+y*y-radius*radius,dot=x*dx+y*dy;
-    let q=clamp(-dot/(speed2+1e-12),0,1);
-    if(c<=0)q=0;
-    else if(speed2>1e-12&&dot<0){
-     const discriminant=dot*dot-speed2*c;
-     if(discriminant>=0){const entry=(-dot-Math.sqrt(discriminant))/speed2;if(entry>=0&&entry<=1)q=entry;}
-    }
-    const u=lo+(hi-lo)*q;
-    // Activation ends the ghost segment at an exclusive boundary.
-    if(u>=cutoff||own.ghostEndExclusive&&u>=own.to-1e-10||segment.ghostEndExclusive&&u>=segment.to+offset-1e-10)continue;
-    const t=(index+u)*forecast.dt,distance=Math.hypot(x+dx*q,y+dy*q);
-    const uncertainty=Math.min(9,2+cfg.launchSpeed*.012*(forecast.age+delay+t));
-    const chance=clamp(1-(distance-b.r-path.r)/uncertainty,0,1);
-    if(chance>0&&(!contacts[k]||chance>contacts[k].chance))contacts[k]={chance,time:t};
-   }
-  }
- }
-}
-function botAnnihilationScore(best,forecast,contacts){
- const groups=new Map();
- for(let k=0;k<contacts.length;k++){
-  const contact=contacts[k],path=forecast.paths[k];
-  if(!contact||contact.time>best.time&&(!forecast.damageBased||best.miss===0))continue;
-  const group=groups.get(path.id)||{blocked:0,defense:0};
-  const probability=path.probability*contact.chance*cfg.annihilationChance/100;
-  group.blocked+=probability;
-  // A collision after the forecasted body hit offers no protection.
-  if(contact.time+(forecast.delay||0)<path.dangerTime)group.defense+=probability*path.danger;
-  groups.set(path.id,group);
- }
- let blocked=0,defense=0;
- for(const group of groups.values()){
-  blocked=Math.max(blocked,Math.min(1,group.blocked));
-  // One own round can remove at most one incoming round.
-  defense=Math.max(defense,forecast.damageBased?group.defense:Math.min(1,group.defense));
- }
- const score=forecast.damageBased?30*((best.damage??0)*blocked-defense):
-  BOT_TUNING.annBlockWeight*blocked-BOT_TUNING.annDefenseWeight*defense;
- return{blocked,defense,score};
-}
-function botAnnihilationDefensiveAim(actor,forecast){
- if(!forecast)return null;
- let best=null;
- for(const path of forecast.paths){
-  if(forecast.damageBased?path.danger<=0:path.danger<.25)continue;
-  for(let i=0;i<path.segments.length;i++){
-   const s=path.segments[i].ghost;if(!s)continue;
-   const time=(i+(s.from+s.to)*.5)*forecast.dt;if(time>=path.dangerTime)break;
-   const t=time-(forecast.delay||0);if(t<0)continue;
-   const x=(s.x0+s.x1)*.5,y=(s.y0+s.y1)*.5;
-   const distance=Math.hypot(x-actor.x,y-actor.y);
-   const travel=muzzleDistance(actor,Math.atan2(y-actor.y,x-actor.x))+3+cfg.launchSpeed*t+.5*cfg.propulsion*t*t;
-   const danger=forecast.damageBased?path.probability*path.danger:path.danger;
-   const score=Math.abs(distance-travel)+30*(1-danger);
-   // Keep this defensive round virtual until it crosses the threat. Its
-   // onset is ours to choose; the opposing onset is still only a hypothesis.
-   if(!best||score<best.score)best={angle:Math.atan2(y-actor.y,x-actor.x),range:distance+12,score};
-  }
- }
- return best;
-}
-
-function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=null,sourceAt=null,midpointWeight=.08){
+function* botAimProbeSteps(actor,target,angle,range,targetAt=null,sourceAt=null,midpointWeight=.08){
  targetAt??=t=>botTargetAt(target,t);
  sourceAt??=t=>botTargetAt(actor,t);
  range=selectAimRange(actor,range,angle);
@@ -3483,13 +3455,12 @@ function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=nu
  const equilibrium=cfg.drag>0?Math.sqrt(cfg.propulsion/cfg.drag):cfg.launchSpeed;
  const duration=clamp(botFlightTime(fieldStart)+
   b.intervalLength/Math.max(25,Math.min(cfg.launchSpeed,equilibrium))+.6,.7,6),dt=1/30;
- let best={miss:Infinity,travel:fieldStart,time:duration};const annContacts=[];let annIndex=0;
+ let best={miss:Infinity,travel:fieldStart,time:duration};
  for(let t=0;t<duration;t+=dt){
   const before=targetAt(t),after=targetAt(t+dt);
   b.age=t;
   integrateProjectile(b,dt,targetAt(t+dt*.5),sourceAt(t+dt*.5));
   const exited=clipProjectileAtArena(b);
-  if(annForecast)botAnnihilationCrossings(b,annIndex++,annForecast,annContacts);
   for(const segment of b.damageSegments){
    if(segment.from>=b.collisionEnd)break;
    const span=segment.to-segment.from,tx=after.x-before.x,ty=after.y-before.y;
@@ -3513,11 +3484,9 @@ function* botAimProbeSteps(actor,target,angle,range,annForecast=null,targetAt=nu
  // interval to tolerate errors in predicted motion and activation distance.
  const {rx,ry}=bodyShape(target),hitTolerance=(ry+b.r)*.5,damage=best.damage??projectileDamage(b,best.travel);
  const midpointCost=midpointWeight&&Number.isFinite(b.damageStart)?Math.abs(best.travel-(b.damageStart+projectileEnd(b))*.5)*midpointWeight:0;
- const ann=annForecast?botAnnihilationScore(best,annForecast,annContacts):{blocked:0,defense:0,score:0};
- const guarding=annForecast?.damageBased&&ann.defense>0&&best.miss!==0;
- const aimCost=guarding?30:Math.max(0,best.miss-hitTolerance)+30*(1-damage);
- return{...best,angle,range,wallBlocked:b.wallAbsorbed&&best.miss>rx+b.r,redirected:!!b.probeRedirected,annBlocked:ann.blocked,annDefense:ann.defense,
-  damage,score:aimCost+midpointCost+best.time*.06+ann.score};
+ const aimCost=Math.max(0,best.miss-hitTolerance)+30*(1-damage);
+ return{...best,angle,range,wallBlocked:b.wallAbsorbed&&best.miss>rx+b.r,redirected:!!b.probeRedirected,
+  damage,score:aimCost+midpointCost+best.time*.06};
 }
 function botAimProbe(...args){
  const search=botAimProbeSteps(...args);let step;do{step=search.next();}while(!step.done);return step.value;
@@ -3579,8 +3548,7 @@ function* botAimSearch(actor,target,bot,level){
  const base=Math.atan2(prediction.y-actor.y,prediction.x-actor.x);
  const baseRange=botLeadRange(Math.hypot(prediction.x-actor.x,prediction.y-actor.y));
  const span=Math.max(shotBand(baseRange)*.75,Math.min(cfg.radius*.55,120));
- let best=null,rangeChoice=null,interceptChoice=null;const sourceCache=new Map();
- const intercepts=shot=>shot?.annDefense>(shotTiming?0:.4);
+ let best=null,rangeChoice=null;const sourceCache=new Map();
  const alternatives=fullStrategy&&(hard||bot.rangePreference)?[]:null,cutAngle=bot.cutAngle??base;
  const routes=fullStrategy?(bot.routes??botAimRoutes(target,cutAngle)):null;
  const cuts=routes?.cuts,paths=routes?.paths,targetAt=paths?.[0]??botAimPath(target);
@@ -3592,11 +3560,10 @@ function* botAimSearch(actor,target,bot,level){
  };
  function result(shot){
   const aim=shot.angle+bot.noiseAngle,range=selectAimRange(actor,shot.range+bot.noiseRange,aim);
-  const solved={aim,range,miss:shot.miss,annDefense:shot.annDefense,
-   wallBlocked:shot.wallBlocked&&!(shot.hitChance>0||shotTiming&&intercepts(shot)),distance};
+  const solved={aim,range,miss:shot.miss,wallBlocked:shot.wallBlocked&&!(shot.hitChance>0),distance};
   if(shot.lane)solved.lane=shot.lane;
   if(fullStrategy){
-   const primary=shot.miss===0?1-shot.annBlocked:0;
+   const primary=shot.miss===0?1:0;
    solved.hitChance=shot.hitChance??weights[0]*primary;
    if(hard){
     const impacts=shot.impacts??(primary>0&&shot.impact?[{...shot.impact,time:shot.time,damage:primary*Math.min(target.hp,shot.damage)}]:[]);
@@ -3604,7 +3571,7 @@ function* botAimSearch(actor,target,bot,level){
    }else solved.coverage={hits:shot.hits??[primary,0,0],flightTimes:shot.flightTimes??[primary>0?shot.time:null,null,null],bearing:base};
   }
   if(shotTiming&&shot.expectedDamage!==undefined){
-   solved.expectedDamage=shot.expectedDamage;solved.directDamage=shot.directDamage;solved.directDefense=shot.directDefense;
+   solved.expectedDamage=shot.expectedDamage;solved.directDamage=shot.directDamage;
    solved.primaryWeight=weights[0];
   }
   if(bot.compact){
@@ -3612,7 +3579,7 @@ function* botAimSearch(actor,target,bot,level){
    solved.shotValue=hard?damage:damage/(1+(shot.hitTime??shot.time));
   }
   // Rebase direct shots on the same movement hypothesis used by the probe.
-  if(fullStrategy&&shot.miss<=target.r&&!shot.redirected&&(shotTiming?!intercepts(shot):shot.annDefense<.25)){
+  if(fullStrategy&&shot.miss<=target.r&&!shot.redirected){
    const impact=shot.lane?paths[shot.lane<0?1:2](shot.time):targetAt(shot.time);
    const dx=impact.x-actor.x,dy=impact.y-actor.y;
    solved.tracking={flightTime:shot.time,angleOffset:aim-Math.atan2(dy,dx),rangeOffset:range-Math.hypot(dx,dy)};
@@ -3624,17 +3591,16 @@ function* botAimSearch(actor,target,bot,level){
   const hits=[],flightTimes=[],impacts=[];
   const recent=hard?null:(bot.coverage||[]).filter(({bearing,projectile})=>Math.cos(bearing-base)>.8&&
    (!projectile||!projectile.dead&&!projectile.expired&&projectilePhase(projectile).phase!=='expired'));
-  let hitChance=0,expectedDamage=0,directDamage=0,expectedDefense=0,directDefense=0,killChance=0,weightedTime=0,uncovered=0;
+  let hitChance=0,expectedDamage=0,directDamage=0,killChance=0,weightedTime=0,uncovered=0;
   for(let i=0;i<paths.length;i++){
    const probe=i===primary?shot:(yield* botAimProbeSteps(actor,i?cuts[i-1]:target,shot.angle,shot.range,
-    bot.annForecast,paths[i],sourceAt,level.midpointWeight));
-   const chance=probe.miss===0?1-probe.annBlocked:0,weight=weights[i];
+    paths[i],sourceAt,level.midpointWeight));
+   const chance=probe.miss===0?1:0,weight=weights[i];
    hitChance+=weight*chance;
    weightedTime+=weight*chance*probe.time;
    const damage=Math.min(target.hp,probe.damage);
-   if(i===0){directDamage=chance*damage;directDefense=probe.annDefense;}
+   if(i===0)directDamage=chance*damage;
    expectedDamage+=weight*chance*damage;
-   expectedDefense+=weight*probe.annDefense;
    if(probe.damage>=target.hp)killChance+=weight*chance;
    if(hard){
     if(chance>0&&probe.impact)impacts.push({...probe.impact,time:probe.time,damage:chance*damage});
@@ -3649,29 +3615,23 @@ function* botAimSearch(actor,target,bot,level){
   }
   const hitTime=hitChance>0?weightedTime/hitChance:shot.time;
   const repeatCost=hard?0:Math.min(.6*expectedDamage,.7*(1-hitChance)*(hitChance-uncovered));
-  const value=expectedDamage-repeatCost+(level.hitWeight??.15)*hitChance+.45*killChance+.55*(1-hitChance)*uncovered+(shotTiming?expectedDefense:.5*shot.annDefense);
-  return{...shot,hits,flightTimes,impacts,hitChance,hitTime,expectedDamage,directDamage,directDefense,
-   annDefense:shotTiming?expectedDefense:shot.annDefense,value};
+  const value=expectedDamage-repeatCost+(level.hitWeight??.15)*hitChance+.45*killChance+.55*(1-hitChance)*uncovered;
+  return{...shot,hits,flightTimes,impacts,hitChance,hitTime,expectedDamage,directDamage,value};
  }
  function* consider(angle,range){
-  const shot=yield* botAimProbeSteps(actor,target,angle,range,bot.annForecast,targetAt,sourceAt,level.midpointWeight);
-  if(alternatives&&shot.miss===0&&(hard||shot.annDefense<.25))alternatives.push(shot);
-  if(shotTiming&&intercepts(shot)&&(!interceptChoice||shot.score<interceptChoice.score))interceptChoice=shot;
-  const viable=shot.miss===0||intercepts(shot),bestViable=best?.miss===0||intercepts(best);
-  if(!best||(fullStrategy&&viable!==bestViable?viable:shot.score<best.score))best=shot;
+  const shot=yield* botAimProbeSteps(actor,target,angle,range,targetAt,sourceAt,level.midpointWeight);
+  const hits=shot.miss===0,bestHits=best?.miss===0;
+  if(alternatives&&hits)alternatives.push(shot);
+  if(!best||(fullStrategy&&hits!==bestHits?hits:shot.score<best.score))best=shot;
  }
  // Changing range moves both endpoints; search direction and range together.
  if(bot.active){
   yield* consider(base,baseRange);
-  if(best.miss===0||intercepts(best))yield result(best);
+  if(best.miss===0)yield result(best);
  }
  const angles=bot.compact?[-.22,0,.22]:[-.30,0,.30],ranges=[-1,0,1];
  for(const da of angles)for(const dr of ranges){
   if((!bot.active||da||dr)&&(!bot.compact||dr===0||da===0&&(hard||dr<0)))yield* consider(base+da,baseRange+dr*span);
- }
- if(BOT_TUNING.annDefenseWeight>0){
-  const defense=botAnnihilationDefensiveAim(actor,bot.annForecast);
-  if(defense){yield* consider(defense.angle,baseRange);yield* consider(defense.angle,defense.range);}
  }
  // Long, strongly damped active arcs need many integration substeps. A
  // smaller deterministic search keeps those extreme settings responsive.
@@ -3688,33 +3648,30 @@ function* botAimSearch(actor,target,bot,level){
   let alternateDamage=-Infinity;
   for(const shot of alternatives){
    if(shot===best||best.miss===0&&Math.abs(shotRangePlan(actor,shot.range,shot.angle).start-start)<12)continue;
-   const damage=Math.min(target.hp,shot.damage)*(1-shot.annBlocked);
+   const damage=Math.min(target.hp,shot.damage);
    if(damage>alternateDamage||damage===alternateDamage&&shot.score<rangeChoice.score){
     rangeChoice=shot;alternateDamage=damage;
    }
   }
- }else if(alternatives&&best.miss===0&&best.annDefense<.25){
+ }else if(alternatives&&best.miss===0){
   const damageFloor=best.damage>=target.hp?target.hp:best.damage-.10;
   for(const shot of alternatives){
-   if((shot.range-best.range)*bot.rangePreference<12||shot.damage<damageFloor||
-    shot.score>best.score+3||shot.annBlocked>best.annBlocked+.08)continue;
+   if((shot.range-best.range)*bot.rangePreference<12||shot.damage<damageFloor||shot.score>best.score+3)continue;
    if(!rangeChoice||shot.score<rangeChoice.score)rangeChoice=shot;
   }
  }
  if(!fullStrategy)return result(best);
- if(bot.active&&(best.miss===0||intercepts(best)))yield result(best);
- const initial=best;
+ if(bot.active&&best.miss===0)yield result(best);
  best=yield* estimate(best);
- if(bot.active&&(best.hitChance>0||shotTiming&&intercepts(best)))yield result(best);
- for(const candidate of [rangeChoice,interceptChoice!==initial&&interceptChoice!==rangeChoice?interceptChoice:null]){
-  if(!candidate)continue;
-  const choice=yield* estimate(candidate);
+ if(bot.active&&best.hitChance>0)yield result(best);
+ if(rangeChoice){
+  const choice=yield* estimate(rangeChoice);
   if(hard?choice.value>best.value:choice.value>=best.value-.025){
    best=choice;
-   if(bot.active&&(best.hitChance>0||shotTiming&&intercepts(best)))yield result(best);
+   if(bot.active&&best.hitChance>0)yield result(best);
   }
  }
- if(bot.active&&best.hitChance<.85&&(hard||!intercepts(best))){
+ if(bot.active&&best.hitChance<.85){
   // Only the finalists get all three physics probes.
   const anchor=best,time=best.hitChance>0?best.hitTime:botFlightTime(distance),expected=targetAt(time);
   const nx=-Math.sin(cutAngle),ny=Math.cos(cutAngle),spread=.8*(bodyShape(target).ry+ACTOR.shotRadius);
@@ -3725,7 +3682,7 @@ function* botAimSearch(actor,target,bot,level){
    if(lane*((pose.x-expected.x)*nx+(pose.y-expected.y)*ny)<spread)continue;
    const x=pose.x-actor.x,y=pose.y-actor.y;
    const shot=yield* botAimProbeSteps(actor,cuts[i-1],anchor.angle+Math.atan2(y,x)-angle,
-    anchor.range+Math.hypot(x,y)-range,bot.annForecast,paths[i],sourceAt,level.midpointWeight);
+    anchor.range+Math.hypot(x,y)-range,paths[i],sourceAt,level.midpointWeight);
    if(shot.miss!==0)continue;
    const choice=yield* estimate({...shot,lane},i);
    if(choice.value>best.value){best=choice;yield result(best);}
@@ -3747,33 +3704,30 @@ function* botAimBeforeFiring(actor,target,plan,level){
  const receiver=botTargetAt(target,wait),flight=shot.tracking?.flightTime??botFlightTime(shot.distance);
  const now=botTargetAt(target,flight),later=botTargetAt(receiver,flight);
  const dx=now.x-actor.x,dy=now.y-actor.y,nextX=later.x-shooter.x,nextY=later.y-shooter.y;
- const aim=shot.annDefense>0?shot.aim:shot.aim+Math.atan2(nextY,nextX)-Math.atan2(dy,dx);
- const range=shot.annDefense>0?shot.range:shot.range+Math.hypot(nextX,nextY)-Math.hypot(dx,dy);
- const forecast=plan.annForecast?{...plan.annForecast,delay:(plan.annForecast.delay||0)+wait}:null;
+ const aim=shot.aim+Math.atan2(nextY,nextX)-Math.atan2(dy,dx);
+ const range=shot.range+Math.hypot(nextX,nextY)-Math.hypot(dx,dy);
  const sourceAt=plan.direction?t=>botBodyStep(shooter,plan.direction,t):null;
- const probe=yield* botAimProbeSteps(shooter,receiver,aim,range,forecast,null,sourceAt,level.midpointWeight);
- const damage=probe.miss===0?(1-probe.annBlocked)*Math.min(receiver.hp,probe.damage):0;
+ const probe=yield* botAimProbeSteps(shooter,receiver,aim,range,null,sourceAt,level.midpointWeight);
+ const damage=probe.miss===0?Math.min(receiver.hp,probe.damage):0;
  // Recheck the main route and carry over the two cut estimates for one tick.
- return{...shot,waitDamage:Math.max(0,shot.expectedDamage+shot.primaryWeight*(damage-shot.directDamage)),
-  waitDefense:Math.max(0,shot.annDefense+shot.primaryWeight*(probe.annDefense-shot.directDefense))};
+ return{...shot,waitDamage:Math.max(0,shot.expectedDamage+shot.primaryWeight*(damage-shot.directDamage))};
 }
 function botAimReady(bot,actor,level,distance){
  const shotTiming=level.shotTiming,solution=bot.aimResult;
- const intercept=!shotTiming&&BOT_TUNING.annDefenseWeight>0&&solution?.annDefense>.4;
  const ready=!actor.salvo&&actor.cd<=0&&bot.time>=bot.nextAttack&&
-  (!level.fullStrategy||!bot.cramped||solution?.miss===0||intercept);
+  (!level.fullStrategy||!bot.cramped||solution?.miss===0);
  if(ready){if(bot.readySince===null)bot.readySince=bot.time;}else bot.readySince=null;
  if(shotTiming&&solution?.expectedDamage!==undefined){
   const cycle=WEAPON.reload+(WEAPON.count-1)*WEAPON.interval;
-  const value=solution.expectedDamage+solution.annDefense,held=bot.time-bot.readySince;
-  const waitValue=(solution.waitDamage??solution.expectedDamage)+(solution.waitDefense??solution.annDefense);
+  const value=solution.expectedDamage,held=bot.time-bot.readySince;
+  const waitValue=solution.waitDamage??value;
   const worthWaiting=waitValue*cycle>value*(cycle+level.interval);
   bot.pendingShot=ready&&!solution.wallBlocked&&distance<1350&&
    (value>0?held>=level.interval||!worthWaiting:held>=BOT_TUNING.maxHold);
   return;
  }
  bot.pendingShot=ready&&!solution?.wallBlocked&&distance<1350&&
-  (solution?.miss<=BOT_TUNING.attackThreshold+level.rangeError*.3||bot.time-bot.readySince>=BOT_TUNING.maxHold||intercept);
+  (solution?.miss<=BOT_TUNING.attackThreshold+level.rangeError*.3||bot.time-bot.readySince>=BOT_TUNING.maxHold);
 }
 function* botOpeningSearch(self,target,plan,level,moves,launchDelay){
  const receiver=botTargetAt(target,launchDelay),plans=[];
@@ -3821,12 +3775,11 @@ function botRoundRoll(bot,actor){
  return ((hash^(hash>>>16))>>>0)/4294967296;
 }
 function beginBotAimSearch(bot,self,target,level,direction=null,{opening=null,wait=0,actor=null}={}){
- const fullStrategy=level.fullStrategy===true,forecast=bot.annForecast;
+ const fullStrategy=level.fullStrategy===true;
  const countdown=actor?.salvo?.next??(wait+STEP);
  const delay=fullStrategy&&actor?Math.max(STEP,Math.ceil((countdown-1e-8)/STEP)*STEP):0;
  const active=fullStrategy&&!!actor?.salvo,roll=fullStrategy&&actor?botRoundRoll(bot,actor):.5;
- const plan={annForecast:fullStrategy&&forecast?{...forecast,delay:delay+Math.max(0,bot.time-(forecast.at??bot.time))}:forecast,
-  noiseAngle:bot.noiseAngle,noiseRange:bot.noiseRange,direction:fullStrategy&&direction?{x:direction.x,y:direction.y}:null,
+ const plan={noiseAngle:bot.noiseAngle,noiseRange:bot.noiseRange,direction:fullStrategy&&direction?{x:direction.x,y:direction.y}:null,
   rangePreference:level===BOT_LEVELS.hard?0:roll<.15?-1:roll<.30?1:0,laneBias:roll<.5?-1:1,active,compact:active,
   coverage:bot.aimCoverage,launchAt:bot.time+delay-STEP};
  if(active)bot.aimDirection=plan.direction;
@@ -3882,7 +3835,7 @@ function botTrigger(bot,level,actor){
  const output={...bot.output,shoot},solution=bot.aimResult,tracking=solution?.tracking,motion=bot.aimMotion;
  if(!fullStrategy||!motion)return output;
  const due=shoot||group?.next<=STEP+1e-8;
- const useSolved=tracking||solution?.hitChance>0||solution?.miss===0||solution?.annDefense>(level.shotTiming?0:.4);
+ const useSolved=tracking||solution?.hitChance>0||solution?.miss===0;
  if(due){
   const coverage=useSolved?solution?.coverage:null;
   if(bot.liveCoverage){
@@ -3932,7 +3885,6 @@ function botControl(actor,target,projectiles,dt,options={}){
  }
  if(!canFire){
   bot.aimJob=bot.aimResult=bot.aimMotion=bot.opening=null;
-  bot.annForecast=null;
   bot.pendingShot=false;
  }else if(!fullStrategy||bot.time<bot.nextDecision){
   if(newRound&&actor.salvo&&bot.aimMotion){
@@ -4059,9 +4011,6 @@ function botControl(actor,target,projectiles,dt,options={}){
   bot.output={x:direction.x,y:direction.y,aim:Math.atan2(perceived.y-self.y,perceived.x-self.x),range:Math.hypot(perceived.x-self.x,perceived.y-self.y),shoot:false};
   return bot.output;
  }
- bot.annForecast=cfg.annihilationChance>0&&(BOT_TUNING.annBlockWeight>0||BOT_TUNING.annDefenseWeight>0)&&untilReady===0?
-  botAnnihilationForecast(self,direction,threats,age,level.shotTiming):null;
- if(bot.annForecast)bot.annForecast.at=bot.time;
  const dx=perceived.x-self.x,dy=perceived.y-self.y,distance=Math.hypot(dx,dy);
  Object.assign(bot.output,direction);
  const planned=bot.aimDirection,steeringChanged=fullStrategy&&actor.salvo?.next>=.045&&planned&&
@@ -4071,7 +4020,7 @@ function botControl(actor,target,projectiles,dt,options={}){
   bot.output.aim=Math.atan2(dy,dx)+bot.noiseAngle;
   bot.output.range=selectAimRange(self,botLeadRange(distance)+bot.noiseRange,bot.output.aim);
  }else if(steeringChanged||!(bot.opening?.moves&&bot.opening.plans&&applyBotOpening(bot))&&!bot.aimJob&&!(fullStrategy&&actor.salvo&&bot.aimResult)){
-  const opening=moves?.length===2&&!bot.opening&&!bot.annForecast?
+  const opening=moves?.length===2&&!bot.opening?
    (bot.opening={moves,plans:null,expires:bot.time+.25}):null;
   beginBotAimSearch(bot,self,perceived,level,direction,{opening,wait:untilReady,actor});
  }
@@ -4088,7 +4037,7 @@ function createStartupAIJob(){
  const actor=botBody(createActor(1,900,375)),target=botTargetAt(botVisibleBody(createActor(0,300,375)),0);
  actor.vx=90;actor.vy=160;
  const shortActor={...actor,x:43.1,y:375.1,vx:.1,vy:.1},shortTarget={...target,x:42.1,y:375.1};
- const bot={annForecast:null,noiseAngle:0,noiseRange:0,side:1,output:{x:0,y:0}};
+ const bot={noiseAngle:0,noiseRange:0,side:1,output:{x:0,y:0}};
  let phase=-1,index=0,bullet=null;
  return()=>{
   // Begin with paths that immediately leave the arena, then gradually
@@ -4158,6 +4107,11 @@ function scheduleStartupPreparation(){
 
 
 // === 11 · Fixed-step simulation and HUD ===
+function beginSkillCooldown(skill){
+ if(elapsed<(skillReadyAt.get(skill)??0))return false;
+ skillReadyAt.set(skill,elapsed+SKILL_INTERVAL);
+ return true;
+}
 function simulate(dt,control){
  hitProjectiles.length=0;
  updateActorHitMarks(p,dt);updateActorHitMarks(enemy,dt);
@@ -4171,6 +4125,16 @@ function simulate(dt,control){
  const ai=e?(fixed?{x:0,y:0,aim:Math.atan2(p.y-e.y,p.x-e.x),range:Math.hypot(p.x-e.x,p.y-e.y)-cfg.band*.5,shoot:false}:botControl(e,p,bullets,dt,botOptions)):null;
  if(practice&&ai)ai.shoot=false;
  applyActorRepulsion(p,e,dt);
+ if(dodgeRequested){
+  const movement=dodgeRequested==='pad'?control.padDodge:control;
+  dodgeRequested=false;
+  if(cfg.dodgeEnabled&&!spectating&&beginSkillCooldown('dodge')&&(movement?.x||movement?.y)){
+   const direction=unit(movement.x,movement.y);
+   p.ivx+=direction.x*DODGE_IMPULSE;p.ivy+=direction.y*DODGE_IMPULSE;
+   const speed=Math.hypot(p.ivx,p.ivy);
+   if(speed>IMPACT.maxSpeed){p.ivx*=IMPACT.maxSpeed/speed;p.ivy*=IMPACT.maxSpeed/speed;}
+  }
+ }
  moveActor(p,control.x*ACTOR.speed,control.y*ACTOR.speed,cfg.inertia,dt);
  if(spectating)p.aim=control.aim;
  if(e){moveActor(e,ai.x*ACTOR.speed,ai.y*ACTOR.speed,cfg.inertia,dt);e.aim=ai.aim;}
@@ -4181,12 +4145,24 @@ function simulate(dt,control){
  if(aimPoint)aimAt(p,aimPoint);
  else p.range=selectAimRange(p,spectating?control.range:p.range);
  if(e)e.range=selectAimRange(e,ai.range);
+ if(implosionRequested){
+  implosionRequested=false;
+  if(cfg.implosionEnabled&&!spectating&&beginSkillCooldown('implosion'))implodePlayerBullets();
+ }
+ if(bulletMirrorRequested){
+  bulletMirrorRequested=false;
+  if(cfg.bulletMirrorEnabled&&!spectating&&beginSkillCooldown('mirror'))mirrorPlayerBullets();
+ }
+ if(bulletPauseRequested){
+  bulletPauseRequested=false;
+  if(cfg.bulletPauseEnabled&&!spectating&&beginSkillCooldown('bulletPause'))pausePlayerBullets();
+ }
  const automaticFire=!spectating&&cfg[autoFireSetting];
  if(automaticFire)p.triggerBlocked=false;
  updateWeapon(p,automaticFire||control.shoot,dt,automaticFire||!!control.autoFire,control.press);
  if(control.press){if(mouse.press===control.press)mouse.press=null;control.press=null;}
  if(e)updateWeapon(e,ai.shoot,dt,false);
- for(const b of bullets)stepBullet(b,dt);
+ for(const b of bullets)if(!b.dead)stepBullet(b,dt);
  const events=[],ghosts=[[],[]],hitShapes=[];
  for(const b of bullets){
   if(b.dead)continue;
@@ -4465,6 +4441,19 @@ function drawActivationMarker(point,radius,team,opacity){
  const r=radius*1.65;ctx.save();ctx.globalAlpha=opacity;ctx.translate(point.x,point.y);ctx.rotate(point.angle);
  ctx.drawImage(getActivationPreviewSprite(team),-r,-r,r*2,r*2);ctx.restore();
 }
+function drawActivationTraces(alpha){
+ const time=elapsed-(1-alpha)*STEP;
+ ctx.save();ctx.lineWidth=1;ctx.lineJoin='round';
+ for(const {team,points,at} of activationTraces){
+  const opacity=1-clamp((time-at-ACTIVATION_TRACE_HOLD)/ACTIVATION_TRACE_FADE,0,1);
+  if(opacity<=0||points.length<2)continue;
+  ctx.globalAlpha=.45*opacity;ctx.strokeStyle=BULLET_COLORS[team].solid;
+  ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+  ctx.stroke();
+ }
+ ctx.restore();
+}
 function drawActivationPreviews(alpha,spectating){
  for(const b of bullets){
   if((!spectating&&b.team!==0)||b.dead||b.expired||Number.isFinite(b.damageStart)||!(b.travel<b.fieldStart))continue;
@@ -4605,6 +4594,7 @@ function render(alpha=1){
   ctx.restore();}
  drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending&&!spectating)drawRange(visualPlayer);
  drawWalls();
+ if(!ending&&cfg.showActivationTrace)drawActivationTraces(alpha);
  if(!ending&&cfg.showActivationPreview)drawActivationPreviews(alpha,spectating);
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3));else drawBullet(b,null,alpha);}
  for(const {bullet,t} of hitProjectiles)if(alpha<t)drawBullet(bullet,null,alpha);
@@ -4741,10 +4731,10 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button===0){beginMouseFire(e,locked,e.pointerId);if(!locked)canvas.setPointerCapture(e.pointerId);}
  refreshInput();
 });
-// Pointer events omit additional button presses while another mouse button
-// is held. Mouse events keep left-click firing reliable in either order.
+// Mousedown also handles presses while another mouse button is held.
 canvas.addEventListener('mousedown',e=>{
  if(state!=='running'||isSpectatorMode()||e.sourceCapabilities?.firesTouchEvents)return;
+ if(e.button===2&&cfg.bulletMirrorEnabled){bulletMirrorRequested=true;unlockAudio();return;}
  const locked=document.pointerLockElement===canvas;
  if(usesMouseLock()&&!locked)return;
  if(e.button===0&&!mouse.down){unlockAudio();beginMouseFire(e,locked,null);}
@@ -4788,18 +4778,26 @@ document.addEventListener('focusin',e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'
 window.addEventListener('keydown',e=>{
  if(['INPUT','SELECT','TEXTAREA','BUTTON','SUMMARY'].includes(document.activeElement?.tagName))return;
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
- if(e.repeat&&['Space','Escape','KeyR','Enter'].includes(e.code))return;
+ if(e.repeat&&['Space','Escape','KeyP','KeyR','Enter'].includes(e.code))return;
  if(e.code==='Escape'&&usesMouseLock()){pause();return;}
- if(e.code==='Space'||e.code==='Escape'){
-  if(e.code==='Space'&&ending?.result===state)startOrResume();
-  else togglePause();
-  if(e.code==='Space'&&aimSource==='mouse')captureMouse();
+ if(e.code==='KeyP'||e.code==='Escape'){
+  togglePause();
+  if(e.code==='KeyP'&&aimSource==='mouse')captureMouse();
+  return;
+ }
+ if(e.code==='Space'){
+  if(ending?.result===state){startOrResume();if(aimSource==='mouse')captureMouse();}
   return;
  }
  if(e.code==='Enter'&&state!=='running'){startOrResume();if(aimSource==='mouse')captureMouse();return;}
  if(e.code==='KeyR'){reset(true);if(aimSource==='mouse')captureMouse();return;}
  if(isSpectatorMode())return;
  if(state==='running')unlockAudio();
+ if(state==='running'&&!e.repeat){
+  if(e.code==='KeyQ'&&cfg.implosionEnabled)implosionRequested=true;
+  if(e.code==='KeyE'&&cfg.bulletPauseEnabled)bulletPauseRequested=true;
+  if((e.code==='ShiftLeft'||e.code==='ShiftRight')&&cfg.dodgeEnabled)dodgeRequested=true;
+ }
  if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){moveSource='keyboard';keys.add(e.code);refreshInput();}
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
@@ -4855,7 +4853,7 @@ function syncDifficultyControl(){
  if(Object.hasOwn(BOT_LEVELS,$('mode').value))$('mode').value=cfg.difficulty;
 }
 const SETTINGS_KEY='near-field-settings';
-const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showHealthNumbers','showDamageNumbers','showPerformanceMonitor','continuousFire','compensateFovSensitivity','playerShotSound'];
+const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showActivationTrace','showHealthNumbers','showDamageNumbers','showPerformanceMonitor','continuousFire','compensateFovSensitivity','playerShotSound','implosionEnabled','bulletMirrorEnabled','dodgeEnabled','bulletPauseEnabled'];
 const PRESET_SLOTS=[1,2,3,4,5],INITIAL_PRESET_SLOT=2,DEFAULT_PRESET_SLOT=5;
 const dirtySettingNames=new Set();
 let activePresetSlot=INITIAL_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
@@ -4936,6 +4934,7 @@ function restoreSettings(){
    rewrite=true;
   }
   for(const name of ['sound','mobileAutoFire',...SETTING_CHECKBOXES])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+  if(typeof saved.bulletPauseEnabled!=='boolean'&&typeof saved.petrifyEnabled==='boolean')cfg.bulletPauseEnabled=saved.petrifyEnabled;
   if(saved.view==='world'||saved.view==='heading')cfg.view=saved.view;
   const difficulty=saved.difficulty==='hard1'?'hard':saved.difficulty;
   const mode=saved.mode==='hard1'?'hard':saved.mode;
@@ -5011,6 +5010,7 @@ for(const name of SETTING_CHECKBOXES)$(name).addEventListener('change',()=>{
  cfg[name==='continuousFire'?autoFireSetting:name]=$(name).checked;
  if(name==='showDamageNumbers'&&!cfg[name])damageNumbers=[];
  if(name==='showActivationPreview'&&!cfg[name])activationPreviewFades.length=0;
+ if(name==='showActivationTrace')activationTraces.length=0;
  if(name==='showPerformanceMonitor')resetPerformanceMonitor();
  saveSettings();if(name!=='continuousFire')renderDirty=true;
 });
@@ -5080,7 +5080,7 @@ reset();resize();initializeLanguage();requestAnimationFrame(frame);queueAudioPre
 // === 16 · Opt-in local test hooks (?test only) ===
 // Opt-in deterministic inspection for local development; absent in normal play.
 if(new URLSearchParams(location.search).has('test'))window.__fieldGame={snapshot:()=>({state,ending:ending?{...ending,actors:ending.actors.map(a=>a?{...a}:null)}:null,effects:effects.map(e=>({...e})),p:{...p},enemy:enemy?{...enemy,bot:enemy.bot?{time:enemy.bot.time,decisions:enemy.bot.decisions,observedAt:enemy.bot.observedAt,output:{...enemy.bot.output}}:null}:null,elapsed,kills,hits,intercepts,shots,bullets:bullets.map(b=>({...b})),bulletFades:bulletFades.map(fade=>({...fade})),cfg:{...cfg},renderFrames,inputMode,moveSource,aimSource,audioPlayed}),reset,pause,resume,step:(seconds,control={x:0,y:0,shoot:false})=>{for(let i=0;i<Math.round(seconds/STEP)&&(state==='running'||state==='ending');i++){if(i%2===0)botAimFrame++;if(state==='running')simulate(STEP,control);else updateEnding(STEP);}},frame,fieldWeight,projectilePhase,collisionEvent,applyImpact,fire,render,probe:(b,seconds)=>{const q={id:0,x:0,y:0,dx:1,dy:0,team:1,r:ACTOR.shotRadius,age:0,...b};for(let i=0;i<Math.round(seconds/STEP);i++)stepBullet(q,STEP);return q;},setPlayer:values=>Object.assign(p,values),inject:b=>bullets.push({id:++shotId,x:0,y:0,px:0,py:0,dx:1,dy:0,r:ACTOR.shotRadius,team:1,age:0,...b}),setEnemy:values=>{if(enemy)Object.assign(enemy,values);},config:values=>Object.assign(cfg,values)};
-if(new URLSearchParams(location.search).has('test'))Object.assign(window.__fieldGame,{startupPreparation,runStartupSlice,scheduleStartupPreparation,stopStartupPreparation,projectilePairEvent,projectileActivationOverlap,projectileBlockedExitTime,startProjectileDamage,drawBullet,drawRange,shotRangePlan,integrateProjectile,projectileDamageActive,projectileEnd,brakingWeight,receiverSpin,shotSpin,drawActor,muzzleDistance,updateWeapon,WEAPON,bulletAcceleration,stepBullet,createActor,moveActor,separateActors,stick,pollPad,getInput,drawHealth,ACTOR,botControl,createBot,botAim,botAimProbe,botAnnihilationForecast,botAnnihilationScore,botTrigger,BOT_LEVELS,BOT_TUNING,botBullet,botLearn,botForecastStep,botObservedThreats,botMoveScore});
+if(new URLSearchParams(location.search).has('test'))Object.assign(window.__fieldGame,{startupPreparation,runStartupSlice,scheduleStartupPreparation,stopStartupPreparation,projectilePairEvent,projectileActivationOverlap,projectileBlockedExitTime,startProjectileDamage,drawBullet,drawRange,shotRangePlan,integrateProjectile,projectileDamageActive,projectileEnd,brakingWeight,receiverSpin,shotSpin,drawActor,muzzleDistance,updateWeapon,WEAPON,bulletAcceleration,stepBullet,createActor,moveActor,separateActors,stick,pollPad,getInput,drawHealth,ACTOR,botControl,createBot,botAim,botAimProbe,botTrigger,BOT_LEVELS,BOT_TUNING,botBullet,botLearn,botForecastStep,botObservedThreats,botMoveScore});
 })();
 </script>
 </body>
