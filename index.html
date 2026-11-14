@@ -521,7 +521,10 @@ html[lang="en"] h1{letter-spacing:.02em}
       <div class="settings-grid settings-checks">
        <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示 FPS 和 CPU 耗时</label>
        <label class="check" title="显示满血为基础满血加上总胜场^1.5，最高 1000000。伤害数字按满血的比例缩放。"><input id="scaleCombatNumbersByWins" type="checkbox">胜场放大生命与伤害数字</label>
-       <label class="check"><input id="hitScreenShake" type="checkbox" checked>命中与受击时屏幕震动</label>
+       <div class="setting">
+        <label for="hitScreenShakeStrength">命中与受击时屏幕震动强度<output id="hitScreenShakeStrength-value">2.5</output></label>
+        <input id="hitScreenShakeStrength" type="range" min="0" max="6" step="0.5" value="2.5">
+       </div>
       </div>
      </details>
      <span class="sr-only" id="health"></span>
@@ -675,13 +678,13 @@ const DEFAULTS={
  burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,followFov:100,compensateFovSensitivity:true,perspectiveAimMapping:true,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,brightBulletLifetime:5,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:0,receiverSpinScale:1,controlSpinScale:1,
  radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
- difficulty:'easy',holdToFire:false,continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:false,showAimCircle:false,showActivationPreview:false,showActivationTrace:false,showHealthNumbers:true,showDamageNumbers:true,hitScreenShake:true,scaleCombatNumbersByWins:false,showPerformanceMonitor:false,implosionEnabled:false,bulletMirrorEnabled:false,dodgeEnabled:false,bulletPauseEnabled:false
+ difficulty:'easy',holdToFire:false,continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:false,showAimCircle:false,showActivationPreview:false,showActivationTrace:false,showHealthNumbers:true,showDamageNumbers:true,hitScreenShakeStrength:2.5,scaleCombatNumbersByWins:false,showPerformanceMonitor:false,implosionEnabled:false,bulletMirrorEnabled:false,dodgeEnabled:false,bulletPauseEnabled:false
 };
 const cfg={...DEFAULTS,view:'heading'};
 let autoFireSetting='continuousFire';
-const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","followFov","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","brightBulletLifetime","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale"];
+const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","followFov","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","brightBulletLifetime","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale","hitScreenShakeStrength"];
 const MOUSE_SETTING_NAMES=['mouseSensitivity','worldMouseSensitivity'];
-const PRESET_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name));
+const PRESET_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name)&&name!=='hitScreenShakeStrength');
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const DODGE_IMPULSE=500,DODGE_GUARD_HOLD=.2,DODGE_GUARD_TIME=.5,DODGE_MAX_REDUCTION=.8;
@@ -726,7 +729,7 @@ function stick(x=0,y=0,full=1,dead=.15){const d=Math.hypot(x,y),m=clamp((d-dead)
 // === 03 · Text and language switching ===
 const ENGLISH={
  "显示命中伤害数字": "Show hit damage numbers",
- "命中与受击时屏幕震动": "Screen shake on hits and damage taken",
+ "命中与受击时屏幕震动强度": "Screen shake strength on hits and damage taken",
  "胜场放大生命与伤害数字": "Scale health and damage numbers with wins",
  "显示满血为基础满血加上总胜场^1.5，最高 1000000。伤害数字按满血的比例缩放。": "Displayed max health is base max health plus total wins^1.5, capped at 1,000,000. Damage numbers scale by the same ratio.",
  "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。P 键暂停或继续，R 键重新开始。结算后按空格键再来一局。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press P to pause or resume, R to restart, and Space to play again after the result.",
@@ -3030,8 +3033,8 @@ function dodgeReductionAt(a,time){
  return DODGE_MAX_REDUCTION*clamp((DODGE_GUARD_TIME-age)/(DODGE_GUARD_TIME-DODGE_GUARD_HOLD),0,1);
 }
 function addHitShake(damage,hurt,vx,vy){
- if(!cfg.hitScreenShake||damage<=0)return;
- const strength=6*Math.sqrt(Math.min(damage/2,1));
+ if(!cfg.hitScreenShakeStrength||damage<=0)return;
+ const strength=cfg.hitScreenShakeStrength*Math.sqrt(Math.min(damage/2,1))*(hurt ? .9 : 1);
  const speed=hurt?Math.hypot(vx,vy):0;
  const heading=cameraHeading();
  const screenSide=speed>0?(Math.cos(heading)*vx+Math.sin(heading)*vy)/speed:0;
@@ -3045,8 +3048,11 @@ function hitShakeOffset(){
   const decay=(1-age/HIT_SHAKE_DURATION)**3;
   if(age<HIT_SHAKE_KICK_TIME){
    const kick=Math.sin(Math.PI*age/HIT_SHAKE_KICK_TIME);
-   x+=strength*decay*kick*(side*(1-Math.abs(screenSide)*kick)+.65*screenSide);
-   y-=strength*decay*kick;
+   const directionWeight=Math.abs(screenSide)*kick;
+   const horizontal=side*(1-directionWeight)+.9*screenSide*kick;
+   const vertical=1-.2*directionWeight;
+   x+=strength*decay*kick*horizontal;
+   y-=strength*decay*kick*vertical;
   }else{
    const phase=2*Math.PI*frequency*(age-HIT_SHAKE_KICK_TIME);
    tailX-=strength*decay*.65*side*Math.sin(phase*.82);
@@ -5296,7 +5302,7 @@ function syncDifficultyControl(){
  if(Object.hasOwn(BOT_LEVELS,$('mode').value))$('mode').value=cfg.difficulty;
 }
 const SETTINGS_KEY='near-field-settings';
-const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showActivationTrace','showHealthNumbers','showDamageNumbers','hitScreenShake','scaleCombatNumbersByWins','showPerformanceMonitor','holdToFire','continuousFire','compensateFovSensitivity','perspectiveAimMapping','playerShotSound','implosionEnabled','bulletMirrorEnabled','dodgeEnabled','bulletPauseEnabled'];
+const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showActivationTrace','showHealthNumbers','showDamageNumbers','scaleCombatNumbersByWins','showPerformanceMonitor','holdToFire','continuousFire','compensateFovSensitivity','perspectiveAimMapping','playerShotSound','implosionEnabled','bulletMirrorEnabled','dodgeEnabled','bulletPauseEnabled'];
 const PRESET_SLOTS=[1,2,3,4,5],INITIAL_PRESET_SLOT=2,DEFAULT_PRESET_SLOT=5;
 const dirtySettingNames=new Set();
 let activePresetSlot=INITIAL_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
@@ -5349,6 +5355,7 @@ function restoreSettings(){
  const saved=readSavedSettings();
  let rewrite=false;
  if(saved){
+  if(!Object.hasOwn(saved.values,'hitScreenShakeStrength')&&saved.hitScreenShake===true)cfg.hitScreenShakeStrength=6;
   const defaultsVersion=Number.isInteger(saved.gameplayDefaultsVersion)?saved.gameplayDefaultsVersion:0;
   const resetParameters=defaultsVersion<GAMEPLAY_DEFAULTS_VERSION;
   for(const name of SETTING_NAMES)if(Object.hasOwn(saved.values,name)){
@@ -5430,6 +5437,10 @@ for(const name of SETTING_NAMES)$(name).addEventListener('input',()=>{
  const value=name==='initialSpinSign'?(input.checked?-1:1):Number(input.value);
  cfg[name]=value/settingScale(name);dirtySettingNames.add(name);
  updateSettingOutput(name,value);
+ if(name==='hitScreenShakeStrength'){
+  if(value===0)hitShakes.length=0;
+  renderDirty=true;return;
+ }
  if(name==='followFov'){renderDirty=true;return;}
  stopStartupPreparation();
  if(name==='worldMouseSensitivity'){syncWorldMouseLock();return;}
@@ -5454,7 +5465,6 @@ $('maxHealth').addEventListener('change',()=>{
 for(const name of SETTING_CHECKBOXES)$(name).addEventListener('change',()=>{
  cfg[name==='continuousFire'?autoFireSetting:name]=$(name).checked;
  if(name==='showDamageNumbers'&&!cfg[name])damageNumbers=[];
- if(name==='hitScreenShake'&&!cfg[name])hitShakes.length=0;
  if(name==='scaleCombatNumbersByWins'){damageNumbers.length=0;updateHud(true);refreshOverlayText();}
  if(name==='showActivationPreview'&&!cfg[name])activationPreviewFades.length=0;
  if(name==='showActivationTrace')activationTraces.length=0;
@@ -5497,6 +5507,7 @@ $('preset-slot').addEventListener('change',()=>{
 $('defaults').addEventListener('click',()=>{
  stopStartupPreparation();
  applySettingValues(SETTING_NAMES,DEFAULTS);
+ hitShakes.length=0;
  for(const name of SETTING_NAMES)dirtySettingNames.add(name);
  const combatDisplayChanged=cfg.scaleCombatNumbersByWins!==DEFAULTS.scaleCombatNumbersByWins;
  for(const name of SETTING_CHECKBOXES)$(name).checked=cfg[name]=DEFAULTS[name];
