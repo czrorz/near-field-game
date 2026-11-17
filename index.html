@@ -1507,14 +1507,7 @@ function reset(run=false){
  gamePage.toggleAttribute('data-spectate',spectating);
  if(run)stopStartupPreparation();
  seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);cameraAngle=filteredCameraTarget=p.aim+Math.PI/2;
- if(!spectating){
-  if(perspectiveView()){
-   const projection=currentPerspectiveProjection();
-   const centerGround=perspectiveGroundY(VIEW_H*.5-projection.anchorY,projection);
-   p.range=selectAimRange(p,Number.isFinite(centerGround)?-centerGround:VIEW_H*.3);
-  }
-  else if(headingView())p.range=VIEW_H*(.8-.5);
- }
+ if(!spectating&&headingView())centerFollowAim(p);
  ending=null;defeatedEnemy=null;
  bullets=[];bulletFades=[];activationPreviewFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberIds=[0,0];elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
  activationTraces.length=0;
@@ -1755,6 +1748,15 @@ function updateCamera(dt){
  cameraAngle+=difference*(-Math.expm1(-followRate*dt));cameraAngle=Math.atan2(Math.sin(cameraAngle),Math.cos(cameraAngle));
 }
 function headingAimPoint(){return{x:p.x+Math.cos(p.aim)*p.range,y:p.y+Math.sin(p.aim)*p.range};}
+function centerFollowAim(actor){
+ let range=VIEW_H*(.8-.5)/followViewZoom();
+ if(perspectiveView()){
+  const projection=currentPerspectiveProjection();
+  const centerGround=perspectiveGroundY(VIEW_H*.5-projection.anchorY,projection);
+  if(Number.isFinite(centerGround))range=-centerGround;
+ }
+ actor.range=selectAimRange(actor,range);
+}
 function turnView(dx,dy,scale){
  dx*=scale;dy*=scale;
  const offset=aimCircleOffset(p),range=Math.max(p.range,minAimRange(p.aim,offset));
@@ -5234,13 +5236,13 @@ canvas.addEventListener('mousedown',e=>{
 });
 window.addEventListener('mouseup',e=>{if(e.button===0)endMouseFire(e);});
 canvas.addEventListener('pointermove',e=>{
- if(e.pointerType==='touch'||isSpectatorMode()||usesMouseLock())return;
+ if(e.pointerType==='touch'||isSpectatorMode()||usesMouseLock()||pointerLockPending||document.pointerLockElement===canvas)return;
  applyMouseMotion(e.movementX||0,e.movementY||0);
  if(aimSource!=='pad')Object.assign(mouse,pointerWorld(e));
  refreshInput();
 });
 document.addEventListener('mousemove',e=>{
- if(!pointerWasLocked||!usesMouseLock()||state!=='running')return;
+ if(!pointerWasLocked||document.pointerLockElement!==canvas||!usesMouseLock()||state!=='running')return;
  applyMouseMotion(e.movementX||0,e.movementY||0,true);
 });
 document.addEventListener('pointerlockchange',()=>{
@@ -5325,14 +5327,12 @@ for(const id of ['start','restart','pause','sound'])$(id).addEventListener('poin
  if(e.isTrusted&&(id!=='sound'||!cfg.sound))unlockAudio(id==='sound');
 });
 $('view').addEventListener('click',e=>{
- const wasPerspective=perspectiveView();
  cfg.view=VIEW_MODES[(VIEW_MODES.indexOf(cfg.view)+1)%VIEW_MODES.length];updateViewButton();cameraAngle=filteredCameraTarget=(ending?.actors[0]||p).aim+Math.PI/2;
  if(!isSpectatorMode()){
   clearFireInput();keys.clear();
-  if(aimSource!=='pad'||wasPerspective){
-   Object.assign(mouse,headingAimPoint());
-   if(!headingView())moveWorldCursor(0,0);
-  }
+  if(headingView())centerFollowAim(p);
+  Object.assign(mouse,headingAimPoint());
+  if(!headingView())moveWorldCursor(0,0);
   if(!usesMouseLock())releaseMouse();
  }
  saveSettings();renderDirty=true;
