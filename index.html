@@ -38,6 +38,7 @@ h1{font-size:24px;line-height:30px;letter-spacing:4px;margin:0;font-weight:500;w
 canvas{display:block;width:100%;aspect-ratio:8/5;touch-action:none;user-select:none;cursor:none}
 #perspective-plane{position:absolute;inset:0 auto auto 0;transform-origin:0 0;pointer-events:none}
 #perspective-plane[hidden]{display:none}
+#game:has(+ #perspective-plane:not([hidden])){opacity:0}
 #perspective-labels{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #perspective-labels[hidden]{display:none}
 main[data-spectate] canvas{cursor:default}
@@ -233,6 +234,7 @@ html[lang="en"] h1{letter-spacing:.02em}
       <div class="legend"><span><i class="dot"></i>你</span><span><i class="dot enemy"></i>对手</span><span><i class="dot faint"></i>暗弹无伤害</span><span><i class="dot solid"></i>亮弹能造成伤害</span></div>
       <p class="notes">WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。P 键暂停或继续，R 键重新开始。结算后按空格键再来一局。</p>
       <p class="notes">子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。</p>
+      <p class="notes">亮弹命中时会造成爆炸伤害和动量伤害。子弹变亮后，爆炸伤害会随飞行路程逐渐提高，直到达到上限。</p>
       <p class="notes">最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。</p>
       <p class="notes">每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。</p>
       <p class="notes">默认情况下，人物的生命值越低，体型越小，惯性也越低。</p>
@@ -332,14 +334,34 @@ html[lang="en"] h1{letter-spacing:.02em}
        <div class="setting">
         <label for="followFov">跟随视野<output id="followFov-value">100%</output></label>
         <input id="followFov" type="range" min="75" max="200" step="5" value="100">
-        <p class="setting-help">仅用于随瞄准转动的视角。数值越大，看得越远。</p>
+        <p class="setting-help">用于普通跟随视角。数值越大，看得越远。</p>
        </div>
        <label class="check"><input id="compensateFovSensitivity" type="checkbox" checked>按视野补偿灵敏度</label>
       </div>
       <div class="settings-grid settings-checks">
        <div>
-        <label class="check"><input id="perspectiveAimMapping" type="checkbox" checked aria-describedby="perspective-aim-help">斜俯视使用透视瞄准换算</label>
+        <label class="check"><input id="perspectiveAimMapping" type="checkbox" checked aria-describedby="perspective-aim-help">斜俯视使用投影瞄准换算</label>
         <p class="setting-help" id="perspective-aim-help">关闭后，斜俯视沿用普通跟随俯视的平面瞄准换算。</p>
+       </div>
+       <label class="check"><input id="obliqueAffineProjection" type="checkbox">斜俯视使用仿射投影</label>
+      </div>
+      <h3 class="settings-subtitle">斜俯视相机</h3>
+      <div class="settings-grid">
+       <div class="setting">
+        <label for="perspectiveHeight">相机高度<output id="perspectiveHeight-value">393</output></label>
+        <input id="perspectiveHeight" type="range" min="200" max="950" step="1" value="393">
+       </div>
+       <div class="setting">
+        <label for="perspectiveSetback">相机后退距离<output id="perspectiveSetback-value">324</output></label>
+        <input id="perspectiveSetback" type="range" min="0" max="900" step="1" value="324">
+       </div>
+       <div class="setting">
+        <label for="perspectivePitch">相机俯角<output id="perspectivePitch-value">50°</output></label>
+        <input id="perspectivePitch" type="range" min="30" max="90" step="1" value="50">
+       </div>
+       <div class="setting">
+        <label for="perspectiveFov">水平视野（FOV）<output id="perspectiveFov-value">80°</output></label>
+        <input id="perspectiveFov" type="range" min="40" max="110" step="1" value="80">
        </div>
       </div>
       <h3 class="settings-subtitle">瞄准灵敏度</h3>
@@ -568,12 +590,8 @@ const gamePage=playArea.parentElement,touchStick=$('touch-stick');
 const landscapeScreen=matchMedia('(orientation:landscape)');
 const VIEW_W=1200,VIEW_H=750,STEP=1/120,TAU=Math.PI*2;
 const VIEW_MODES=['heading','perspective','world'];
-const PERSPECTIVE={anchorY:VIEW_H*.70,xScale:1.4,yScale:1.08,depth:.00125};
-const perspectiveFront=perspectiveGroundY(-PERSPECTIVE.anchorY);
-const perspectiveBack=perspectiveGroundY(VIEW_H-PERSPECTIVE.anchorY);
-const perspectiveOriginX=Math.ceil(VIEW_W*.5*(1-PERSPECTIVE.depth*perspectiveFront)/PERSPECTIVE.xScale)+2;
-const perspectiveOriginY=Math.ceil(-perspectiveFront)+2;
-const perspectiveWidth=2*perspectiveOriginX,perspectiveHeight=perspectiveOriginY+Math.ceil(perspectiveBack)+2;
+const PERSPECTIVE_CENTER_Y=VIEW_H*.70,PERSPECTIVE_REACH=Math.hypot(VIEW_W,VIEW_H)+100;
+let perspectiveProjection=null,planeProjection=null;
 let W=1200,H=750;
 const ARENA_FRAME_INSET=24,BULLET_OVERHANG=20;
 const AIM_CIRCLE_RADIUS=100,AIM_CIRCLE_MAX_SHIFT=30;
@@ -675,16 +693,22 @@ const GAMEPLAY_DEFAULTS_VERSION=1;
 const COMBAT_DISPLAY_SCALE=1000;
 const DEFAULTS={
  maxHealth:10,actorRadius:15,minRadiusRatio:.7,actorAspect:0,moveSpeed:235,inertia:.45,bodyRepulsion:300,bodyRepulsionRange:100,
- burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,followFov:100,compensateFovSensitivity:true,perspectiveAimMapping:true,
+ burstCount:5,fireRate:6.25,reloadTime:1.1,mouseSensitivity:100,worldMouseSensitivity:100,followFov:100,compensateFovSensitivity:true,perspectiveAimMapping:true,obliqueAffineProjection:false,
+ perspectiveHeight:393,perspectiveSetback:324,perspectivePitch:50,perspectiveFov:80,
  annihilationChance:50,bulletSize:100,launchSpeed:800,propulsion:300,brightBulletLifetime:5,bandBase:100,band:100,initialSpinSign:1,launchSpinScale:0,receiverSpinScale:1,controlSpinScale:1,
  radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
  difficulty:'easy',holdToFire:false,continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:false,showAimCircle:false,showActivationPreview:false,showActivationTrace:false,showHealthNumbers:true,showDamageNumbers:true,hitScreenShakeStrength:2.5,scaleCombatNumbersByWins:false,showPerformanceMonitor:false,implosionEnabled:false,bulletMirrorEnabled:false,dodgeEnabled:false,bulletPauseEnabled:false
 };
 const cfg={...DEFAULTS,view:'heading'};
+const DEFAULT_PERSPECTIVE_PITCH=DEFAULTS.perspectivePitch*Math.PI/180;
+const DEFAULT_PERSPECTIVE_FOCAL=VIEW_W*.5/Math.tan(DEFAULTS.perspectiveFov*Math.PI/360);
+const DEFAULT_PERSPECTIVE_SCALE=DEFAULT_PERSPECTIVE_FOCAL/(
+ DEFAULTS.perspectiveSetback*Math.cos(DEFAULT_PERSPECTIVE_PITCH)+DEFAULTS.perspectiveHeight*Math.sin(DEFAULT_PERSPECTIVE_PITCH));
 let autoFireSetting='continuousFire';
-const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","followFov","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","brightBulletLifetime","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale","hitScreenShakeStrength"];
+const PERSPECTIVE_SETTING_NAMES=['perspectiveHeight','perspectiveSetback','perspectivePitch','perspectiveFov'];
+const SETTING_NAMES=["moveSpeed","inertia","maxHealth","actorRadius","minRadiusRatio","actorAspect","bodyRepulsionRange","bodyRepulsion","followFov","worldMouseSensitivity","mouseSensitivity","burstCount","fireRate","reloadTime","launchSpeed","propulsion","bulletSize","annihilationChance","initialSpinSign","launchSpinScale","brightBulletLifetime","bandBase","band","minimumDamage","damageRampDistance","radius","drag","receiverSpinScale","spinForce","controlRadius","controlSpinScale","momentumDamageScale","momentumDamageCap","knockbackScale","hitScreenShakeStrength",...PERSPECTIVE_SETTING_NAMES];
 const MOUSE_SETTING_NAMES=['mouseSensitivity','worldMouseSensitivity'];
-const PRESET_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name)&&name!=='hitScreenShakeStrength');
+const PRESET_SETTING_NAMES=SETTING_NAMES.filter(name=>!MOUSE_SETTING_NAMES.includes(name)&&!PERSPECTIVE_SETTING_NAMES.includes(name)&&name!=='hitScreenShakeStrength');
 const ACTOR={get radius(){return cfg.actorRadius;},get health(){return cfg.maxHealth;},get speed(){return cfg.moveSpeed;},get shotRadius(){return 2.8*(cfg.bulletSize/100);}};
 const IMPACT={decay:.16,maxSpeed:600};
 const DODGE_IMPULSE=500,DODGE_GUARD_HOLD=.2,DODGE_GUARD_TIME=.5,DODGE_MAX_REDUCTION=.8;
@@ -734,6 +758,7 @@ const ENGLISH={
  "显示满血为基础满血加上总胜场^1.5，最高 1000000。伤害数字按满血的比例缩放。": "Displayed max health is base max health plus total wins^1.5, capped at 1,000,000. Damage numbers scale by the same ratio.",
  "WASD 移动，鼠标瞄准。点击发射一组子弹，按住连续射击。P 键暂停或继续，R 键重新开始。结算后按空格键再来一局。": "Move with WASD and aim with the mouse. Click to fire a burst or hold to keep firing. Press P to pause or resume, R to restart, and Space to play again after the result.",
  "子弹出膛时是暗弹，飞到瞄准的距离才会变亮。只有亮弹能伤到对手。双方的暗弹相撞时有概率互相抵消。": "Bullets start dim and turn bright after traveling the distance you aim for. Only bright bullets can hurt your opponent. When dim bullets from opposing sides collide, they can cancel each other out.",
+ "亮弹命中时会造成爆炸伤害和动量伤害。子弹变亮后，爆炸伤害会随飞行路程逐渐提高，直到达到上限。": "Bright bullets deal explosion damage and momentum damage on impact. After a bullet turns bright, its explosion damage increases with distance traveled until it reaches the maximum.",
  "最小瞄准圈朝移动方向偏移，圈边标出变亮所需的最短距离。距离线的两端对应子弹预计变亮和消失的位置。": "The minimum aim circle shifts in the direction you move, and its edge marks the minimum distance a bullet must travel before turning bright. The ends of the range line show where bullets are expected to turn bright and disappear.",
  "每个角色身边有两种力场，都只影响亮弹。接收场让敌方亮弹减速、偏转，控弹场改变己方亮弹的方向。相对弹道横移时，力场会把子弹往你移动的一侧带。开火时相对射击方向横移会给子弹加上自旋，影响它在对手接收场里的弹道。": "Each character has two fields that act only on bright bullets. The receiving field slows and deflects enemy bright bullets, and the control field steers your own. Moving sideways relative to a bullet's path pulls it to that side through your field. Moving sideways relative to your aim when firing adds spin, which affects the bullet's path in your opponent's receiving field.",
  "默认情况下，人物的生命值越低，体型越小，惯性也越低。": "By default, characters shrink and lose inertia as their health drops.",
@@ -792,11 +817,18 @@ const ENGLISH={
  "固定视角": "Fixed view",
  "随瞄准转动": "Rotate with aim",
  "斜俯视透视": "Oblique perspective",
+ "斜俯视仿射": "Oblique affine view",
  "视角与瞄准": "Camera & aiming",
+ "斜俯视相机": "Oblique camera",
+ "相机高度": "Camera height",
+ "相机后退距离": "Camera setback",
+ "相机俯角": "Camera pitch",
+ "水平视野（FOV）": "Horizontal FOV",
  "跟随视野": "Follow view FOV",
- "仅用于随瞄准转动的视角。数值越大，看得越远。": "Applies to the aim-following view. Higher values show more of the arena.",
+ "用于普通跟随视角。数值越大，看得越远。": "For the standard follow view. Higher values show more of the arena.",
  "按视野补偿灵敏度": "Scale sensitivity with FOV",
- "斜俯视使用透视瞄准换算": "Use perspective aim mapping in oblique view",
+ "斜俯视使用投影瞄准换算": "Use projection-based aiming in oblique view",
+ "斜俯视使用仿射投影": "Use affine projection in oblique view",
  "关闭后，斜俯视沿用普通跟随俯视的平面瞄准换算。": "Turn off to use the standard follow view's flat aim mapping in oblique view.",
  "无法锁定鼠标。请再点一次战场，或切换到固定视角。": "Could not capture the mouse. Click the arena again or switch to Fixed view.",
  "无法锁定鼠标。现在可以直接移动指针瞄准。": "Could not capture the mouse. You can now aim with the pointer directly.",
@@ -938,7 +970,7 @@ function settingScale(name){
   default:return 1;
  }
 }
-function formatSetting(name,value){if(name==='reloadTime'||name==='brightBulletLifetime')return tr('{value} 秒',{value:value.toFixed(1)});if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance'||name==='minRadiusRatio'||name==='worldMouseSensitivity'||name==='mouseSensitivity'||name==='followFov')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale'||name==='controlSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='drag'?value.toFixed(3):name==='knockbackScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':String(value);}
+function formatSetting(name,value){if(name==='perspectivePitch'||name==='perspectiveFov')return value+'°';if(name==='reloadTime'||name==='brightBulletLifetime')return tr('{value} 秒',{value:value.toFixed(1)});if(name==='momentumDamageScale')return value.toFixed(4);if(name==='minimumDamage'||name==='maxHealth')return String(Math.round(value));if(name==='annihilationChance'||name==='minRadiusRatio'||name==='worldMouseSensitivity'||name==='mouseSensitivity'||name==='followFov')return value+'%';if(name==='launchSpinScale'||name==='receiverSpinScale'||name==='controlSpinScale')return value.toFixed(1);if(name==='actorAspect'){const ratio=Number((1+Math.abs(value)/100).toFixed(2));return value<0?'1:'+ratio:ratio+':1';}return name==='drag'?value.toFixed(3):name==='knockbackScale'?value.toFixed(2):name==='fireRate'?tr('{value} 发/秒',{value:value.toFixed(2)}):name==='inertia'?value+' ms':name==='bulletSize'?value+'%':String(value);}
 function updateSettingOutput(name,value){
  const output=$(name+'-value');
  if(output)output.textContent=formatSetting(name,value);
@@ -957,7 +989,7 @@ function updatePauseButton(){
 function updateSoundButton(){const button=$('sound');button.title=tr(cfg.sound?'声音已开启':'声音已关闭');button.setAttribute('aria-pressed',String(cfg.sound));}
 function updateViewButton(){
  const button=$('view'),mode=headingView()?cfg.view:'world';
- const label=tr(mode==='perspective'?'斜俯视透视':mode==='heading'?'随瞄准转动':'固定视角');
+ const label=tr(mode==='perspective'?(cfg.obliqueAffineProjection?'斜俯视仿射':'斜俯视透视'):mode==='heading'?'随瞄准转动':'固定视角');
  button.dataset.view=mode;button.title=label;button.setAttribute('aria-label',label);
 }
 function applyLanguage(){
@@ -1138,7 +1170,8 @@ function impactSoundPan(kind,point){
   return .3*clamp(lateral*1.7,-1,1);
  }
  // Use the same horizontal projection and zoom as the following camera.
- const screenOffset=(co*(point.x-p.x)+si*(point.y-p.y))*followViewZoom();
+ const zoom=perspectiveView()?currentPerspectiveProjection().xScale/DEFAULT_PERSPECTIVE_SCALE:followViewZoom();
+ const screenOffset=(co*(point.x-p.x)+si*(point.y-p.y))*zoom;
  return clamp(screenOffset*1.4/VIEW_W,-.8,.8);
 }
 function playShotSound(actor){
@@ -1475,7 +1508,11 @@ function reset(run=false){
  if(run)stopStartupPreparation();
  seed=3947+(rounds++*813);p=createActor(0,W*.25,H*.5);cameraAngle=filteredCameraTarget=p.aim+Math.PI/2;
  if(!spectating){
-  if(perspectiveView())p.range=selectAimRange(p,-perspectiveGroundY(VIEW_H*.5-PERSPECTIVE.anchorY)/followViewZoom());
+  if(perspectiveView()){
+   const projection=currentPerspectiveProjection();
+   const centerGround=perspectiveGroundY(VIEW_H*.5-projection.anchorY,projection);
+   p.range=selectAimRange(p,Number.isFinite(centerGround)?-centerGround:VIEW_H*.3);
+  }
   else if(headingView())p.range=VIEW_H*(.8-.5);
  }
  ending=null;defeatedEnemy=null;
@@ -1645,15 +1682,35 @@ function getInput(pad,dt=STEP){
 function headingView(){return cfg.view==='heading'||cfg.view==='perspective';}
 function perspectiveView(){return cfg.view==='perspective';}
 function followViewZoom(){return 100/cfg.followFov;}
-function perspectiveGroundY(screenY){
- const {yScale,depth}=PERSPECTIVE;
- return screenY/(yScale+depth*screenY);
+function currentPerspectiveProjection(){
+ if(perspectiveProjection)return perspectiveProjection;
+ const {perspectiveHeight:height,perspectiveSetback:setback,perspectivePitch,perspectiveFov}=cfg;
+ const pitch=perspectivePitch*Math.PI/180;
+ const sin=Math.sin(pitch),cos=Math.cos(pitch),focal=VIEW_W*.5/Math.tan(perspectiveFov*Math.PI/360);
+ const distance=setback*cos+height*sin;
+ const xScale=focal/distance,yScale=xScale*height/distance;
+ const depth=cfg.obliqueAffineProjection?0:cos/distance;
+ const anchorY=PERSPECTIVE_CENTER_Y+xScale*(height*cos-setback*sin);
+ const projection={anchorY,xScale,yScale,depth};
+ // A wide or low view can include the horizon. The arena has finite extent.
+ const front=Math.max(-PERSPECTIVE_REACH,perspectiveGroundY(-anchorY,projection));
+ const back=Math.min(PERSPECTIVE_REACH,perspectiveGroundY(VIEW_H-anchorY,projection));
+ const originX=Math.ceil(Math.min(PERSPECTIVE_REACH,VIEW_W*.5*(1-depth*front)/xScale))+2;
+ const originY=Math.ceil(-front)+2;
+ const liftScale=xScale*cos/(DEFAULT_PERSPECTIVE_SCALE*Math.cos(DEFAULT_PERSPECTIVE_PITCH));
+ const lensScale=focal/DEFAULT_PERSPECTIVE_FOCAL;
+ return perspectiveProjection={...projection,front,back,originX,originY,
+  width:2*originX,height:Math.max(1,originY+Math.ceil(back)+2),liftScale,lensScale};
+}
+function perspectiveGroundY(screenY,{yScale,depth}){
+ const denominator=yScale+depth*screenY;
+ return denominator>0?screenY/denominator:-Infinity;
 }
 function usesPerspectiveAimMapping(){return perspectiveView()&&cfg.perspectiveAimMapping;}
 function aimSensitivity(follow){
  const name=follow?'mouseSensitivity':'worldMouseSensitivity',sensitivity=cfg[name]*settingScale(name)/100;
  if(!follow)return sensitivity;
- const zoom=followViewZoom(),compensate=cfg.compensateFovSensitivity;
+ const zoom=perspectiveView()?currentPerspectiveProjection().lensScale:followViewZoom(),compensate=cfg.compensateFovSensitivity;
  if(usesPerspectiveAimMapping())return compensate?sensitivity:sensitivity*zoom;
  return compensate?sensitivity/zoom:sensitivity;
 }
@@ -1703,10 +1760,10 @@ function turnView(dx,dy,scale){
  const offset=aimCircleOffset(p),range=Math.max(p.range,minAimRange(p.aim,offset));
  const a=cameraHeading(),co=Math.cos(a),si=Math.sin(a),sx=Math.cos(p.aim)*range,sy=Math.sin(p.aim)*range;
  if(usesPerspectiveAimMapping()){
-  const {xScale,yScale,depth}=PERSPECTIVE,zoom=followViewZoom();
-  const u=zoom*(co*sx+si*sy),v=clamp(zoom*(-si*sx+co*sy),perspectiveFront,perspectiveBack);
+  const {xScale,yScale,depth,front,back}=currentPerspectiveProjection();
+  const u=co*sx+si*sy,v=clamp(-si*sx+co*sy,front,back);
   const q=1-depth*v,dv=dy*q*q/yScale;
-  dx=(dx*q/xScale-depth*u*dv/q)/zoom;dy=dv/zoom;
+  dx=dx*q/xScale-depth*u*dv/q;dy=dv;
  }
  const vx=co*dx-si*dy,vy=si*dx+co*dy;
  let x=sx+vx,y=sy+vy;
@@ -3034,7 +3091,8 @@ function dodgeReductionAt(a,time){
 }
 function addHitShake(damage,hurt,vx,vy){
  if(!cfg.hitScreenShakeStrength||damage<=0)return;
- const strength=cfg.hitScreenShakeStrength*Math.sqrt(Math.min(damage/2,1))*(hurt ? .9 : 1);
+ const damageStrength=Math.sqrt(Math.min(damage/2,1));
+ const strength=cfg.hitScreenShakeStrength*(.25+.75*damageStrength)*(hurt ? .9 : 1);
  const speed=hurt?Math.hypot(vx,vy):0;
  const heading=cameraHeading();
  const screenSide=speed>0?(Math.cos(heading)*vx+Math.sin(heading)*vy)/speed:0;
@@ -3045,7 +3103,7 @@ function hitShakeOffset(){
  let x=0,y=0;
  let tailX=0,tailY=0;
  for(const {age,strength,side,frequency,screenSide} of hitShakes){
-  const decay=(1-age/HIT_SHAKE_DURATION)**3;
+  const decay=(1-age/HIT_SHAKE_DURATION)**(age<HIT_SHAKE_KICK_TIME?3:2);
   if(age<HIT_SHAKE_KICK_TIME){
    const kick=Math.sin(Math.PI*age/HIT_SHAKE_KICK_TIME);
    const directionWeight=Math.abs(screenSide)*kick;
@@ -4590,10 +4648,11 @@ function drawLoopImages(a,drawing,view=null){
  for(let iy=-1;iy<=1;iy++)for(let ix=-1;ix<=1;ix++){
   if(!ix&&!iy)continue;
   const dx=ix*(W-48),dy=iy*(H-48),x=a.x+dx,y=a.y+dy;
-  if(view?.perspective){
+  if(view?.projection){
+   const {originX,front,back}=view.projection;
    const dx=x-view.x,dy=y-view.y,margin=r*view.zoom;
    const u=view.zoom*(view.co*dx+view.si*dy),v=view.zoom*(-view.si*dx+view.co*dy);
-   if(Math.abs(u)>perspectiveOriginX+margin||v<perspectiveFront-margin||v>perspectiveBack+margin)continue;
+   if(Math.abs(u)>originX+margin||v<front-margin||v>back+margin)continue;
   }
   else if(view){
    const dx=x-view.x,dy=y-view.y,screenRadius=r*view.zoom;
@@ -4677,7 +4736,7 @@ function drawBullet(b,fade=null,alpha=1,view=null){
  const charge=solid?(fade===null?projectileDamage(b,travel):b.fadeDamage??projectileDamage(b)):0;
  const fadeScale=fade===null?1:clamp(fade,0,1);
  const palette=BULLET_COLORS[b.team===0?0:1],color=solid?palette.solid:palette.ghost;
- if(solid&&view?.perspective){drawPerspectiveBrightBullet(x,y,b.r,color,charge,fadeScale,view);return;}
+ if(solid&&view?.projection){drawPerspectiveBrightBullet(x,y,b.r,color,charge,fadeScale,view);return;}
  ctx.save();
  // Fixed geometry: charge changes fill/glow brightness, never projectile size.
  if(solid){
@@ -4832,21 +4891,24 @@ function drawImpactEffect(e,age=e.age){
  }
  ctx.restore();
 }
-function updatePerspectivePlane(){
- const {anchorY,xScale,yScale,depth}=PERSPECTIVE;
+function updatePerspectivePlane(projection){
+ const {anchorY,xScale,yScale,depth,originX,originY,width:planeWidth,height:planeHeight}=projection;
  const sx=1/pointerWidthScale,sy=1/pointerDistanceScale;
- const width=Math.ceil(perspectiveWidth*canvas.width/VIEW_W),height=Math.ceil(perspectiveHeight*canvas.height/VIEW_H);
+ const rasterWidth=planeWidth*canvas.width/VIEW_W,rasterHeight=planeHeight*canvas.height/VIEW_H;
+ const rasterScale=Math.min(1,4500/rasterWidth,4500/rasterHeight,Math.sqrt(16000000/(rasterWidth*rasterHeight)));
+ const width=Math.ceil(rasterWidth*rasterScale),height=Math.ceil(rasterHeight*rasterScale);
  if(perspectivePlane.width!==width)perspectivePlane.width=width;
  if(perspectivePlane.height!==height)perspectivePlane.height=height;
- perspectivePlane.style.width=perspectiveWidth*sx+'px';
- perspectivePlane.style.height=perspectiveHeight*sy+'px';
+ perspectivePlane.style.width=planeWidth*sx+'px';
+ perspectivePlane.style.height=planeHeight*sy+'px';
  // Canvas coordinates are translated to the camera origin before the
  // homogeneous divide. All world layers share this ground-plane projection.
- const centerX=VIEW_W*.5,q0=1+depth*perspectiveOriginY;
- perspectivePlane.style.transform=`matrix3d(${xScale},0,0,0,${-centerX*depth*sx/sy},${yScale-anchorY*depth},0,${-depth/sy},0,0,1,0,${(centerX*q0-xScale*perspectiveOriginX)*sx},${(anchorY*q0-yScale*perspectiveOriginY)*sy},0,${q0})`;
+ const centerX=VIEW_W*.5,q0=1+depth*originY;
+ perspectivePlane.style.transform=`matrix3d(${xScale},0,0,0,${-centerX*depth*sx/sy},${yScale-anchorY*depth},0,${-depth/sy},0,0,1,0,${(centerX*q0-xScale*originX)*sx},${(anchorY*q0-yScale*originY)*sy},0,${q0})`;
+ planeProjection=projection;
 }
 function perspectiveScreenPoint(x,y,view,lift=0){
- const {anchorY,xScale,yScale,depth}=PERSPECTIVE,dx=x-view.x,dy=y-view.y;
+ const {anchorY,xScale,yScale,depth}=view.projection,dx=x-view.x,dy=y-view.y;
  const u=view.zoom*(view.co*dx+view.si*dy),v=view.zoom*(-view.si*dx+view.co*dy);
  const q=1-depth*v;
  if(q<=0)return null;
@@ -4854,8 +4916,8 @@ function perspectiveScreenPoint(x,y,view,lift=0){
 }
 function drawPerspectiveCover(drawing,view){
  if(!drawing.cover.length)return;
- const paint=labelContext,wallLift=80;
- const limit=perspectiveGroundY(VIEW_H-PERSPECTIVE.anchorY+2*wallLift*view.zoom);
+ const projection=view.projection,paint=labelContext,wallLift=80*projection.liftScale;
+ const limit=perspectiveGroundY(VIEW_H-projection.anchorY+2*wallLift*view.zoom,projection);
  const depthAt=p=>view.zoom*(-view.si*(p.x-view.x)+view.co*(p.y-view.y));
  const walls=drawing.cover.map(({points,absorbs})=>({
   points,absorbs,depth:(depthAt(points[0])+depthAt(points[points.length/2]))*.5
@@ -4895,7 +4957,7 @@ function drawPerspectiveCover(drawing,view){
 }
 function tracePerspectiveEdge(paint,x0,y0,x1,y1,view){
  // Clip at the bottom of the viewport before dividing by depth.
- const limit=perspectiveGroundY(VIEW_H-PERSPECTIVE.anchorY+4);
+ const projection=view.projection,limit=perspectiveGroundY(VIEW_H-projection.anchorY+4,projection);
  const depth0=view.zoom*(-view.si*(x0-view.x)+view.co*(y0-view.y));
  const depth1=view.zoom*(-view.si*(x1-view.x)+view.co*(y1-view.y));
  if(depth0>limit&&depth1>limit)return;
@@ -4934,13 +4996,14 @@ function render(alpha=1){
  const aimPoint=pointerAimPoint();
  if(!ending&&aimPoint)aimAt(visualPlayer,aimPoint);
  const perspective=perspectiveView();
+ const projection=perspective?currentPerspectiveProjection():null;
  const shake=hitShakeOffset();
  if(perspective){
   const offset=shake.x||shake.y?`${shake.x/pointerWidthScale}px ${shake.y/pointerDistanceScale}px`:'';
   perspectivePlane.style.translate=perspectiveLabels.style.translate=offset;
+  if(perspectivePlane.hidden||planeProjection!==projection)updatePerspectivePlane(projection);
  }
  if(perspectivePlane.hidden===perspective){
-  if(perspective)updatePerspectivePlane();
   perspectivePlane.hidden=!perspective;
   perspectiveLabels.hidden=!perspective;
  }
@@ -4950,16 +5013,16 @@ function render(alpha=1){
   labelContext.setTransform(canvas.width/VIEW_W,0,0,canvas.height/VIEW_H,0,0);
   labelContext.clearRect(0,0,VIEW_W,VIEW_H);
  }
- const drawWidth=perspective?perspectiveWidth:VIEW_W,drawHeight=perspective?perspectiveHeight:VIEW_H;
+ const drawWidth=projection?.width??VIEW_W,drawHeight=projection?.height??VIEW_H;
  const surface=perspective?perspectivePlane:canvas;
  ctx=perspective?perspectiveContext:flatContext;
  renderFrames++;
  ctx.setTransform(surface.width/drawWidth,0,0,surface.height/drawHeight,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,drawWidth,drawHeight);
  if(!perspective)ctx.translate(shake.x,shake.y);
- const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,zoom=camera?followViewZoom():1;
- const view=camera?{x:camera.x,y:camera.y,co:Math.cos(heading),si:Math.sin(heading),zoom,perspective}:null;
+ const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,zoom=camera&&!projection?followViewZoom():1;
+ const view=camera?{x:camera.x,y:camera.y,co:Math.cos(heading),si:Math.sin(heading),zoom,projection}:null;
  if(view){
-  ctx.translate(perspective?perspectiveOriginX:VIEW_W*.5,perspective?perspectiveOriginY:VIEW_H*.8);
+  ctx.translate(projection?.originX??VIEW_W*.5,projection?.originY??VIEW_H*.8);
   ctx.scale(zoom,zoom);ctx.rotate(-heading);ctx.translate(-view.x,-view.y);
  }else ctx.translate((VIEW_W-W)/2,(VIEW_H-H)/2);
  // Keep terrain shading and contours inside the arena; draw the border separately.
@@ -5302,7 +5365,7 @@ function syncDifficultyControl(){
  if(Object.hasOwn(BOT_LEVELS,$('mode').value))$('mode').value=cfg.difficulty;
 }
 const SETTINGS_KEY='near-field-settings';
-const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showActivationTrace','showHealthNumbers','showDamageNumbers','scaleCombatNumbersByWins','showPerformanceMonitor','holdToFire','continuousFire','compensateFovSensitivity','perspectiveAimMapping','playerShotSound','implosionEnabled','bulletMirrorEnabled','dodgeEnabled','bulletPauseEnabled'];
+const SETTING_CHECKBOXES=['showField','showRange','showAimCircle','showActivationPreview','showActivationTrace','showHealthNumbers','showDamageNumbers','scaleCombatNumbersByWins','showPerformanceMonitor','holdToFire','continuousFire','compensateFovSensitivity','perspectiveAimMapping','obliqueAffineProjection','playerShotSound','implosionEnabled','bulletMirrorEnabled','dodgeEnabled','bulletPauseEnabled'];
 const PRESET_SLOTS=[1,2,3,4,5],INITIAL_PRESET_SLOT=2,DEFAULT_PRESET_SLOT=5;
 const dirtySettingNames=new Set();
 let activePresetSlot=INITIAL_PRESET_SLOT,presetSaveFailed=false,pendingPresetBackup=null;
@@ -5319,6 +5382,7 @@ function settingValues(names,source=cfg){
  return values;
 }
 function applySettingValues(names,values){
+ if(names.includes('perspectivePitch'))perspectiveProjection=null;
  for(const name of names){
   cfg[name]=values[name];
   const input=$(name);
@@ -5361,6 +5425,12 @@ function restoreSettings(){
   for(const name of SETTING_NAMES)if(Object.hasOwn(saved.values,name)){
    if(name==='band'&&!Object.hasOwn(saved.values,'bandBase'))continue;
    let value=saved.values[name];
+   if(PERSPECTIVE_SETTING_NAMES.includes(name)&&Number.isFinite(value)){
+    const input=$(name);
+    value=name==='perspectivePitch'&&value===50.5?DEFAULTS.perspectivePitch:Math.round(value);
+    value=clamp(value,Number(input.min),Number(input.max));
+    if(value!==saved.values[name])rewrite=true;
+   }
    if(name==='actorAspect'&&Number.isFinite(value)&&Math.abs(value)<=100&&value%5===0)value=Math.sign(value)*Math.round(Math.abs(value)/10)*10;
    if(validSettingValue(name,value))cfg[name]=value;
    else if(MOUSE_SETTING_NAMES.includes(name))rewrite=true;
@@ -5387,6 +5457,18 @@ function restoreSettings(){
   if(typeof saved.scaleCombatNumbersByWins!=='boolean'&&typeof saved.scaleDamageNumbersByWins==='boolean')cfg.scaleCombatNumbersByWins=saved.scaleDamageNumbersByWins;
   if(typeof saved.bulletPauseEnabled!=='boolean'&&typeof saved.petrifyEnabled==='boolean')cfg.bulletPauseEnabled=saved.petrifyEnabled;
   if(VIEW_MODES.includes(saved.view))cfg.view=saved.view;
+  if(PERSPECTIVE_SETTING_NAMES.every(name=>!Object.hasOwn(saved.values,name))){
+   const {perspectiveHeight,perspectiveSetback,perspectivePitch,perspectiveFov}=DEFAULTS;
+   const [height,setback,pitch,fov]=saved.perspectivePitch==='low'?[380,446,40,64]
+    :saved.perspectivePitch==='high'?[449,208,65,82]:[perspectiveHeight,perspectiveSetback,perspectivePitch,perspectiveFov];
+   // The previous follow FOV scaled the ground before projection, like dollying.
+   const distanceScale=cfg.followFov/100;
+   cfg.perspectiveHeight=Math.round(height*distanceScale);
+   cfg.perspectiveSetback=Math.round(setback*distanceScale);
+   cfg.perspectivePitch=pitch;
+   cfg.perspectiveFov=fov;
+   rewrite=true;
+  }
   const difficulty=saved.difficulty==='hard1'?'hard':saved.difficulty;
   const mode=saved.mode==='hard1'?'hard':saved.mode;
   if(difficulty!==saved.difficulty||mode!==saved.mode)rewrite=true;
@@ -5437,6 +5519,9 @@ for(const name of SETTING_NAMES)$(name).addEventListener('input',()=>{
  const value=name==='initialSpinSign'?(input.checked?-1:1):Number(input.value);
  cfg[name]=value/settingScale(name);dirtySettingNames.add(name);
  updateSettingOutput(name,value);
+ if(PERSPECTIVE_SETTING_NAMES.includes(name)){
+  perspectiveProjection=null;renderDirty=true;return;
+ }
  if(name==='hitScreenShakeStrength'){
   if(value===0)hitShakes.length=0;
   renderDirty=true;return;
@@ -5464,6 +5549,7 @@ $('maxHealth').addEventListener('change',()=>{
 });
 for(const name of SETTING_CHECKBOXES)$(name).addEventListener('change',()=>{
  cfg[name==='continuousFire'?autoFireSetting:name]=$(name).checked;
+ if(name==='obliqueAffineProjection'){perspectiveProjection=null;updateViewButton();}
  if(name==='showDamageNumbers'&&!cfg[name])damageNumbers=[];
  if(name==='scaleCombatNumbersByWins'){damageNumbers.length=0;updateHud(true);refreshOverlayText();}
  if(name==='showActivationPreview'&&!cfg[name])activationPreviewFades.length=0;
@@ -5511,6 +5597,7 @@ $('defaults').addEventListener('click',()=>{
  for(const name of SETTING_NAMES)dirtySettingNames.add(name);
  const combatDisplayChanged=cfg.scaleCombatNumbersByWins!==DEFAULTS.scaleCombatNumbersByWins;
  for(const name of SETTING_CHECKBOXES)$(name).checked=cfg[name]=DEFAULTS[name];
+ updateViewButton();
  if(combatDisplayChanged){damageNumbers.length=0;refreshOverlayText();}
  resetPerformanceMonitor();
  cfg.mobileAutoFire=DEFAULTS.mobileAutoFire;$('continuousFire').checked=cfg[autoFireSetting];
@@ -5533,7 +5620,7 @@ function resize(){
  healthDrawScale=Math.max(1,Math.min(2,HEALTH_FONT_MIN_SCREEN_SIZE*widthScale/HEALTH_FONT_SIZE));
  const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
  if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;renderDirty=true;}
- if(width&&height&&!perspectivePlane.hidden)updatePerspectivePlane();
+ if(width&&height&&!perspectivePlane.hidden)updatePerspectivePlane(currentPerspectiveProjection());
 }
 const toolbar=document.querySelector('.top');
 const resizeObserver=new ResizeObserver(entries=>{
