@@ -2042,7 +2042,7 @@ function startProjectileDamage(b,carrier=b.team===0?enemy:p,age=b.age||0){
  b.damageStart=b.travel;b.damageEnd=end;b.brightAt=age;return true;
 }
 
-function bulletAcceleration(b,x,y,vx,vy,travel=b.travel||0,carrier=b.team===0?enemy:p,fieldActive=projectileDamageActive(b,travel),speed=Math.hypot(vx,vy),source=null){
+function bulletAcceleration(b,x,y,vx,vy,travel=b.travel||0,carrier=b.team===0?enemy:p,fieldActive=projectileDamageActive(b,travel),speed=Math.hypot(vx,vy),source=null,out={}){
  const dx=speed>1e-8?vx/speed:b.dx||0,dy=speed>1e-8?vy/speed:b.dy||0;
  let forward=cfg.propulsion,turn=0;
  // Character fields add independently; source is supplied only for bright flight.
@@ -2055,7 +2055,9 @@ function bulletAcceleration(b,x,y,vx,vy,travel=b.travel||0,carrier=b.team===0?en
  }
  turn/=Math.hypot(speed,6);
  const mapForce=mapAcceleration(x,y);
- return{x:forward*dx-turn*vy+mapForce.x,y:forward*dy+turn*vx+mapForce.y};
+ out.x=forward*dx-turn*vy+mapForce.x;
+ out.y=forward*dy+turn*vx+mapForce.y;
+ return out;
 }
 function projectileStraightTime(distance,speed,acceleration=cfg.propulsion){
  distance=Math.max(0,distance);
@@ -2067,24 +2069,35 @@ function projectileStraightStep(b,dt){
  b.x+=dx*distance;b.y+=dy*distance;b.travel+=distance;
  b.vx=dx*nextSpeed;b.vy=dy*nextSpeed;b.dx=dx;b.dy=dy;
 }
+const projectileStageAccelerations=Array.from({length:4},()=>({x:0,y:0}));
 function projectileRK4(b,dt,carrier,fieldActive,source=null){
  const h=dt*.5,x=b.x,y=b.y,vx=b.vx,vy=b.vy,s=b.travel;
- const speed1=Math.hypot(vx,vy),a=bulletAcceleration(b,x,y,vx,vy,s,carrier,fieldActive,speed1,source);
- const v2x=vx+a.x*h,v2y=vy+a.y*h,speed2=Math.hypot(v2x,v2y),a2=bulletAcceleration(b,x+vx*h,y+vy*h,v2x,v2y,s+speed1*h,carrier,fieldActive,speed2,source);
- const v3x=vx+a2.x*h,v3y=vy+a2.y*h,speed3=Math.hypot(v3x,v3y),a3=bulletAcceleration(b,x+v2x*h,y+v2y*h,v3x,v3y,s+speed2*h,carrier,fieldActive,speed3,source);
- const v4x=vx+a3.x*dt,v4y=vy+a3.y*dt,speed4=Math.hypot(v4x,v4y),a4=bulletAcceleration(b,x+v3x*dt,y+v3y*dt,v4x,v4y,s+speed3*dt,carrier,fieldActive,speed4,source);
+ const speed1=Math.hypot(vx,vy);
+ const a1=bulletAcceleration(b,x,y,vx,vy,s,carrier,fieldActive,speed1,source,projectileStageAccelerations[0]);
+ const v2x=vx+a1.x*h,v2y=vy+a1.y*h,speed2=Math.hypot(v2x,v2y);
+ const a2=bulletAcceleration(b,x+vx*h,y+vy*h,v2x,v2y,s+speed1*h,carrier,fieldActive,speed2,source,projectileStageAccelerations[1]);
+ const v3x=vx+a2.x*h,v3y=vy+a2.y*h,speed3=Math.hypot(v3x,v3y);
+ const a3=bulletAcceleration(b,x+v2x*h,y+v2y*h,v3x,v3y,s+speed2*h,carrier,fieldActive,speed3,source,projectileStageAccelerations[2]);
+ const v4x=vx+a3.x*dt,v4y=vy+a3.y*dt,speed4=Math.hypot(v4x,v4y);
+ const a4=bulletAcceleration(b,x+v3x*dt,y+v3y*dt,v4x,v4y,s+speed3*dt,carrier,fieldActive,speed4,source,projectileStageAccelerations[3]);
  b.x=x+dt/6*(vx+2*v2x+2*v3x+v4x);b.y=y+dt/6*(vy+2*v2y+2*v3y+v4y);
- b.vx=vx+dt/6*(a.x+2*a2.x+2*a3.x+a4.x);b.vy=vy+dt/6*(a.y+2*a2.y+2*a3.y+a4.y);
+ b.vx=vx+dt/6*(a1.x+2*a2.x+2*a3.x+a4.x);b.vy=vy+dt/6*(a1.y+2*a2.y+2*a3.y+a4.y);
  b.travel=s+dt/6*(speed1+2*speed2+2*speed3+speed4);
  const speed=Math.hypot(b.vx,b.vy);if(speed>1e-8){b.dx=b.vx/speed;b.dy=b.vy/speed;}
 }
 // Split at distance boundaries and at the exit from a blocking body.
 // Every accepted RK4 segment has one phase.
-function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtActivation=false,live=false){
+function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtActivation=false,live=false,sweepBuffers=null){
  if(!Number.isFinite(b.vx)||!Number.isFinite(b.vy)){const launch=b.launchSpeed??cfg.launchSpeed;b.vx=b.dx*launch;b.vy=b.dy*launch;}
  const age=b.age||0;
  let deadline=projectileTimeLeft(b),elapsed=0,wallContacts=0;
- b.travel=b.travel||0;b.motionSegments=[];b.damageSegments=[];b.endPoint=null;b.wallEnd=null;
+ b.travel=b.travel||0;b.endPoint=null;b.wallEnd=null;
+ b.motionSegments=sweepBuffers?.motion??[];
+ b.damageSegments=sweepBuffers?.damage??[];
+ if(sweepBuffers){
+  b.motionSegments.length=0;
+  b.damageSegments.length=0;
+ }
  if(live){b.mapImpulses=[];b.impactCutoff=Infinity;}
  // A newborn bullet is emitted after actors have moved in simulate(). Its
  // first collision sweep must therefore start at those emission-time poses.
@@ -2311,9 +2324,9 @@ function pausePlayerBullets(){
 }
 function stepBullet(b,dt,playerSource=p){
  b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;
- b.mapImpulses=[];b.impactCutoff=Infinity;
  const target=b.team===0?enemy:p;
  if(b.pauseSteps>0){
+  b.mapImpulses=[];b.impactCutoff=Infinity;
   // A stationary segment still sweeps against the moving target.
   b.motionSegments=b.damageSegments=[{from:0,to:1,x0:b.x,y0:b.y,x1:b.x,y1:b.y,
    travel0:b.prevTravel,travel1:b.prevTravel,phase:'solid',solid:true,vx0:0,vy0:0,vx:0,vy:0}];
@@ -3892,6 +3905,7 @@ function* botAimProbeSteps(actor,target,angle,range,targetAt=null,sourceAt=null,
  sourceAt??=t=>botTargetAt(actor,t);
  range=selectAimRange(actor,range,angle);
  const b=createProjectile({...actor,aim:angle},actor.team,angle,range),{fieldStart}=b;
+ const sweepBuffers={motion:[],damage:[]};
  b.probeWorkLeft=cfg.spinForce>8000&&cfg.radius>200?96:256;
  // These estimates only bound the search. Actual simulated acceleration
  // comes from integrateProjectile, including the exact activation point.
@@ -3902,7 +3916,7 @@ function* botAimProbeSteps(actor,target,angle,range,targetAt=null,sourceAt=null,
  for(let t=0;t<duration;t+=dt){
   const before=targetAt(t),after=targetAt(t+dt);
   b.age=t;
-  integrateProjectile(b,dt,targetAt(t+dt*.5),sourceAt(t+dt*.5));
+  integrateProjectile(b,dt,targetAt(t+dt*.5),sourceAt(t+dt*.5),false,false,sweepBuffers);
   const exited=clipProjectileAtArena(b);
   for(const segment of b.damageSegments){
    if(segment.from>=b.collisionEnd)break;
