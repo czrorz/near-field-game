@@ -17,7 +17,7 @@ button:disabled{opacity:.4;cursor:default}
 .primary{background:var(--accent);color:#1b2829;border-color:var(--accent);font-weight:600;padding:11px 23px}
 .primary:hover{background:#c1d4ce}
 main{--arena-gap:8px;max-width:1200px;margin:auto}
-.top{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px;padding-bottom:var(--arena-gap)}
+.top{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding-bottom:var(--arena-gap)}
 h1{font-size:24px;line-height:30px;letter-spacing:4px;margin:0;font-weight:500;white-space:nowrap}
 .tools{display:flex;align-items:center;gap:6px;grid-column:-2}
 .tools>button,.settings>summary{display:grid;place-items:center;width:32px;height:32px;padding:0}
@@ -29,10 +29,15 @@ h1{font-size:24px;line-height:30px;letter-spacing:4px;margin:0;font-weight:500;w
 #view[data-view="heading"] [data-view-icon="heading"],
 #view[data-view="perspective"] [data-view-icon="perspective"]{display:block}
 #view[data-view="world"] .compass-fill{display:none}
-.performance-monitor{display:flex;align-items:center;justify-self:end;gap:10px;color:var(--muted);font-size:11px;line-height:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.performance-monitor[hidden]{display:none}
-.performance-value{width:7ch;text-align:right}
-.performance-cpu{width:11ch;text-align:right}
+.performance-history{position:absolute;top:8px;left:8px;z-index:1;pointer-events:none;width:min(240px,calc(100% - 16px));padding:6px;background:rgba(26,32,34,.94);border:1px solid var(--line);border-radius:5px;font:11px/15px "Segoe UI","Microsoft YaHei",sans-serif;font-variant-numeric:tabular-nums;color:var(--ink)}
+.performance-history[hidden]{display:none}
+#performance-graph{width:100%;height:54px;aspect-ratio:auto;cursor:default}
+.performance-summary{display:flex;justify-content:space-between;gap:4px;flex-wrap:wrap}
+.performance-summary-cpu{color:var(--player)}
+.performance-summary-interval{color:var(--enemy)}
+.performance-caption{display:flex;justify-content:space-between;gap:4px;margin-top:3px;color:var(--muted)}
+.performance-costs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}
+.performance-costs>div{display:flex;justify-content:space-between;gap:3px}
 .play-area{--play-height:calc(100dvh - var(--toolbar-bottom,136px) - var(--arena-gap) - env(safe-area-inset-bottom));touch-action:none}
 .arena{position:relative;width:min(100%,calc((var(--play-height) - 2px)*1.6 + 2px));margin-inline:auto;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#20282a;isolation:isolate}
 canvas{display:block;width:100%;aspect-ratio:8/5;touch-action:none;user-select:none;cursor:none}
@@ -162,7 +167,6 @@ html[lang="en"] h1{letter-spacing:.02em}
 @media(max-width:520px){
   .settings-grid{grid-template-columns:1fr}
   .tools{gap:4px}
-  .performance-monitor{display:grid;gap:0}
   #fullscreen{display:none}
   .overlay .dialog p{font-size:11px}
   .dialog h2{font-size:20px}
@@ -173,12 +177,10 @@ html[lang="en"] h1{letter-spacing:.02em}
   .top{grid-template-columns:1fr 216px;row-gap:4px}
   .top h1,html[lang="en"] h1{font-size:16px}
   .tools{grid-area:1/2;justify-self:end}
-  .performance-monitor{grid-area:2/1;justify-self:start}
-  .match-options{grid-area:2/2;width:100%}
+  .match-options{grid-area:2/1 / 3/3;width:100%}
 }
 @media(pointer:coarse) and (orientation:landscape) and (min-width:680px){
-  .top{grid-template-columns:auto auto minmax(0,1fr) auto}
-  .performance-monitor{display:grid;justify-items:end;gap:0}
+  .top{grid-template-columns:auto minmax(0,1fr) auto}
   .match-options{grid-area:auto / -3}
 }
 .settings-group .settings-subtitle{margin:20px 0 0;font-size:12px;font-weight:500;color:var(--muted)}
@@ -188,10 +190,6 @@ html[lang="en"] h1{letter-spacing:.02em}
 <main>
  <header class="top">
   <h1>近场</h1>
-  <div class="performance-monitor" id="performance-monitor" hidden>
-   <span class="performance-value" id="fps">FPS —</span>
-   <span class="performance-cpu" id="cpu-time" title="每帧平均 CPU 耗时，包含更新和绘制提交。">CPU — ms</span>
-  </div>
   <div class="match-options">
    <label class="sr-only" for="map">地图</label>
    <select id="map">
@@ -201,7 +199,9 @@ html[lang="en"] h1{letter-spacing:.02em}
     <option value="four">地图 · 四墙</option>
     <option value="ellipse">地图 · 椭圆反射场</option>
     <option value="peaks">地图 · 三柱</option>
-    <option value="crossflow">地图 · 横流带</option>
+    <option value="circle">地图 · 中央反射圆</option>
+    <option value="rotor">地图 · 转动板</option>
+    <option value="gravity">地图 · 重力弹床</option>
     <option value="maze">地图 · 吸收迷宫</option>
     <option value="divided">地图 · 隔离带</option>
    </select>
@@ -541,7 +541,7 @@ html[lang="en"] h1{letter-spacing:.02em}
      <details class="settings-group">
       <summary><h2>其他设置</h2></summary>
       <div class="settings-grid settings-checks">
-       <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示 FPS 和 CPU 耗时</label>
+       <label class="check"><input id="showPerformanceMonitor" type="checkbox">显示性能监控窗口</label>
        <label class="check" title="显示满血为基础满血加上总胜场^1.5，最高 1000000。伤害数字按满血的比例缩放。"><input id="scaleCombatNumbersByWins" type="checkbox">胜场放大生命与伤害数字</label>
        <div class="setting">
         <label for="hitScreenShakeStrength">命中与受击时屏幕震动强度<output id="hitScreenShakeStrength-value">2.5</output></label>
@@ -559,6 +559,17 @@ html[lang="en"] h1{letter-spacing:.02em}
  </header>
  <div class="play-area" id="play-area">
   <section class="arena" id="arena" aria-label="对战区域">
+   <div class="performance-history" id="performance-history" hidden>
+    <div class="performance-summary performance-summary-cpu"><span id="performance-cpu">CPU — ms</span><span id="performance-cpu-peak"></span></div>
+    <div class="performance-summary performance-summary-interval"><span id="performance-interval">帧间隔</span><span id="performance-interval-peak"></span></div>
+    <canvas id="performance-graph" width="456" height="108" role="img" aria-label="最近 5 秒的逐帧 CPU 耗时和帧间隔曲线。青色为 CPU，棕色为帧间隔，虚线为 16.7 毫秒参考线。"></canvas>
+    <div class="performance-caption"><span>峰值帧分解</span><span>最近 5 秒</span></div>
+    <div class="performance-costs">
+     <div><span>人机移动决策</span><span id="performance-cost-0">— ms</span></div><div><span>人机瞄准决策</span><span id="performance-cost-1">— ms</span></div>
+     <div><span>弹道</span><span id="performance-cost-5">— ms</span></div><div><span>物理</span><span id="performance-cost-2">— ms</span></div>
+     <div><span>绘制</span><span id="performance-cost-3">— ms</span></div><div><span>其他</span><span id="performance-cost-4">— ms</span></div>
+    </div>
+   </div>
    <canvas id="game" width="1200" height="750" tabindex="-1" aria-label="用键盘和鼠标时，WASD 移动，鼠标瞄准并射击。用手柄时，左摇杆移动，右摇杆瞄准，RB 或 RT 射击。P 键暂停或继续，R 键重新开始，结算后按空格键再来一局。更多玩法见顶部的「说明与设置」。">请使用支持 Canvas 的现代浏览器。</canvas>
    <canvas id="perspective-plane" hidden aria-hidden="true"></canvas>
    <canvas id="perspective-labels" hidden aria-hidden="true"></canvas>
@@ -596,7 +607,8 @@ let W=1200,H=750;
 const ARENA_FRAME_INSET=24,BULLET_OVERHANG=20;
 const AIM_CIRCLE_RADIUS=100,AIM_CIRCLE_MAX_SHIFT=30;
 const AIM_STROKE=1.8;
-const C={bg:'#20282a',edge:'#414f50',player:'#b2ceca',enemy:'#d2b49b'};
+const C={bg:'#20282a',edge:'#414f50',reflect:'#687e83',blocked:'#1e2628',player:'#b2ceca',enemy:'#d2b49b'};
+const ROTOR_INERTIA=150000,ROTOR_MAX_SPEED=2.5,ROTOR_ACTOR_MASS=4,ROTOR_RESTITUTION=.15;
 const MAPS={
  open:{walls:[]},
  divided:{walls:[],divider:{x0:450,x1:750}},
@@ -626,10 +638,9 @@ const MAPS={
  {horizontal:true,x0:625,x1:730,y:650,r:8,type:'absorb'}
  ]},
  ellipse:{walls:[{kind:'ellipse',cx:600,cy:375,rx:560,ry:326,r:1,type:'reflect',boundary:true}]},
- crossflow:{walls:[],fields:[
-  {x0:380,x1:540,y0:24,y1:726,ax:0,ay:1,strength:3000,feather:32},
-  {x0:660,x1:820,y0:24,y1:726,ax:0,ay:-1,strength:3000,feather:32}
- ]}
+ circle:{walls:[{kind:'circle',x:600,y0:375,y1:375,r:150,type:'reflect'}]},
+ rotor:{walls:[{kind:'rotor',cx:600,cy:375,halfLength:175,r:7,type:'reflect',angle:Math.PI/4,omega:0}]},
+ gravity:{gravity:680,springSpeed:700,walls:[{horizontal:true,x0:24,x1:1176,y:726,r:0,type:'spring',boundary:true}]}
 };
 for(const {terrain} of Object.values(MAPS))if(terrain){
  const scale=Math.abs(terrain.potential)*Math.exp(-.5);
@@ -637,6 +648,12 @@ for(const {terrain} of Object.values(MAPS))if(terrain){
 }
 let mapId='open',WALLS=MAPS.open.walls,mapFields=[];
 function setMap(id){if(!Object.hasOwn(MAPS,id))return false;mapId=id;const map=MAPS[id],width=map.width||VIEW_W,height=map.height||VIEW_H;mouse.x+=(width-W)/2;mouse.y+=(height-H)/2;W=width;H=height;WALLS=map.walls;mapFields=map.fields||[];return true;}
+function resetMapMechanics(){WALLS=MAPS[mapId].walls.map(wall=>({...wall}));mapDrawingCache.delete(mapId);}
+function advanceMapMechanics(dt){
+ for(const wall of WALLS)if(wall.kind==='rotor'&&wall.omega!==0){
+  wall.angle=(wall.angle+wall.omega*dt)%TAU;wall.omega*=Math.exp(-.45*dt);
+ }
+}
 const mapAccelerationScratch={x:0,y:0};
 function peakHeight(x,y,p){
  if(p.kind==='pillar'){const d=Math.max(0,Math.hypot(x-p.x,y-p.y)-p.radius)/p.falloff;return Math.exp(-.5*d*d);}
@@ -656,6 +673,7 @@ function terrainAcceleration(x,y,out){
 // caller before another query; RK4 and bot forecasts allocate no extra vectors.
 function mapAcceleration(x,y,out=mapAccelerationScratch){
  terrainAcceleration(x,y,out);
+ out.y+=MAPS[mapId].gravity||0;
  for(const field of mapFields){
   const edge=Math.min(x-field.x0,field.x1-x,y-field.y0,field.y1-y);
   if(edge<=0)continue;
@@ -665,7 +683,7 @@ function mapAcceleration(x,y,out=mapAccelerationScratch){
  return out;
 }
 function mapForceBound(x,y,reach=0){
- let bound=MAPS[mapId].terrain?.forceBound??0;
+ let bound=(MAPS[mapId].terrain?.forceBound??0)+(MAPS[mapId].gravity||0);
  for(const field of mapFields){
   const dx=Math.max(field.x0-x,0,x-field.x1),dy=Math.max(field.y0-y,0,y-field.y1);
   if(dx*dx+dy*dy<=reach*reach)bound+=field.strength;
@@ -673,7 +691,7 @@ function mapForceBound(x,y,reach=0){
  return bound;
 }
 function mapFieldTouchesSegment(x0,y0,x1,y1){
- if(MAPS[mapId].terrain)return true;
+ if(MAPS[mapId].terrain||MAPS[mapId].gravity)return true;
  const dx=x1-x0,dy=y1-y0;
  for(const field of mapFields){
   let lo=0,hi=1;
@@ -802,8 +820,18 @@ const ENGLISH={
  "爆炸伤害增长路程": "Distance to full damage",
  "近场": "Near Field",
  "其他设置": "Other settings",
- "显示 FPS 和 CPU 耗时": "Show FPS and CPU time",
- "每帧平均 CPU 耗时，包含更新和绘制提交。": "Average CPU time per frame; update and draw submission.",
+ "显示性能监控窗口": "Show performance monitor",
+ "最近 5 秒的逐帧 CPU 耗时和帧间隔曲线。青色为 CPU，棕色为帧间隔，虚线为 16.7 毫秒参考线。": "Per-frame CPU time and frame intervals over the last 5 seconds. Teal: CPU. Brown: frame interval. Dashed line: 16.7 ms reference.",
+ "帧间隔": "Frame interval",
+ "峰值": "Peak",
+ "最近 5 秒": "Last 5 seconds",
+ "峰值帧分解": "Peak frame breakdown",
+ "人机移动决策": "Bot movement",
+ "人机瞄准决策": "Bot aiming",
+ "物理": "Physics",
+ "绘制": "Draw",
+ "其他": "Other",
+ "弹道": "Projectiles",
  "地图": "Map",
  "地图 · 缓丘": "Map · Gentle hill",
  "地图 · 空场": "Map · Open field",
@@ -811,7 +839,9 @@ const ENGLISH={
  "地图 · 四墙": "Map · Four walls",
  "地图 · 椭圆反射场": "Map · Ellipse arena",
  "地图 · 三柱": "Map · Three pillars",
- "地图 · 横流带": "Map · Crossflow",
+ "地图 · 中央反射圆": "Map · Central reflector",
+ "地图 · 转动板": "Map · Turning paddle",
+ "地图 · 重力弹床": "Map · Gravity trampoline",
  "地图 · 吸收迷宫": "Map · Absorbing maze",
  "地图 · 隔离带": "Map · Divided arena",
  "固定视角": "Fixed view",
@@ -1254,7 +1284,7 @@ function playSound(kind,strength=1,point){
 // === 05 · Actors, shape, movement and wall geometry ===
 const ACTOR_FLASH_TIME=.1;
 function actorFlashAmount(a){return clamp((a.hitFlash||0)/ACTOR_FLASH_TIME,0,1)*clamp(a.hitFlashStrength||0,0,1);}
-function impactState(){return{mvx:0,mvy:0,ivx:0,ivy:0,qx:0,qy:0,qvx:0,qvy:0,hitFlash:0,hitFlashStrength:0};}
+function impactState(){return{mvx:0,mvy:0,ivx:0,ivy:0,gvy:0,qx:0,qy:0,qvx:0,qvy:0,hitFlash:0,hitFlashStrength:0};}
 function updateShape(a,dt){a.qvx+=(-676*a.qx-18*a.qvx)*dt;a.qvy+=(-676*a.qy-18*a.qvy)*dt;a.qx+=a.qvx*dt;a.qy+=a.qvy*dt;const amplitude=Math.hypot(a.qx,a.qy);if(amplitude>.29){a.qx*=.29/amplitude;a.qy*=.29/amplitude;}a.hitFlash=Math.max(0,a.hitFlash-dt);}
 let bodyAspectValue=0,bodyAspectAmount=0;
 function bodyShape(a){
@@ -1301,10 +1331,18 @@ function curveClosest(wall,x,y){
 }
 function reflectionPoint(wall,x,y){
  if(wall.kind==='ellipse')return curveClosest(wall,x,y);
- const cx=wall.horizontal?clamp(x,wall.x0,wall.x1):wall.x;
- const cy=wall.horizontal?wall.y:clamp(y,wall.y0,wall.y1);
+ const frame=wallFrame(wall),along=clamp((x-frame.x)*frame.tx+(y-frame.y)*frame.ty,0,frame.length);
+ const cx=frame.x+frame.tx*along,cy=frame.y+frame.ty*along;
  const normal=unit(x-cx,y-cy);
  return{x:cx,y:cy,nx:normal.x,ny:normal.y,d:normal.d};
+}
+function wallFrame(wall){
+ if(wall.kind==='rotor'){
+  const tx=Math.cos(wall.angle),ty=Math.sin(wall.angle);
+  return{x:wall.cx-tx*wall.halfLength,y:wall.cy-ty*wall.halfLength,tx,ty,length:wall.halfLength*2};
+ }
+ return wall.horizontal?{x:wall.x0,y:wall.y,tx:1,ty:0,length:wall.x1-wall.x0}:
+  {x:wall.x,y:wall.y0,tx:0,ty:1,length:wall.y1-wall.y0};
 }
 function curveWallHit(wall,x0,y0,x1,y1,r,bracketOnly){
  const radius=wall.r+r,dx=x1-x0,dy=y1-y0,aa=dx*dx+dy*dy;
@@ -1342,46 +1380,53 @@ function respondProjectileWall(b,hit,epsilon=1e-5){
   b.x+=hit.nx*(W-48-epsilon);b.y+=hit.ny*(H-48-epsilon);
   return;
  }
- const dot=b.vx*hit.nx+b.vy*hit.ny;
+ const wall=hit.wall,rx=hit.x-(wall.cx||0),ry=hit.y-(wall.cy||0);
+ const surfaceX=wall.kind==='rotor'?-wall.omega*ry:0,surfaceY=wall.kind==='rotor'?wall.omega*rx:0;
+ const dot=(b.vx-surfaceX)*hit.nx+(b.vy-surfaceY)*hit.ny;
  if(dot<0){b.vx-=2*dot*hit.nx;b.vy-=2*dot*hit.ny;}
+ if(wall.type==='spring'&&b.vy<0)b.vy=-Math.max(450,-b.vy);
  const speed=Math.hypot(b.vx,b.vy);if(speed>1e-8){b.dx=b.vx/speed;b.dy=b.vy/speed;}
  b.x+=hit.nx*epsilon;b.y+=hit.ny*epsilon;
 }
 function firstWallHit(x0,y0,x1,y1,r,projectile=false,bracketEllipse=false){
  if(projectile&&MAPS[mapId].wrap)return loopBoundaryHit(x0,y0,x1,y1);
- if(!WALLS.length)return null;
  const dx=x1-x0,dy=y1-y0,aa=dx*dx+dy*dy;
- let best=null,limit=Infinity,minX,maxX,minY,maxY;
+ let best=null,limit=Infinity;
+ const minX=Math.min(x0,x1),maxX=Math.max(x0,x1),minY=Math.min(y0,y1),maxY=Math.max(y0,y1);
  for(const wall of WALLS){
   const bodyRadius=projectile&&wall.type==='reflect'?0:r;
-  if(wall.kind){const hit=curveWallHit(wall,x0,y0,x1,y1,bodyRadius,bracketEllipse);if(hit&&hit.t<limit){limit=hit.t;best=hit;}continue;}
+  if(wall.kind==='ellipse'){const hit=curveWallHit(wall,x0,y0,x1,y1,bodyRadius,bracketEllipse);if(hit&&hit.t<limit){limit=hit.t;best=hit;}continue;}
   const radius=wall.r+bodyRadius;
-  // Horizontal capsules reuse the vertical solve by exchanging local axes.
-  const horizontal=!!wall.horizontal,wx=horizontal?wall.y:wall.x,wy0=horizontal?wall.x0:wall.y0,wy1=horizontal?wall.x1:wall.y1;
-  if(minX===undefined){minX=Math.min(x0,x1);maxX=Math.max(x0,x1);minY=Math.min(y0,y1);maxY=Math.max(y0,y1);}
-  if((horizontal?maxY:maxX)<wx-radius||(horizontal?minY:minX)>wx+radius||
-     (horizontal?maxX:maxY)<wy0-radius||(horizontal?minX:minY)>wy1+radius)continue;
-  const lx0=horizontal?y0:x0,ly0=horizontal?x0:y0,ldx=horizontal?dy:dx,ldy=horizontal?dx:dy;
-  function accept(t,nx,ny){if(horizontal){const swap=nx;nx=ny;ny=swap;}if(t>=-1e-10&&t<=1&&t<limit&&dx*nx+dy*ny<1e-10){t=Math.max(0,t);limit=t;best={t,x:x0+dx*t,y:y0+dy*t,nx,ny,wall};}}
-  const sx=lx0-wx,sy=ly0-clamp(ly0,wy0,wy1),distance=Math.hypot(sx,sy);
+  const frame=wallFrame(wall),endX=frame.x+frame.tx*frame.length,endY=frame.y+frame.ty*frame.length;
+  if(maxX<Math.min(frame.x,endX)-radius||minX>Math.max(frame.x,endX)+radius||
+     maxY<Math.min(frame.y,endY)-radius||minY>Math.max(frame.y,endY)+radius)continue;
+  const fx=frame.ty,fy=-frame.tx,ox=x0-frame.x,oy=y0-frame.y;
+  const lx0=ox*fx+oy*fy,ly0=ox*frame.tx+oy*frame.ty,ldx=dx*fx+dy*fy,ldy=dx*frame.tx+dy*frame.ty;
+  function accept(t,nx,ny){
+   const worldNx=nx*fx+ny*frame.tx,worldNy=nx*fy+ny*frame.ty;
+   if(t>=-1e-10&&t<=1&&t<limit&&dx*worldNx+dy*worldNy<1e-10){t=Math.max(0,t);limit=t;best={t,x:x0+dx*t,y:y0+dy*t,nx:worldNx,ny:worldNy,wall};}
+  }
+  const sx=lx0,sy=ly0-clamp(ly0,0,frame.length),distance=Math.hypot(sx,sy);
   if(distance<radius-1e-7){
-   const nx=distance>1e-9?sx/distance:ldx>0?-1:1,ny=distance>1e-9?sy/distance:0,px=wx+nx*radius,py=clamp(ly0,wy0,wy1)+ny*radius;
-   if(limit>0){limit=0;best={t:0,x:horizontal?py:px,y:horizontal?px:py,nx:horizontal?ny:nx,ny:horizontal?nx:ny,wall};}continue;
+   const nx=distance>1e-9?sx/distance:ldx>0?-1:1,ny=distance>1e-9?sy/distance:0,px=nx*radius,py=clamp(ly0,0,frame.length)+ny*radius;
+   if(limit>0){limit=0;best={t:0,x:frame.x+fx*px+frame.tx*py,y:frame.y+fy*px+frame.ty*py,nx:fx*nx+frame.tx*ny,ny:fy*nx+frame.ty*ny,wall};}continue;
   }
   if(Math.abs(ldx)>1e-12)for(const side of [-1,1]){
-   const t=(wx+side*radius-lx0)/ldx,y=ly0+ldy*t;
-   if(y>=wy0&&y<=wy1)accept(t,side,0);
+   const t=(side*radius-lx0)/ldx,y=ly0+ldy*t;
+   if(y>=0&&y<=frame.length)accept(t,side,0);
   }
-  if(aa>1e-16)for(const cy of [wy0,wy1]){
-   const ox=lx0-wx,oy=ly0-cy,bb=ox*ldx+oy*ldy,cc=ox*ox+oy*oy-radius*radius,disc=bb*bb-aa*cc;
+  if(aa>1e-16)for(const cy of [0,frame.length]){
+   const ox=lx0,oy=ly0-cy,bb=ox*ldx+oy*ldy,cc=ox*ox+oy*oy-radius*radius,disc=bb*bb-aa*cc;
    if(disc<0)continue;const t=(-bb-Math.sqrt(disc))/aa,y=ly0+ldy*t;
-   if(wy0===wy1||(cy===wy0?y<=cy:y>=cy))accept(t,(lx0+ldx*t-wx)/radius,(y-cy)/radius);
+   if(frame.length===0||(cy===0?y<=cy:y>=cy))accept(t,(lx0+ldx*t)/radius,(y-cy)/radius);
   }
  }
  return best;
 }
 function removeInwardVelocity(a,nx,ny){
  const movement=a.mvx*nx+a.mvy*ny,kick=a.ivx*nx+a.ivy*ny;
+ const gravity=(a.gvy||0)*ny;
+ if(gravity<0){a.ivx-=gravity*nx;a.gvy-=gravity*ny;}
  if(movement<0){a.mvx-=movement*nx;a.mvy-=movement*ny;}
  if(kick<0){
   a.ivx-=kick*nx;a.ivy-=kick*ny;
@@ -1398,9 +1443,10 @@ function limitActorImpact(a){
  a.ivx*=scale;a.ivy*=scale;
  if(a.dodgeVelocity){a.dodgeVelocity.x*=scale;a.dodgeVelocity.y*=scale;}
 }
-function constrainActorWalls(a,radius=bodyShape(a).rx){
+function constrainActorWalls(a,radius=bodyShape(a).rx,dynamicRotors=false){
  for(const wall of WALLS){
-  if(wall.kind){
+  if(wall.type==='spring')continue;
+  if(wall.kind==='ellipse'){
    const gap=radius+wall.r+3;
    const safe=1-gap/Math.min(wall.rx,wall.ry);
    if(safe>0&&(a.x-wall.cx)**2/(wall.rx*safe)**2+(a.y-wall.cy)**2/(wall.ry*safe)**2<1)continue;
@@ -1409,20 +1455,56 @@ function constrainActorWalls(a,radius=bodyShape(a).rx){
    removeInwardVelocity(a,point.nx,point.ny);
    continue;
   }
-  const gap=radius+wall.r+3,dx=a.x-(wall.horizontal?clamp(a.x,wall.x0,wall.x1):wall.x),dy=a.y-(wall.horizontal?wall.y:clamp(a.y,wall.y0,wall.y1));
+  const point=reflectionPoint(wall,a.x,a.y),gap=radius+wall.r+3,dx=a.x-point.x,dy=a.y-point.y;
   if(Math.abs(dx)>=gap||Math.abs(dy)>=gap)continue;
   const distance=Math.hypot(dx,dy);if(distance>=gap)continue;
-  const nx=distance>1e-9?dx/distance:wall.horizontal?0:(a.px??a.x)<wall.x?-1:1,ny=distance>1e-9?dy/distance:wall.horizontal?((a.py??a.y)<wall.y?-1:1):0;
+  const frame=wallFrame(wall),side=((a.px??a.x)-point.x)*frame.ty-((a.py??a.y)-point.y)*frame.tx<0?-1:1;
+  const nx=distance>1e-9?dx/distance:frame.ty*side,ny=distance>1e-9?dy/distance:-frame.tx*side;
   a.x+=nx*(gap-distance);a.y+=ny*(gap-distance);
-  removeInwardVelocity(a,nx,ny);
+  if(wall.kind!=='rotor'||!dynamicRotors)removeInwardVelocity(a,nx,ny);
  }
- a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy;
+ a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy+(a.gvy||0);
+}
+function resolveActorRotorContacts(actors){
+ for(const wall of WALLS){
+  if(wall.kind!=='rotor')continue;
+  const contacts=[];
+  for(const actor of actors){
+   if(!actor||actor.shattered)continue;
+   const point=reflectionPoint(wall,actor.x,actor.y);
+   if(point.d>bodyShape(actor).rx+wall.r+3+1e-6)continue;
+   const nx=point.nx,ny=point.ny;
+   const lever=(point.x-wall.cx)*ny-(point.y-wall.cy)*nx;
+   const relative=(actor.mvx+actor.ivx)*nx+(actor.mvy+actor.ivy+(actor.gvy||0))*ny-wall.omega*lever;
+   contacts.push({actor,nx,ny,lever,inverseMass:1/(ROTOR_ACTOR_MASS*actorSizeRatio(actor)**2),reboundSpeed:-Math.min(0,relative)*ROTOR_RESTITUTION,impulse:0});
+  }
+  // Solve both characters together so one contact can resist the other.
+  for(let pass=0;pass<6;pass++)for(const contact of contacts){
+   const {actor,nx,ny,lever,inverseMass,reboundSpeed}=contact;
+   const relative=(actor.mvx+actor.ivx)*nx+(actor.mvy+actor.ivy+(actor.gvy||0))*ny-wall.omega*lever;
+   const inverseEffectiveMass=inverseMass+lever*lever/ROTOR_INERTIA;
+   const accumulated=Math.max(0,contact.impulse+(reboundSpeed-relative)/inverseEffectiveMass);
+   const impulse=accumulated-contact.impulse;
+   contact.impulse=accumulated;
+   actor.ivx+=impulse*inverseMass*nx;actor.ivy+=impulse*inverseMass*ny;
+   wall.omega-=impulse*lever/ROTOR_INERTIA;
+  }
+  wall.omega=clamp(wall.omega,-ROTOR_MAX_SPEED,ROTOR_MAX_SPEED);
+  for(const {actor} of contacts){
+   limitActorImpact(actor);
+   actor.vx=actor.mvx+actor.ivx;actor.vy=actor.mvy+actor.ivy+(actor.gvy||0);
+  }
+ }
 }
 function constrainActor(a){
  const inset=actorInset(a),x=clampActorX(a.x,a.team,inset),y=clamp(a.y,inset,H-inset);
  if(x!==a.x){a.x=x;a.mvx=a.ivx=0;if(a.dodgeVelocity)a.dodgeVelocity.x=0;}
- if(y!==a.y){a.y=y;a.mvy=a.ivy=0;if(a.dodgeVelocity)a.dodgeVelocity.y=0;}
- constrainActorWalls(a,inset-27);
+ if(y!==a.y){
+  const down=a.mvy+a.ivy+(a.gvy||0);a.y=y;a.mvy=a.ivy=0;
+  a.gvy=MAPS[mapId].gravity&&y===H-inset?-Math.max(MAPS[mapId].springSpeed,down*.94):0;
+  if(a.dodgeVelocity)a.dodgeVelocity.y=0;
+ }
+ constrainActorWalls(a,inset-27,true);
 }
 function resizeActors(){
  const actors=[p,enemy,...(ending?.actors||[])].filter(Boolean);
@@ -1441,6 +1523,7 @@ function applyActorRepulsion(a,b,dt){
 }
 function advanceActor(a,targetX,targetY,inertia,dt){
  let dx,dy;
+ const startX=a.x,startY=a.y;a.mapMotion=null;
  const terrain=MAPS[mapId].terrain;
  if(terrain&&inertia>0){const force=terrainAcceleration(a.x,a.y,mapAccelerationScratch);targetX+=force.x*terrain.actorScale*inertia;targetY+=force.y*terrain.actorScale*inertia;}
  if(inertia>0){const retain=Math.exp(-dt/inertia);dx=targetX*dt+(a.mvx-targetX)*inertia*(1-retain);dy=targetY*dt+(a.mvy-targetY)*inertia*(1-retain);a.mvx=targetX+(a.mvx-targetX)*retain;a.mvy=targetY+(a.mvy-targetY)*retain;}
@@ -1449,7 +1532,24 @@ function advanceActor(a,targetX,targetY,inertia,dt){
  dx+=a.ivx*impactDecay*(1-retention);dy+=a.ivy*impactDecay*(1-retention);a.ivx*=retention;a.ivy*=retention;
  if(a.dodgeVelocity){a.dodgeVelocity.x*=retention;a.dodgeVelocity.y*=retention;}
  updateShape(a,dt);
- const x=a.x+dx,y=a.y+dy,inset=actorInset(a);
+ let x=a.x+dx,y=a.y+dy;const inset=actorInset(a);
+ if(MAPS[mapId].gravity&&dt>0){
+  const gravity=MAPS[mapId].gravity,base=dy/dt,segments=[];
+  let time=0,position=startY,velocity=base+(a.gvy||0);
+  for(let pass=0;time<dt&&pass<16;pass++){
+   const floorDistance=Math.max(0,H-inset-position),floorRoot=Math.sqrt(velocity*velocity+2*gravity*floorDistance);
+   const floorTime=velocity>=0?2*floorDistance/Math.max(1e-9,velocity+floorRoot):(-velocity+floorRoot)/gravity;
+   const ceilingDisc=velocity*velocity+2*gravity*(inset-position);
+   const ceilingTime=velocity<0&&ceilingDisc>=0?Math.max(0,(-velocity-Math.sqrt(ceilingDisc))/gravity):Infinity;
+   const remaining=dt-time,h=Math.min(remaining,floorTime,ceilingTime),next=position+velocity*h+.5*gravity*h*h;
+   segments.push({from:time/dt,to:(time+h)/dt,x0:startX+dx*time/dt,y0:position,x1:startX+dx*(time+h)/dt,y1:next});
+   time+=h;position=next;velocity+=gravity*h;
+   if(h>=remaining-1e-10)break;
+   if(floorTime<=ceilingTime){position=H-inset;velocity=-Math.max(MAPS[mapId].springSpeed,velocity*.94);}
+   else{position=inset;velocity=0;}
+  }
+  y=position;a.gvy=velocity-base;a.mapMotion=segments;
+ }
  a.x=clampActorX(x,a.team,inset);a.y=clamp(y,inset,H-inset);
  if(a.x!==x){a.mvx=a.ivx=0;if(a.dodgeVelocity)a.dodgeVelocity.x=0;}
  if(a.y!==y){a.mvy=a.ivy=0;if(a.dodgeVelocity)a.dodgeVelocity.y=0;}
@@ -1458,8 +1558,21 @@ function advanceActor(a,targetX,targetY,inertia,dt){
 function moveActor(a,targetX,targetY,inertia,dt){
  inertia*=actorSizeRatio(a);
  a.px=a.x;a.py=a.y;
- a.pvx=(inertia>0?a.mvx:targetX)+a.ivx;a.pvy=(inertia>0?a.mvy:targetY)+a.ivy;
- constrainActorWalls(a,advanceActor(a,targetX,targetY,inertia,dt)-27);
+ a.pvx=(inertia>0?a.mvx:targetX)+a.ivx;a.pvy=(inertia>0?a.mvy:targetY)+a.ivy+(a.gvy||0);
+ constrainActorWalls(a,advanceActor(a,targetX,targetY,inertia,dt)-27,true);
+}
+function actorMovementSegments(a){
+ if(a.mapMotion?.length){
+  const last=a.mapMotion.at(-1);last.x1=a.x;last.y1=a.y;
+  return a.mapMotion;
+ }
+ return[{from:0,to:1,x0:a.px??a.x,y0:a.py??a.y,x1:a.x,y1:a.y}];
+}
+function actorPositionAt(a,time){
+ const segments=actorMovementSegments(a);
+ const segment=segments.find(s=>time>=s.from&&time<s.to)||segments.at(-1);
+ const span=segment.to-segment.from,t=span>0?clamp((time-segment.from)/span,0,1):1;
+ return{x:segment.x0+(segment.x1-segment.x0)*t,y:segment.y0+(segment.y1-segment.y0)*t};
 }
 function separateActors(a,b){
  const ar=bodyShape(a).rx,br=bodyShape(b).rx,gap=ar+br+3,ai=27+ar,bi=27+br;
@@ -1471,11 +1584,11 @@ function separateActors(a,b){
   b.x=clamp(b.x-ux*push/2,bi,W-bi);b.y=clamp(b.y-uy*push/2,bi,H-bi);
   const left=gap-Math.hypot(a.x-b.x,a.y-b.y);
   if(left>0){a.x=clamp(a.x+ux*left,ai,W-ai);a.y=clamp(a.y+uy*left,ai,H-ai);const rest=gap-Math.hypot(a.x-b.x,a.y-b.y);if(rest>0){b.x=clamp(b.x-ux*rest,bi,W-bi);b.y=clamp(b.y-uy*rest,bi,H-bi);}}
-  constrainActorWalls(a,ar);constrainActorWalls(b,br);
+  constrainActorWalls(a,ar,true);constrainActorWalls(b,br,true);
   d=unit(a.x-b.x,a.y-b.y);ux=d.d?d.x:1;uy=d.d?d.y:0;
  }
  for(const [x,y] of [['mvx','mvy'],['ivx','ivy']]){const closing=(b[x]-a[x])*ux+(b[y]-a[y])*uy;if(closing>0){a[x]+=closing*ux/2;a[y]+=closing*uy/2;b[x]-=closing*ux/2;b[y]-=closing*uy/2;}}
- for(const actor of [a,b])constrainActorWalls(actor);
+ for(const actor of [a,b])constrainActorWalls(actor,bodyShape(actor).rx,true);
 }
 
 
@@ -1501,6 +1614,7 @@ function reset(run=false){
  hitShakes.length=0;
  mouseFocusInterrupted=false;
  flushSettings();renderDirty=true;renderStepReady=false;roundMode=$('mode').value;
+ resetMapMechanics();
  roundWinHealthBonus=totalWins**1.5;
  const spectating=isSpectatorMode();
  if(spectating)releaseMouse();
@@ -1591,9 +1705,11 @@ function updateBulletFades(dt){
 function updateEnding(dt){
  if(state!=='ending'||!ending)return;
  hitProjectiles.length=0;
+ advanceMapMechanics(dt);
  ending.age=Math.min(ending.duration,ending.age+dt);
  for(const actor of ending.actors){if(actor){updateActorHitMarks(actor,dt);moveActor(actor,0,0,.16,dt);}}
  if(ending.actors[0]&&ending.actors[1])separateActors(ending.actors[0],ending.actors[1]);
+ resolveActorRotorContacts(ending.actors);
  updateDamageNumbers(dt);
  updateEffects(dt);
  updateBulletFades(dt);
@@ -1843,16 +1959,15 @@ const PROJECTILE_ENTRY_EPS=1e-6;
 const PROJECTILE_TIME_EPS=1e-10;
 const DARK_BULLET_LIFETIME=4;
 const IMPLOSION_IMPULSE=800;
-function projectileActivationOverlap(b,carrier){
+function projectileActivationOverlap(b,carrier,atX=b.x,atY=b.y,geometry=null){
  if(!carrier||(Number.isFinite(b.team)&&carrier.team===b.team))return false;
- const shape=bodyShape(carrier),co=Math.cos(shape.angle),si=Math.sin(shape.angle),x=b.x-carrier.x,y=b.y-carrier.y;
+ const shape=geometry?.shape??bodyShape(carrier),co=geometry?.co??Math.cos(shape.angle),si=geometry?.si??Math.sin(shape.angle),x=atX-carrier.x,y=atY-carrier.y;
  const rx=shape.rx+(b.r||0)+PROJECTILE_ENTRY_EPS,ry=shape.ry+(b.r||0)+PROJECTILE_ENTRY_EPS;
  return ((co*x+si*y)/rx)**2+((-si*x+co*y)/ry)**2<=1;
 }
 function projectileCarrierAt(carrier,time,dt){
  if(!carrier)return null;
- const u=dt>0?clamp(time/dt,0,1):1,px=carrier.px??carrier.x,py=carrier.py??carrier.y;
- return{...carrier,x:px+(carrier.x-px)*u,y:py+(carrier.y-py)*u};
+ return{...carrier,...actorPositionAt(carrier,dt>0?clamp(time/dt,0,1):1)};
 }
 // Find all real roots on an interval by splitting at derivative roots. This
 // catches a brief exit and re-entry even when both step endpoints are inside.
@@ -1875,7 +1990,9 @@ function projectileBlockedExitTime(b,carrier,elapsed,dt,h){
  if(!carrier||carrier.team===b.team)return 0;
  const body=projectileCarrierAt(carrier,elapsed,dt),shape=bodyShape(body),co=Math.cos(shape.angle),si=Math.sin(shape.angle);
  const rx=shape.rx+(b.r||0)+PROJECTILE_ENTRY_EPS,ry=shape.ry+(b.r||0)+PROJECTILE_ENTRY_EPS;
- const cx=dt>0?(carrier.x-(carrier.px??carrier.x))/dt:0,cy=dt>0?(carrier.y-(carrier.py??carrier.y))/dt:0;
+ const motion=actorMovementSegments(carrier).find(s=>elapsed<dt*s.to)||actorMovementSegments(carrier).at(-1);
+ const duration=dt*(motion.to-motion.from);
+ const cx=duration>0?(motion.x1-motion.x0)/duration:0,cy=duration>0?(motion.y1-motion.y0)/duration:0;
  const speed=Math.hypot(b.vx,b.vy),dx=speed>1e-8?b.vx/speed:b.dx||0,dy=speed>1e-8?b.vy/speed:b.dy||0;
  const mapForce=mapAcceleration(b.x,b.y);
  const x=b.x-body.x,y=b.y-body.y,vx=b.vx-cx,vy=b.vy-cy;
@@ -1963,14 +2080,15 @@ function projectileRK4(b,dt,carrier,fieldActive,source=null){
 }
 // Split at distance boundaries and at the exit from a blocking body.
 // Every accepted RK4 segment has one phase.
-function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtActivation=false){
+function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtActivation=false,live=false){
  if(!Number.isFinite(b.vx)||!Number.isFinite(b.vy)){const launch=b.launchSpeed??cfg.launchSpeed;b.vx=b.dx*launch;b.vy=b.dy*launch;}
  const age=b.age||0;
  let deadline=projectileTimeLeft(b),elapsed=0,wallContacts=0;
  b.travel=b.travel||0;b.motionSegments=[];b.damageSegments=[];b.endPoint=null;b.wallEnd=null;
+ if(live){b.mapImpulses=[];b.impactCutoff=Infinity;}
  // A newborn bullet is emitted after actors have moved in simulate(). Its
  // first collision sweep must therefore start at those emission-time poses.
- const motionCarrier=b.freshSpawn&&carrier?{...carrier,px:carrier.x,py:carrier.y}:carrier;
+ const motionCarrier=b.freshSpawn&&carrier?{...carrier,px:carrier.x,py:carrier.y,mapMotion:null}:carrier;
  b.damageCarrierStart=b.freshSpawn&&carrier?{x:carrier.x,y:carrier.y,team:carrier.team}:null;b.freshSpawn=false;
  function recordSegment(from,to,start,solid){
   const segment={from:dt>0?from/dt:0,to:dt>0?to/dt:0,x0:start.x,y0:start.y,x1:b.x,y1:b.y,
@@ -2023,6 +2141,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtA
   const turning=((near?Math.abs(cfg.spinForce*(b.spin||0))+3*LATERAL_FORCE*receiverMotion:0)+(nearSource?3*LATERAL_FORCE*sourceMotion:0))/Math.hypot(speed,6);
   const slope=dragSlope+thrust/Math.max(speed,6)+turning+mapForce/Math.max(speed,60);
   let h=Math.min(remaining,.025,.4/Math.max(1,slope));
+  for(const motion of motionCarrier?.mapMotion||[]){const boundary=motion.to*dt-elapsed;if(boundary>1e-9)h=Math.min(h,boundary);}
   // Resolve the sharp range boundary with a smaller time step, not a
   // spatial transition zone or a discontinuous assignment to velocity.
   if(Math.abs(receiverDistance-cfg.radius)<possibleSpeed*h)h=Math.min(h,.001);
@@ -2081,7 +2200,12 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtA
   if(wallHit&&!b.endPoint){
    if(wallHit.wall.type==='absorb'||wallHit.wall.type!=='wrap'&&++wallContacts>4){b.wallAbsorbed=true;b.wallEnd={x:b.x,y:b.y,t:elapsed/dt};break;}
    if(b.probeWorkLeft!==undefined)b.probeRedirected=true;
+   const beforeVx=b.vx,beforeVy=b.vy;
    respondProjectileWall(b,wallHit);
+   if(live&&wallHit.wall.kind==='rotor'){
+    const wall=wallHit.wall,torque=(wallHit.x-wall.cx)*(beforeVy-b.vy)-(wallHit.y-wall.cy)*(beforeVx-b.vx);
+    b.mapImpulses.push({wall,t:elapsed/dt,torque:torque*(b.r/ACTOR.shotRadius)**2/ROTOR_INERTIA});
+   }
   }
   activateAt(elapsed);
  }
@@ -2117,7 +2241,7 @@ function predictBulletActivation(b){
  const map=MAPS[mapId],distance=b.fieldStart-b.travel,timeLeft=projectileTimeLeft(b);
  const inside=(x,y)=>projectileArenaExit(x,y)===1;
  if(!(distance>0&&timeLeft>0)||projectileEnd(b)-b.fieldStart<=PROJECTILE_PATH_EPS||!inside(b.x,b.y))return null;
- if(!map.wrap&&!WALLS.length&&!map.terrain&&!mapFields.length){
+ if(!map.wrap&&!map.gravity&&!WALLS.length&&!map.terrain&&!mapFields.length){
   const speed=Math.hypot(b.vx,b.vy);
   if(!(speed>0)||projectileStraightTime(distance,speed)>=timeLeft-PROJECTILE_TIME_EPS)return null;
   const x=b.x+b.vx/speed*distance,y=b.y+b.vy/speed*distance;
@@ -2135,8 +2259,9 @@ function predictBulletActivation(b){
 }
 function bulletActivationPreview(b){
  let cached=activationPreviewCache.get(b);
- if(!cached||cached.map!==mapId||cached.propulsion!==cfg.propulsion){
-  cached={map:mapId,propulsion:cfg.propulsion,point:predictBulletActivation(b)};
+ const angle=mapId==='rotor'?WALLS[0].angle:0;
+ if(!cached||cached.map!==mapId||cached.angle!==angle||cached.propulsion!==cfg.propulsion){
+  cached={map:mapId,angle,propulsion:cfg.propulsion,point:predictBulletActivation(b)};
   activationPreviewCache.set(b,cached);
  }
  return cached.point;
@@ -2186,6 +2311,7 @@ function pausePlayerBullets(){
 }
 function stepBullet(b,dt,playerSource=p){
  b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;
+ b.mapImpulses=[];b.impactCutoff=Infinity;
  const target=b.team===0?enemy:p;
  if(b.pauseSteps>0){
   // A stationary segment still sweeps against the moving target.
@@ -2195,7 +2321,7 @@ function stepBullet(b,dt,playerSource=p){
   b.freshSpawn=false;b.endPoint=b.wallEnd=null;b.lifetimeEnd=Infinity;
   if(--b.pauseSteps===0){[b.vx,b.vy]=b.pausedVelocity;b.pausedVelocity=null;}
  }else{
-  integrateProjectile(b,dt,target,b.team===0?playerSource:enemy);
+  integrateProjectile(b,dt,target,b.team===0?playerSource:enemy,false,true);
   b.age=(b.age||0)+dt*Math.min(1,b.lifetimeEnd);
  }
  // Swept collisions before the first cutoff still count within this step.
@@ -2283,29 +2409,41 @@ function collisionEvent(b,a,shapeCache=null){
  const end=projectileCollisionEnd(b);
  const {shape,co,si}=shapeCache?(shapeCache[a.team]??=collisionShape(a)):collisionShape(a),rx=shape.rx+b.r,ry=shape.ry+b.r;
  const bound=Math.max(rx,ry)+PROJECTILE_PATH_EPS;
- const emissionPose=b.damageCarrierStart?.team===a.team?b.damageCarrierStart:null,origin=emissionPose??{x:a.px,y:a.py};
+ const emissionPose=b.damageCarrierStart?.team===a.team?b.damageCarrierStart:null;
+ const movements=emissionPose?[{from:0,to:1,x0:emissionPose.x,y0:emissionPose.y,x1:emissionPose.x,y1:emissionPose.y}]:actorMovementSegments(a);
  for(const segment of segments){
   // Expiry is exclusive, as for projectile pairs; earlier hits still count.
   if(segment.from>=end)break;
-  const span=segment.to-segment.from,ax0=origin.x+(a.x-origin.x)*segment.from,ay0=origin.y+(a.y-origin.y)*segment.from;
-  const x=segment.x0-ax0,y=segment.y0-ay0,dx=segment.x1-segment.x0-(a.x-origin.x)*span,dy=segment.y1-segment.y0-(a.y-origin.y)*span;
+  for(const movement of movements){
+  const from=Math.max(segment.from,movement.from),to=Math.min(segment.to,movement.to,end);
+  if(from>to||from>=end||movement.to<=movement.from)continue;
+  const span=to-from,bulletSpan=segment.to-segment.from,actorSpan=movement.to-movement.from;
+  const bulletStart=bulletSpan>0?(from-segment.from)/bulletSpan:0,bulletEnd=bulletSpan>0?(to-segment.from)/bulletSpan:0;
+  const actorStart=(from-movement.from)/actorSpan,actorEnd=(to-movement.from)/actorSpan;
+  const ax0=movement.x0+(movement.x1-movement.x0)*actorStart,ay0=movement.y0+(movement.y1-movement.y0)*actorStart;
+  const ax1=movement.x0+(movement.x1-movement.x0)*actorEnd,ay1=movement.y0+(movement.y1-movement.y0)*actorEnd;
+  const bx0=segment.x0+(segment.x1-segment.x0)*bulletStart,by0=segment.y0+(segment.y1-segment.y0)*bulletStart;
+  const bx1=segment.x0+(segment.x1-segment.x0)*bulletEnd,by1=segment.y0+(segment.y1-segment.y0)*bulletEnd;
+  const x=bx0-ax0,y=by0-ay0,dx=bx1-bx0-(ax1-ax0),dy=by1-by0-(ay1-ay0);
   // Reject only when the whole relative segment misses the enclosing square.
   if(x>bound&&x+dx>bound||x< -bound&&x+dx< -bound||y>bound&&y+dy>bound||y< -bound&&y+dy< -bound)continue;
   const localX=co*x+si*y,localY=-si*x+co*y,localDx=co*dx+si*dy,localDy=-si*dx+co*dy;
   const overlap=overlapWindow(localX/rx,localY/ry,localDx/rx,localDy/ry);if(!overlap)continue;
-  const localTime=overlap[0],t=segment.from+span*localTime;
+  const localTime=overlap[0],t=from+span*localTime;
   if(t>=end)continue;
   let lx=localX+localDx*localTime,ly=localY+localDy*localTime;
   if(Math.hypot(lx,ly)<1e-8){lx=-co*b.dx-si*b.dy;ly=si*b.dx-co*b.dy;}
   const normal=unit(lx/(rx*rx),ly/(ry*ry)),nx=co*normal.x-si*normal.y,ny=si*normal.x+co*normal.y;
-  const scale=1/Math.hypot(lx/shape.rx,ly/shape.ry),ax=origin.x+(a.x-origin.x)*t,ay=origin.y+(a.y-origin.y)*t;
-  const travel=segment.travel0+(segment.travel1-segment.travel0)*localTime;
-  const vx=segment.vx0+(segment.vx-segment.vx0)*localTime,vy=segment.vy0+(segment.vy-segment.vy0)*localTime;
+  const scale=1/Math.hypot(lx/shape.rx,ly/shape.ry),ax=ax0+(ax1-ax0)*localTime,ay=ay0+(ay1-ay0)*localTime;
+  const bulletTime=bulletStart+(bulletEnd-bulletStart)*localTime;
+  const travel=segment.travel0+(segment.travel1-segment.travel0)*bulletTime;
+  const vx=segment.vx0+(segment.vx-segment.vx0)*bulletTime,vy=segment.vy0+(segment.vy-segment.vy0)*bulletTime;
   // Keep impulses from any earlier hits in this step by storing an offset.
   const remaining=emissionPose?0:1-t;
   return{t,nx,ny,travel,x:ax+(co*lx-si*ly)*scale,y:ay+(si*lx+co*ly)*scale,targetX:ax,targetY:ay,
-   bulletX:segment.x0+(segment.x1-segment.x0)*localTime,bulletY:segment.y0+(segment.y1-segment.y0)*localTime,vx,vy,
+   bulletX:bx0+(bx1-bx0)*localTime,bulletY:by0+(by1-by0)*localTime,vx,vy,
    targetVxOffset:((a.pvx??a.vx)-a.vx)*remaining,targetVyOffset:((a.pvy??a.vy)-a.vy)*remaining};
+  }
  }
  return null;
 }
@@ -3053,7 +3191,7 @@ function applyImpact(a,b,contact,damage=projectileHitDamage(b,a,contact),knockba
  const impulse=knockbackMultiplier*cfg.knockbackScale*100*damage/(IMPACT.decay*actorSizeRatio(a)),strength=clamp(impulse/320,0,1.6);
  // The contact normal points out of the body; push away from the hit face.
  a.ivx-=contact.nx*impulse;a.ivy-=contact.ny*impulse;limitActorImpact(a);
- a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy;
+ a.vx=a.mvx+a.ivx;a.vy=a.mvy+a.ivy+(a.gvy||0);
  const xx=contact.nx*contact.nx-contact.ny*contact.ny,xy=2*contact.nx*contact.ny;
  a.qx-=xx*.025*strength;a.qy-=xy*.025*strength;a.qvx-=xx*8*strength;a.qvy-=xy*8*strength;
  if(damage>0){a.hitFlashStrength=Math.min(1,actorFlashAmount(a)+damage/1.5);a.hitFlash=ACTOR_FLASH_TIME;}
@@ -3169,9 +3307,9 @@ const BOT_PROFILES=[
 const BOT_DIRECTIONS=[{x:0,y:0},...Array.from({length:8},(_,i)=>({x:Math.cos(i*Math.PI/4),y:Math.sin(i*Math.PI/4)}))];
 function createBot(actor){
  const profile=BOT_PROFILES[Math.floor(rand()*BOT_PROFILES.length)];
- const bot={profile,time:0,nextSample:0,nextDecision:0,history:[],side:rand()<.5?-1:1,nextSide:2+rand()*2,
+ const bot={profile,time:0,nextSample:0,nextDecision:0,history:[],side:rand()<.5?-1:1,nextSide:2+rand()*2,escapeUntil:0,
   strategySeed:seed,noiseAngle:0,noiseRange:0,nextNoise:0,decisions:0,observedAt:null,nextAttack:.45,
- lastSalvoSeq:actor.salvoSeq||0,pulse:false,pendingShot:false,tracks:new Map(),learnedAt:-1,readySince:null,aimJob:null,aimResult:null,aimJobsCompleted:0,aimSliceFrame:-1,aimSliceUsed:0,aimSliceSteps:0,
+ lastSalvoSeq:actor.salvoSeq||0,pulse:false,pendingShot:false,tracks:new Map(),learnedAt:-1,readySince:null,aimJob:null,aimResult:null,aimJobsCompleted:0,aimSliceFrame:-1,aimSliceUsed:0,aimSliceSteps:0,moveLimitFrame:-1,moveSpent:0,
   output:{x:0,y:0,aim:actor.aim||0,range:actor.range||500,shoot:false}};
  actor.bot=bot;return bot;
 }
@@ -3331,8 +3469,13 @@ function botForecastActiveStep(b,dt,body,source=null){
   b.x=endX;b.y=endY;
   b.vx=Math.cos(angle+omega*h)*nextSpeed+ax*h;b.vy=Math.sin(angle+omega*h)*nextSpeed+ay*h;
   if(!windowStopped&&h>1e-12){
-   if(!b.forecastWindow)b.forecastWindow={lo:(dt-remaining)/dt,x1:oldX,y1:oldY,charge0:b.charged};
-   Object.assign(b.forecastWindow,{hi:(dt-remaining+h)/dt,x2:b.x,y2:b.y,charge1:b.charged+ds});
+   if(!b.forecastWindow){
+    const window=b.forecastWindowBuffer??={lo:0,hi:0,x1:0,y1:0,x2:0,y2:0,charge0:0,charge1:0};
+    b.forecastWindow=window;
+    window.lo=(dt-remaining)/dt;window.x1=oldX;window.y1=oldY;window.charge0=b.charged;
+   }
+   const window=b.forecastWindow;
+   window.hi=(dt-remaining+h)/dt;window.x2=b.x;window.y2=b.y;window.charge1=b.charged+ds;
   }
   b.charged+=ds;
   b.left=Math.max(0,b.left-ds);
@@ -3358,17 +3501,27 @@ function botForecastStep(b,dt,body,sourcePose=null){
   if(typeof b.materialized!=='boolean')b.materialized=!!b.solid;
   b.forecastWindow=null;
   let elapsed=0,wallContacts=0;
-  const bodyAt=t=>({...body,r:body.r||ACTOR.radius,team:body.team??(b.team===0?1:0),x:body.x+(body.vx||0)*(t-dt*.5),
-    y:body.y+(body.vy||0)*(t-dt*.5)});
+  // Samples are consumed immediately; reuse them during boundary searches.
+  let sampledBody=null,activationShape=null;
+  const bodyAt=t=>{
+   const offset=t-dt*.5;
+   if(offset===0&&body.r&&body.team!=null)return body;
+   sampledBody??={...body,r:body.r||ACTOR.radius,team:body.team??(b.team===0?1:0)};
+   sampledBody.x=body.x+(body.vx||0)*offset;sampledBody.y=body.y+(body.vy||0)*offset;
+   return sampledBody;
+  };
+  const free={x:0,y:0,vx:0,vy:0,travel:0};
   const freeState=h=>{
     const speed=Math.max(1e-9,Math.hypot(b.vx,b.vy)),nx=b.vx/speed,ny=b.vy/speed;
     const travel=speed*h+.5*cfg.propulsion*h*h,newSpeed=speed+cfg.propulsion*h;
-    if(!mapFields.length&&!MAPS[mapId].terrain)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
+    free.x=b.x+nx*travel;free.y=b.y+ny*travel;free.vx=nx*newSpeed;free.vy=ny*newSpeed;free.travel=travel;
+    if(!mapFields.length&&!MAPS[mapId].terrain)return free;
     const midX=b.x+nx*travel*.5,midY=b.y+ny*travel*.5,mapForce=mapAcceleration(midX,midY);
     const ax=mapForce.x,ay=mapForce.y;
-    if(ax===0&&ay===0)return{x:b.x+nx*travel,y:b.y+ny*travel,vx:nx*newSpeed,vy:ny*newSpeed,travel};
+    if(ax===0&&ay===0)return free;
     const driftX=nx*(speed+newSpeed)*.5+ax*h*.5,driftY=ny*(speed+newSpeed)*.5+ay*h*.5;
-    return{x:b.x+driftX*h,y:b.y+driftY*h,vx:nx*newSpeed+ax*h,vy:ny*newSpeed+ay*h,travel:Math.hypot(driftX,driftY)*h};
+    free.x=b.x+driftX*h;free.y=b.y+driftY*h;free.vx=nx*newSpeed+ax*h;free.vy=ny*newSpeed+ay*h;free.travel=Math.hypot(driftX,driftY)*h;
+    return free;
   };
   const timeAtDistance=(distance,high)=>{
     let low=0;for(let i=0;i<18;i++){const mid=(low+high)*.5;if(freeState(mid).travel<distance)low=mid;else high=mid;}return high;
@@ -3377,7 +3530,11 @@ function botForecastStep(b,dt,body,sourcePose=null){
     const remaining=limit-elapsed;
     if(b.before<=1e-7){
       b.before=0;
-      if(!b.materialized&&!projectileActivationOverlap(b,bodyAt(elapsed)))b.materialized=true;
+      if(!b.materialized){
+        const carrier=bodyAt(elapsed);
+        activationShape??=collisionShape(carrier);
+        if(!projectileActivationOverlap(b,carrier,b.x,b.y,activationShape))b.materialized=true;
+      }
     }
     if(b.materialized){
       const owner=b.sourceField,t=sourceTime+elapsed+remaining*.5;
@@ -3407,13 +3564,13 @@ function botForecastStep(b,dt,body,sourcePose=null){
     next=freeState(h);
    }
    if(b.before===0){
-      if(!projectileActivationOverlap({...b,...next},bodyAt(elapsed+h))){
+      if(!projectileActivationOverlap(b,bodyAt(elapsed+h),next.x,next.y,activationShape)){
         // The ghost exits the body in this substep. Find the first outside
         // point, consume that path, then permit the actor field and damage.
         let lo=0,hi=h;
         for(let i=0;i<24;i++){
           const mid=(lo+hi)*.5,at=freeState(mid);
-          if(projectileActivationOverlap({...b,...at},bodyAt(elapsed+mid)))lo=mid;else hi=mid;
+          if(projectileActivationOverlap(b,bodyAt(elapsed+mid),at.x,at.y,activationShape))lo=mid;else hi=mid;
         }
      if(hi<h-1e-10)wallHit=null;
      h=hi;
@@ -3448,10 +3605,12 @@ function botRankThreats(bullets,actor,limit){
  return bullets.map(bullet=>({bullet,rank:botThreatRank(bullet,actor)}))
   .sort((a,b)=>a.rank-b.rank).slice(0,limit).map(entry=>entry.bullet);
 }
-function botObservedThreats(observation,actor,age,level,bot){
+function botMoveExpired(deadline){return deadline>0&&performance.now()>=deadline;}
+function botObservedThreats(observation,actor,age,level,bot,deadline=0){
  const ranked=botRankThreats(observation.bullets.filter(b=>!bot.tracks.get(b.id)?.expired),actor,level.threats);
- const threats=[];
+ const threats=[],bodies=[],steps=Math.ceil(age/.04),old=observation.self;
  for(const visible of ranked){
+  if(botMoveExpired(deadline))return null;
   const track=bot.tracks.get(visible.id)||{spin:0,confidence:0,used:0};
   // Ghost onset remains concealed; solid rounds are immediately dangerous.
   const observedPath=track.observedPath??AIM_CIRCLE_RADIUS;
@@ -3473,10 +3632,10 @@ function botObservedThreats(observation,actor,age,level,bot){
     weight:probability*(visible.solid?1:BOT_TUNING.ghostWeight)};
    // Bring the delayed observation forward through our KNOWN movement. No
    // future opponent or projectile state is consulted during this forecast.
-   const steps=Math.ceil(age/.04);
    for(let i=0;i<steps&&b.left>0;i++){
-    const q=(i+.5)/steps,old=observation.self;
-    const body={...old,x:old.x+(actor.x-old.x)*q,y:old.y+(actor.y-old.y)*q,
+    if(botMoveExpired(deadline))return null;
+    const q=(i+.5)/steps;
+    const body=bodies[i]??={...old,x:old.x+(actor.x-old.x)*q,y:old.y+(actor.y-old.y)*q,
      vx:old.vx+(actor.vx-old.vx)*q,vy:old.vy+(actor.vy-old.vy)*q};
     botForecastStep(b,age/steps,body);
    }
@@ -3529,14 +3688,15 @@ function botControlForecast(shot){
  const materialized=projectileDamageActive(shot);
  const charged=materialized?(Number.isFinite(shot.damageStart)?Math.max(0,travel-shot.damageStart):cfg.damageRampDistance):0;
  return{...shot,spin:shot.spin||0,before,left:(projectileEnd(shot)??Infinity)-travel-before,materialized,charged,
-  timeLeft:projectileTimeLeft(shot)};
+  timeLeft:projectileTimeLeft(shot),forecastWindowBuffer:null};
 }
-function botControllableRounds(rounds,actor,direction,receivers,dt){
+function botControllableRounds(rounds,actor,direction,receivers,dt,receiverMidpoints,deadline=0){
  const horizon=(receivers.length-1)*dt,inertia=cfg.inertia*actorSizeRatio(actor);
  const target=receivers[0],sources=[actor],carriers=[],reach=[],ranked=[];
  const acceleration=cfg.propulsion+mapForceBound(actor.x,actor.y,Infinity),wrap=MAPS[mapId].wrap;
  let receiverTravel=0;
  for(let i=0;i<receivers.length-1;i++){
+  if(botMoveExpired(deadline))return null;
   const t=(i+1)*dt,next=botBodyStep(sources[i],direction,dt);
   sources.push(next);carriers.push(botBodyMidpoint(sources[i],next));
   // Opposite inputs bound how far another move could shift this course.
@@ -3545,14 +3705,16 @@ function botControllableRounds(rounds,actor,direction,receivers,dt){
  }
  const radius=bodyShape(target).ry;
  for(const shot of rounds){
+  if(botMoveExpired(deadline))return null;
   const b=botControlForecast(shot),speed=Math.hypot(b.vx,b.vy);
   const travel=Math.min(b.before+b.left,(speed+.5*acceleration*horizon)*horizon);
   const nearTarget=Math.max(cfg.radius,radius+b.r);
   if(b.before>travel||!wrap&&Math.hypot(b.x-target.x,b.y-target.y)>travel+receiverTravel+nearTarget)continue;
   let canSteer=false,rank=Infinity;
   for(let i=0;i<carriers.length&&b.left>1e-7;i++){
+   if(botMoveExpired(deadline))return null;
    const old=receivers[i],next=receivers[i+1];
-   botForecastStep(b,dt,botBodyMidpoint(old,next),carriers[i]);
+   botForecastStep(b,dt,receiverMidpoints[i],carriers[i]);
    const window=b.forecastWindow;if(!window)continue;
    canSteer||=botClosestPass(window,sources[i],sources[i+1]).distance<cfg.controlRadius+reach[i];
    if(canSteer)rank=Math.min(rank,botClosestPass(window,old,next).distance);
@@ -3561,15 +3723,17 @@ function botControllableRounds(rounds,actor,direction,receivers,dt){
  }
  return ranked.sort((a,b)=>a.rank-b.rank).map(entry=>entry.shot);
 }
-function botShotControlValue(rounds,receivers,states,carriers,dt){
+function botShotControlValue(rounds,receivers,states,carriers,dt,receiverMidpoints,deadline=0){
  const radius=bodyShape(receivers[0]).ry,margin=32;
  let dealt=0,totalMiss=0;
  for(const shot of rounds){
+  if(botMoveExpired(deadline))return null;
   const b=botControlForecast(shot);
   let miss=margin;
   for(let i=0;i<receivers.length-1&&b.left>1e-7;i++){
+   if(botMoveExpired(deadline))return null;
    const old=receivers[i],next=receivers[i+1],source=carriers[i]??=botBodyMidpoint(states[i],states[i+1]);
-   botForecastStep(b,dt,botBodyMidpoint(old,next),source);
+   botForecastStep(b,dt,receiverMidpoints[i],source);
    if(!b.forecastWindow)continue;
    const {distance,damage}=botClosestPass(b.forecastWindow,old,next,radius+b.r,dt);
    miss=Math.min(miss,Math.max(0,distance-radius-b.r));
@@ -3604,37 +3768,58 @@ function botMoveContext(actor,target,bot,level){
  // Score their constrained displacement so pushing into a wall earns no gain.
  const obstruction=kiting||fullStrategy&&bot.recharging?null:firstWallHit(actor.x,actor.y,target.x,target.y,dodgeRadius+3);
  let waypoint=null;
- if(obstruction&&!obstruction.wall.boundary){
+ if(obstruction&&!obstruction.wall.boundary&&obstruction.wall.kind!=='rotor'){
   const wall=obstruction.wall,gap=dodgeRadius+wall.r+12;
-  const inset=actorInset(actor),far=wall.horizontal?wall.y+(target.y>=wall.y?gap:-gap):wall.x+(target.x>=wall.x?gap:-gap);
-  const top=wall.horizontal?{x:clamp(wall.x0-gap,inset,W-inset),y:far}:{x:far,y:clamp(wall.y0-gap,inset,H-inset)};
-  const bottom=wall.horizontal?{x:clamp(wall.x1+gap,inset,W-inset),y:far}:{x:far,y:clamp(wall.y1+gap,inset,H-inset)};
   const length=point=>Math.hypot(point.x-actor.x,point.y-actor.y)+Math.hypot(target.x-point.x,target.y-point.y);
-  waypoint=length(top)<=length(bottom)?top:bottom;
+  if(wall.kind==='circle'){
+   // Short tangent steps keep the route outside the inflated circular body.
+   const angle=Math.atan2(actor.y-wall.y0,actor.x-wall.x),step=.5,radius=gap/Math.cos(step);
+   const left={x:wall.x+radius*Math.cos(angle-step),y:wall.y0+radius*Math.sin(angle-step)};
+   const right={x:wall.x+radius*Math.cos(angle+step),y:wall.y0+radius*Math.sin(angle+step)};
+   waypoint=length(left)<=length(right)?left:right;
+  }else{
+   const inset=actorInset(actor),far=wall.horizontal?wall.y+(target.y>=wall.y?gap:-gap):wall.x+(target.x>=wall.x?gap:-gap);
+   const top=wall.horizontal?{x:clamp(wall.x0-gap,inset,W-inset),y:far}:{x:far,y:clamp(wall.y0-gap,inset,H-inset)};
+   const bottom=wall.horizontal?{x:clamp(wall.x1+gap,inset,W-inset),y:far}:{x:far,y:clamp(wall.y1+gap,inset,H-inset)};
+   waypoint=length(top)<=length(bottom)?top:bottom;
+  }
  }
- const radial=reactive?0:clamp((separation-clamp(separation,minRange,maxRange))/(kiting?80:170),-1,1);
- const tangent=bot.practice?bot.practice.side*bot.practice.tangent:(reactive||fullStrategy&&!bot.recharging)?0:bot.side*profile.tangent;
+ const escaping=bot.time<(bot.escapeUntil||0);
+ const radial=reactive||escaping?0:clamp((separation-clamp(separation,minRange,maxRange))/(kiting?80:170),-1,1);
+ const tangent=escaping?bot.side:bot.practice?bot.practice.side*bot.practice.tangent:(reactive||fullStrategy&&!bot.recharging)?0:bot.side*profile.tangent;
  const center=bot.practice?.kind==='reposition'?unit(W*.5-actor.x,H*.5-actor.y):{x:0,y:0};
  const desired=unit(current.x*radial-current.y*tangent+center.x*1.4,current.y*radial+current.x*tangent+center.y*1.4);
  return{count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired,positionStep,fireFloor,cramped:!reactive&&fullStrategy&&separation<=fireFloor};
 }
-function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveContext(actor,target,bot,level),limit=Infinity,turnDelay=0){
+function botMoveReceivers(context,target){
+ const receivers=context.receivers??=Array.from({length:context.positionStep+1},(_,i)=>botTargetAt(target,i*context.dt));
+ context.receiverMidpoints??=receivers.slice(1).map((next,i)=>botBodyMidpoint(receivers[i],next));
+ return receivers;
+}
+function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveContext(actor,target,bot,level),limit=Infinity,turnDelay=0,deadline=0){
  const {count,dt,dodgeRadius,predicted,profile,minRange,maxRange,waypoint,desired,positionStep,fireFloor}=shared,states=[actor],carriers=[];let body=actor,turnStart=actor;
- for(let i=0;i<count;i++){
-  if(turnDelay>0){
-   const hold=Math.min(dt,turnDelay);
-   body=turnStart=botBodyStep(body,bot.output,hold);turnDelay-=hold;
-   if(hold<dt)body=botBodyStep(body,direction,dt-hold);
-  }else body=botBodyStep(body,direction,dt);
-  states.push(body);
+ function extendStates(index){
+  // Finish a delayed turn's hold as well: wall-push scoring uses turnStart.
+  while(states.length<=Math.min(count,index)||turnDelay>0&&states.length<=count){
+   if(botMoveExpired(deadline))return false;
+   if(turnDelay>0){
+    const hold=Math.min(dt,turnDelay);
+    body=turnStart=botBodyStep(body,bot.output,hold);turnDelay-=hold;
+    if(hold<dt)body=botBodyStep(body,direction,dt-hold);
+   }else body=botBodyStep(body,direction,dt);
+   states.push(body);
+  }
+  return true;
  }
+ const reactive=level.reactiveMovement;
+ const routeIndex=waypoint?Math.min(count,Math.ceil(.35/dt)):reactive?positionStep:count;
+ if(!extendStates(Math.max(positionStep,routeIndex)))return null;
  const position=states[positionStep],offset=unit(predicted.x-position.x,predicted.y-position.y);
  // A wall end is a near-term steering goal. Reuse an earlier predicted body
  // so a full-horizon overshoot of that corner cannot make standing still win.
- const routeIndex=waypoint?Math.min(count,Math.ceil(.35/dt)):count,routeBody=states[routeIndex];
+ const routeBody=states[routeIndex];
  const routeDistance=waypoint?Math.hypot(waypoint.x-routeBody.x,waypoint.y-routeBody.y)+Math.hypot(predicted.x-waypoint.x,predicted.y-waypoint.y):offset.d;
  const distanceCost=(Math.max(minRange-routeDistance,0,routeDistance-maxRange)/210)**2*2*BOT_TUNING.spacingWeight;
- const reactive=level.reactiveMovement;
  let wallCost=0;
  if(reactive&&mapId!=='ellipse'){
   const edgeDistance=Math.min(position.x,W-position.x,position.y,H-position.y)-actorInset(position);
@@ -3659,19 +3844,27 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
  const requestedWall=firstWallHit(turnStart.x,turnStart.y,turnStart.x+direction.x*ACTOR.speed*.35,turnStart.y+direction.y*ACTOR.speed*.35,dodgeRadius+3);
  const wallPushCost=requestedWall?Math.max(0,-direction.x*requestedWall.nx-direction.y*requestedWall.ny)*2.2:0;
  const crowding=reactive?12*Math.max(0,1-offset.d/AIM_CIRCLE_RADIUS)**2:Math.max(0,(fireFloor-offset.d)/15);
- const turnCost=change*(waypoint?.12:.6);
+ const turnCost=change*((waypoint||bot.time<(bot.escapeUntil||0)) ? .12 : .6);
  const hasRounds=shared.rounds?.length>0,trading=level.fullStrategy===true&&(hasRounds||shared.opening);
- // Assume the largest possible return before simulating our shots, so pruning
- // still allows a candidate to take a hit in exchange for more damage.
- let dealt=trading&&hasRounds?Math.min(target.hp,shared.rounds.length*(1+cfg.momentumDamageCap)):0;
+ // Use the actual offensive return so poor moves can be pruned during threat checks.
+ let dealt=0,miss=0;
+ if(trading&&hasRounds){
+  const receivers=botMoveReceivers(shared,target);
+  if(states.length<receivers.length&&!extendStates(receivers.length-1))return null;
+  const attack=botShotControlValue(shared.rounds,receivers,states,carriers,dt,shared.receiverMidpoints,deadline);
+  if(attack===null)return null;
+  dealt=attack.dealt;miss=attack.miss;
+ }
  const score=(risk,taken)=>(
   trading?BOT_DAMAGE_WEIGHT*(risk-dealt)+(taken>=actor.hp?10000:0):risk*BOT_TUNING.riskWeight*profile.riskScale
- )+distanceCost+wallCost+wallPushCost+crowding-alignment*1.6+turnCost;
+ )+distanceCost+wallCost+wallPushCost+crowding-alignment*1.6+turnCost+miss;
  let risk=0,taken=0;
  if(score(risk,taken)>=limit)return limit;
  for(const incoming of threats){
-  const b={...incoming};let worst=0,damage=0;
+  const b={...incoming,forecastWindowBuffer:null};let worst=0,damage=0;
   for(let i=0;i<count&&b.left>0;i++){
+   if(botMoveExpired(deadline))return null;
+   if(states.length<=i+1&&!extendStates(i+1))return null;
    const old=states[i],next=states[i+1];
    const carrier=carriers[i]??=botBodyMidpoint(old,next);
    botForecastStep(b,dt,carrier);
@@ -3692,10 +3885,7 @@ function botMoveScore(actor,target,threats,direction,bot,level,shared=botMoveCon
   risk+=(worst+damage)*incoming.weight;
   if(trading&&score(risk,taken)>=limit)return limit;
  }
- if(!trading||!hasRounds)return score(risk,taken);
- const attack=botShotControlValue(shared.rounds,shared.receivers,states,carriers,dt);
- dealt=attack.dealt;
- return score(risk,taken)+attack.miss;
+ return score(risk,taken);
 }
 function* botAimProbeSteps(actor,target,angle,range,targetAt=null,sourceAt=null,midpointWeight=.08){
  targetAt??=t=>botTargetAt(target,t);
@@ -4048,6 +4238,12 @@ function beginBotAimSearch(bot,self,target,level,direction=null,{opening=null,wa
  bot.aimJob={search,map:mapId,level,steps:0,opening,round:fullStrategy&&actor?botRoundKey(actor):null};
 }
 function runBotAimSlice(bot,actor,level){
+ if(!monitorProfiling)return runBotAimSliceWork(bot,actor,level);
+ const started=performance.now();
+ try{return runBotAimSliceWork(bot,actor,level);}
+ finally{monitorFrameCosts[1]+=performance.now()-started;}
+}
+function runBotAimSliceWork(bot,actor,level){
  if(!bot.aimJob)return;
  if(bot.aimJob.map!==mapId||bot.aimJob.level!==level||!actor.salvo&&actor.cd>(level.aimAhead??0)||
   bot.aimJob.round&&bot.aimJob.round!==botRoundKey(actor)||
@@ -4126,8 +4322,17 @@ function botTrigger(bot,level,actor){
  output.range=tracking?distance+tracking.rangeOffset:botLeadRange(distance);
  return output;
 }
+// Each bot has its own per-frame fallback cap, without deferred movement searches.
+const BOT_MOVE_LIMIT_MS=5;
 function botControl(actor,target,projectiles,dt,options={}){
+ if(!monitorProfiling)return botControlWork(actor,target,projectiles,dt,options);
+ const started=performance.now(),aimBefore=monitorFrameCosts[1];
+ try{return botControlWork(actor,target,projectiles,dt,options);}
+ finally{monitorFrameCosts[0]+=Math.max(0,performance.now()-started-(monitorFrameCosts[1]-aimBefore));}
+}
+function botControlWork(actor,target,projectiles,dt,options={}){
  const bot=actor.bot||createBot(actor);
+ if(bot.moveLimitFrame!==botAimFrame){bot.moveLimitFrame=botAimFrame;bot.moveSpent=0;}
  const level=options.level??BOT_LEVELS[options.difficulty||cfg.difficulty]??BOT_LEVELS.normal;
  bot.time+=dt;
  const fullStrategy=level.fullStrategy===true,canFire=options.fire!==false;
@@ -4156,14 +4361,14 @@ function botControl(actor,target,projectiles,dt,options={}){
  if(!canFire){
   bot.aimJob=bot.aimResult=bot.aimMotion=bot.opening=null;
   bot.pendingShot=false;
- }else if(!fullStrategy||bot.time<bot.nextDecision){
+ }else if(!fullStrategy||bot.time<bot.nextDecision||bot.moveSpent>=BOT_MOVE_LIMIT_MS){
   if(newRound&&actor.salvo&&bot.aimMotion){
    const perceived=botTargetAt(bot.aimMotion,bot.time-bot.observedAt);
    beginBotAimSearch(bot,botBody(actor),perceived,level,bot.output,{actor});
   }
   runBotAimSlice(bot,actor,level);
  }
- const decisionDue=bot.time>=bot.nextDecision;
+ const decisionDue=bot.time>=bot.nextDecision&&bot.moveSpent<BOT_MOVE_LIMIT_MS;
  if(bot.time<bot.nextSample&&!decisionDue)return botTrigger(bot,level,actor);
  const self=botBody(actor);
  // With zero delay, a decision uses a fresh snapshot even between samples.
@@ -4179,6 +4384,8 @@ function botControl(actor,target,projectiles,dt,options={}){
  bot.nextDecision=bot.time+level.interval;let observation=null;
  for(let i=bot.history.length-1;i>=0;i--)if(bot.history[i].time<=bot.time-level.delay){observation=bot.history[i];break;}
  if(!observation||!observation.target||observation.target.hp<=0){bot.output={...bot.output,x:0,y:0};bot.pendingShot=false;bot.aimJob=bot.aimMotion=bot.opening=null;return botTrigger(bot,level,actor);}
+ const moveStarted=performance.now(),deadline=moveStarted+BOT_MOVE_LIMIT_MS-bot.moveSpent;
+ const keepMove=()=>{bot.moveSpent+=performance.now()-moveStarted;bot.nextDecision=bot.time;return botTrigger(bot,level,actor);};
  botLearn(bot,observation,level);
  const age=bot.time-observation.time,observedMotion={...observation.target,vx:observation.target.vx*level.lead,vy:observation.target.vy*level.lead,ax:0,ay:0};
  const previous=bot.history.findLast(frame=>frame.time<observation.time-.05&&frame.target);
@@ -4188,7 +4395,14 @@ function botControl(actor,target,projectiles,dt,options={}){
   observedMotion.ay=clamp((observation.target.vy-previous.target.vy)/span,-limit,limit)*level.lead;
  }
  const perceived=botTargetAt(observedMotion,age);
- if(fullStrategy&&canFire)bot.aimMotion=observedMotion;
+ const earlier=bot.history.findLast(frame=>frame.time<=bot.time-.6);
+ if(canFire&&bot.time>=(bot.escapeUntil||0)&&earlier&&Math.hypot(self.x-earlier.self.x,self.y-earlier.self.y)<12){
+  const obstruction=firstWallHit(self.x,self.y,perceived.x,perceived.y,bodyShape(self).rx+3);
+  if(obstruction&&!obstruction.wall.boundary){
+   bot.side=rand()<.5?-1:1;bot.escapeUntil=bot.time+1.1;
+   if(bot.opening?.moves)discardBotOpening(bot);
+  }
+ }
  if(!fullStrategy&&bot.time>=bot.nextSide){
   bot.nextSide=bot.time+2+rand()*2.5;
   if(rand()<.5)bot.side*=-1;
@@ -4199,7 +4413,8 @@ function botControl(actor,target,projectiles,dt,options={}){
  else if(bot.practice)delete bot.practice;
  const untilReady=actor.salvo?0:Math.max(0,actor.cd,bot.nextAttack-bot.time);
  bot.committing=fullStrategy&&canFire&&(!!actor.salvo||untilReady<=level.aimAhead);
- const threats=botObservedThreats(observation,self,age,level,bot);
+ const threats=botObservedThreats(observation,self,age,level,bot,deadline);
+ if(threats===null)return keepMove();
  let direction=BOT_DIRECTIONS[0],score=Infinity,alternate=null,alternateCost=Infinity;
  const moveContext=botMoveContext(self,perceived,bot,level);
  if(moveContext.cramped&&!bot.cramped){
@@ -4211,8 +4426,9 @@ function botControl(actor,target,projectiles,dt,options={}){
  if(fullStrategy&&canFire&&cfg.controlSpinScale>0&&cfg.controlRadius>0){
   const own=projectiles.filter(b=>b.team===self.team&&!b.dead&&!b.expired);
   if(level===BOT_LEVELS.hard&&own.length){
-   moveContext.receivers=Array.from({length:moveContext.positionStep+1},(_,i)=>botTargetAt(perceived,i*moveContext.dt));
-   rounds=botControllableRounds(own,self,bot.output,moveContext.receivers,moveContext.dt);
+   const receivers=botMoveReceivers(moveContext,perceived);
+   rounds=botControllableRounds(own,self,bot.output,receivers,moveContext.dt,moveContext.receiverMidpoints,deadline);
+   if(rounds===null)return keepMove();
   }else{
    rounds=botRankThreats(own.filter(b=>fieldWeight(b.x,b.y,self,cfg.controlRadius)>0&&botThreatRank(b,perceived)<cfg.radius&&
     (Number.isFinite(b.fieldStart)?b.fieldStart-(b.travel||0):0)<=Math.hypot(b.vx,b.vy)*.16),perceived,2);
@@ -4220,26 +4436,47 @@ function botControl(actor,target,projectiles,dt,options={}){
  }
  if(rounds?.length){
   moveContext.rounds=rounds;
-  moveContext.receivers??=Array.from({length:moveContext.positionStep+1},(_,i)=>botTargetAt(perceived,i*moveContext.dt));
+  botMoveReceivers(moveContext,perceived);
  }
- const openingWindow=fullStrategy&&canFire&&!actor.salvo&&!bot.cramped&&!rounds?.length&&untilReady<=level.aimAhead;
+ const openingWindow=fullStrategy&&canFire&&bot.time>=(bot.escapeUntil||0)&&!actor.salvo&&!bot.cramped&&!rounds?.length&&untilReady<=level.aimAhead;
  if(bot.opening?.moves&&!openingWindow)discardBotOpening(bot);
  const shortlist=openingWindow&&(!!bot.opening?.moves||!bot.opening&&!bot.aimJob&&!bot.aimResult);
  const maxOpeningGain=shortlist?BOT_DAMAGE_WEIGHT*Math.min(perceived.hp,1+cfg.momentumDamageCap):0;
  moveContext.opening=shortlist;
- // Retain world-axis and diagonal moves, plus an exact cut across the lead shot.
+ // Evaluate continuation and precise lateral moves before the remaining turns.
  const incoming=fullStrategy&&cfg.receiverSpinScale>0&&threats.find(b=>
   b.solid&&botThreatRank(b,self)<cfg.radius&&(self.x-b.x)*b.vx+(self.y-b.y)*b.vy>0);
  const aligned=rounds?.[0]||incoming,axis=aligned&&unit(aligned.vx,aligned.vy);
- const candidates=axis?.d?[...BOT_DIRECTIONS,{x:-axis.y,y:axis.x},{x:axis.y,y:-axis.x}]:BOT_DIRECTIONS;
- // Break ties during reload without favoring a fixed direction.
+ const pool=axis?.d?[...BOT_DIRECTIONS,{x:-axis.y,y:axis.x},{x:axis.y,y:-axis.x}]:BOT_DIRECTIONS;
+ const current={x:bot.output.x,y:bot.output.y},candidates=[];
+ const addCandidate=move=>{
+  if(!candidates.some(a=>Math.abs(a.x-move.x)+Math.abs(a.y-move.y)<1e-6))candidates.push(move);
+ };
+ const prefer=(x,y)=>{
+  let best=pool[0],alignment=-Infinity;
+  for(const move of pool){const value=move.x*x+move.y*y;if(value>alignment){best=move;alignment=value;}}
+  addCandidate(best);
+ };
+ prefer(current.x,current.y);
+ for(const shot of [incoming,rounds?.[0]]){
+  if(!shot)continue;
+  const axis=unit(shot.vx,shot.vy);if(!axis.d)continue;
+  const lateral={x:-axis.y,y:axis.x},opposite={x:axis.y,y:-axis.x};
+  if(lateral.x*current.x+lateral.y*current.y>=0){prefer(lateral.x,lateral.y);prefer(opposite.x,opposite.y);}
+  else{prefer(opposite.x,opposite.y);prefer(lateral.x,lateral.y);}
+ }
+ // Reload tie-breaking only reorders equally close remaining turns.
  const randomizeTies=level===BOT_LEVELS.hard&&bot.recharging&&!bot.practice;
- const startIndex=randomizeTies?Math.floor(rand()*candidates.length):0;
+ const startIndex=randomizeTies?Math.floor(rand()*(pool.length-1)):0;
+ const remaining=Array.from({length:pool.length-1},(_,i)=>pool[1+(startIndex+i)%(pool.length-1)]);
+ remaining.sort((a,b)=>current.x*(b.x-a.x)+current.y*(b.y-a.y));
+ for(const move of remaining)addCandidate(move);
+ addCandidate(BOT_DIRECTIONS[0]);
  const tieTolerance=randomizeTies?1e-6:0;
- for(let i=0;i<candidates.length;i++){
-  const candidate=candidates[(startIndex+i)%candidates.length];
+ for(const candidate of candidates){
   const limit=shortlist?Math.min(alternateCost,score+maxOpeningGain):score-tieTolerance;
-  const cost=botMoveScore(self,perceived,threats,candidate,bot,level,moveContext,limit);
+  const cost=botMoveScore(self,perceived,threats,candidate,bot,level,moveContext,limit,0,deadline);
+  if(cost===null)break;
   if(cost>=limit)continue;
   const distinct=shortlist&&Math.hypot(candidate.x-direction.x,candidate.y-direction.y)>=.2;
   if(cost<score){
@@ -4247,35 +4484,38 @@ function botControl(actor,target,projectiles,dt,options={}){
    score=cost;direction=candidate;
   }else if(distinct&&cost<alternateCost){alternate=candidate;alternateCost=cost;}
  }
- if(level===BOT_LEVELS.hard&&canFire){
+ if(!Number.isFinite(score))return keepMove();
+ if(level===BOT_LEVELS.hard&&canFire&&!botMoveExpired(deadline)){
   const planned=bot.delayedCut;
-  bot.delayedCut=null;
   if(!shortlist){
    const tolerance=.6; // One ordinary turn-cost unit.
    const limit=score+tolerance;
    if(planned){
-    if(botMoveScore(self,perceived,threats,planned,bot,level,moveContext,limit)<limit)direction=planned;
+    const late=botMoveScore(self,perceived,threats,planned,bot,level,moveContext,limit,0,deadline);
+    if(late!==null){bot.delayedCut=null;if(late<limit)direction=planned;}
    }else{
     const dx=direction.x-bot.output.x,dy=direction.y-bot.output.y;
     const shot=threats.find(b=>!b.solid&&b.id>(bot.lastCutShot??0)&&
      (self.x-b.x)*b.vx+(self.y-b.y)*b.vy>0&&botThreatRank(b,self)<cfg.radius&&
      Math.abs(b.vx*dy-b.vy*dx)>.5*Math.hypot(b.vx,b.vy));
     if(shot){
-     bot.lastCutShot=shot.id;
-     const late=botMoveScore(self,perceived,threats,direction,bot,level,moveContext,limit,level.interval);
-     if(late<limit&&(late<score-tolerance||rand()<.5)){
+     const late=botMoveScore(self,perceived,threats,direction,bot,level,moveContext,limit,level.interval,deadline);
+     if(late!==null)bot.lastCutShot=shot.id;
+     if(late!==null&&late<limit&&(late<score-tolerance||rand()<.5)){
       bot.delayedCut=direction;
       direction=bot.output;
      }
     }
    }
-  }
+  }else bot.delayedCut=null;
  }
  const moves=shortlist?[{direction,cost:score}]:null;
  if(moves&&alternate&&alternateCost<score+maxOpeningGain&&Math.hypot(alternate.x-direction.x,alternate.y-direction.y)>=.2){
   moves.push({direction:alternate,cost:alternateCost});
  }
+ bot.moveSpent+=performance.now()-moveStarted;
  if(bot.opening?.moves)bot.opening.moves=moves;
+ if(fullStrategy&&canFire)bot.aimMotion=observedMotion;
  bot.observedAt=observation.time;bot.decisions++;
  if(!canFire){
   bot.output={x:direction.x,y:direction.y,aim:Math.atan2(perceived.y-self.y,perceived.x-self.x),range:Math.hypot(perceived.x-self.x,perceived.y-self.y),shoot:false};
@@ -4385,6 +4625,7 @@ function beginSkillCooldown(skill){
 }
 function simulate(dt,control){
  hitProjectiles.length=0;
+ advanceMapMechanics(dt);
  updateActorHitMarks(p,dt);updateActorHitMarks(enemy,dt);
  updateBulletFades(dt);
  elapsed+=dt;const practice=isPracticeMode(),fixed=$('mode').value==='practice',e=enemy,previousPlayerHp=p.hp,previousEnemyHp=e?.hp;
@@ -4415,6 +4656,7 @@ function simulate(dt,control){
  const {aimPoint}=control;
  if(aimPoint)aimAt(p,aimPoint);
  constrainActor(p);if(e){constrainActor(e);separateActors(p,e);}
+ resolveActorRotorContacts([p,e]);
  if(aimPoint)aimAt(p,aimPoint);
  else p.range=selectAimRange(p,spectating?control.range:p.range);
  if(e)e.range=selectAimRange(e,ai.range);
@@ -4436,6 +4678,7 @@ function simulate(dt,control){
  if(e)updateWeapon(e,ai.shoot,dt,false,null,cfg.holdToFire);
  const reduction=dodgeReductionAt(p,elapsed-dt),dodgeVelocity=p.dodgeVelocity;
  const playerSource=reduction>0&&dodgeVelocity?{x:p.x,y:p.y,vx:p.vx-reduction*dodgeVelocity.x,vy:p.vy-reduction*dodgeVelocity.y}:p;
+ const projectileStarted=monitorProfiling?performance.now():0;
  for(const b of bullets)if(!b.dead)stepBullet(b,dt,playerSource);
  const events=[],ghosts=[[],[]],hitShapes=[];
  for(const b of bullets){
@@ -4455,17 +4698,28 @@ function simulate(dt,control){
   if(ev.kind==='annihilate'){
    if(ev.a.dead||ev.b.dead)continue;
    ev.a.dead=ev.b.dead=true;intercepts++;
+   ev.a.impactCutoff=ev.b.impactCutoff=ev.t;
    const at=elapsed-dt*(1-ev.t);fadeActivationPreview(ev.a,at);fadeActivationPreview(ev.b,at);
    interceptEffect(ev.x,ev.y);playSound('intercept',.55,ev);continue;
   }
   if(ev.b.dead||ev.target!==p&&ev.target!==enemy)continue;
   resolveHit(ev.b,ev.target,ev.contact,dt);
+  ev.b.impactCutoff=ev.t;
   // Keep the swept projectile visible until the interpolated contact.
   if(ev.t>0)hitProjectiles.push({bullet:ev.b,t:ev.t});
  }
+ for(const wall of WALLS)if(wall.kind==='rotor'){
+  let torque=0;
+  for(const b of bullets)for(const impulse of b.mapImpulses||[]){
+   if(impulse.wall===wall&&impulse.t<=Math.min(b.impactCutoff??Infinity,projectileCollisionEnd(b)))torque+=impulse.torque;
+  }
+  wall.omega=clamp(wall.omega+torque,-ROTOR_MAX_SPEED,ROTOR_MAX_SPEED);
+ }
+ if(monitorProfiling)monitorFrameCosts[5]+=performance.now()-projectileStarted;
  // All contacts in a fixed step use the same body geometry.
  if(p.hp!==previousPlayerHp)syncActorRadius(p);if(e&&e.hp!==previousEnemyHp)syncActorRadius(e);
  constrainActor(p);if(e){constrainActor(e);if(p.hp>0&&e.hp>0)separateActors(p,e);}
+ resolveActorRotorContacts([p,e]);
  for(let i=activationPreviewFades.length-1;i>=0;i--)if(elapsed-dt-activationPreviewFades[i].at>=ACTIVATION_PREVIEW_FADE_TIME)activationPreviewFades.splice(i,1);
  for(const b of bullets){
   if(cfg.showActivationPreview&&(spectating||b.team===0)&&b.prevTravel<b.fieldStart&&Number.isFinite(b.damageStart)){
@@ -4494,7 +4748,7 @@ function circle(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,TAU);}
 const mapDrawingCache=new Map();
 function mapDrawing(){
  const cached=mapDrawingCache.get(mapId);if(cached)return cached;
- const drawing={fields:[],walls:[],cover:[],edges:[],edgeSegments:[],grid:new Path2D()};
+ const drawing={fields:[],walls:[],rotors:[],cover:[],edges:[],edgeSegments:[],grid:new Path2D()};
  const {divider,terrain}=MAPS[mapId];
  if(terrain){
   // Cached shading and contours share the summed height, including saddle regions.
@@ -4531,7 +4785,7 @@ function mapDrawing(){
  drawing.edgeSegments.push([edge,edge,W-edge,edge],[edge,H-edge,W-edge,H-edge],[edge,edge,edge,H-edge],[W-edge,edge,W-edge,H-edge]);
  if(divider){
   const {x0,x1}=divider;
-  drawing.divider={x:x0,width:x1-x0,fill:getComputedStyle(canvas).getPropertyValue('--bg').trim()};
+  drawing.divider={x:x0,width:x1-x0,fill:C.blocked};
   for(const x of [x0,x1])drawing.edgeSegments.push([x,edge,x,H-edge]);
  }
  for(const [x0,y0,x1,y1] of drawing.edgeSegments){
@@ -4550,29 +4804,49 @@ function mapDrawing(){
  }
  for(const wall of WALLS){
   const path=new Path2D();
+  if(wall.kind==='rotor'){
+   const extent=wall.halfLength+wall.r;
+   path.rect(-extent,-wall.r,extent*2,wall.r*2);
+   const localPoints=[{x:-extent,y:-wall.r},{x:extent,y:-wall.r},{x:extent,y:wall.r},{x:-extent,y:wall.r}];
+   const points=localPoints.map(()=>({x:0,y:0}));
+   drawing.rotors.push({wall,path,localPoints,points});
+   drawing.cover.push({points,absorbs:false});continue;
+  }
+  if(wall.type==='spring'){
+   path.moveTo(wall.x0,wall.y);
+   for(let x=wall.x0;x<wall.x1;x+=32){path.lineTo(Math.min(x+16,wall.x1),wall.y+9);path.lineTo(Math.min(x+32,wall.x1),wall.y);}
+   drawing.walls.push({path,width:1.5,stroke:C.reflect,ground:true});continue;
+  }
   if(wall.kind==='ellipse'){
    const mask=new Path2D();mask.rect(0,0,W,H);mask.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);path.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);
-   drawing.walls.push({path,mask,width:wall.r*2,stroke:'#afbab8'});continue;
+   drawing.walls.push({path,mask,width:wall.r*2,stroke:C.reflect});continue;
   }
   const absorbs=wall.type==='absorb';
   const radius=wall.r;
-  if(wall.horizontal){
-   path.rect(wall.x0-radius,wall.y-radius,wall.x1-wall.x0+2*radius,2*radius);
+  if(wall.kind==='circle'){
+   path.arc(wall.x,wall.y0,radius,0,TAU);
+   drawing.walls.push({path,mask:path,width:2,stroke:C.reflect});continue;
   }else{
-   path.rect(wall.x-radius,wall.y0-radius,2*radius,wall.y1-wall.y0+2*radius);
+   const points=coverFootprint(wall);
+   path.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)path.lineTo(points[i].x,points[i].y);
   }
-  path.closePath();drawing.walls.push({path,fill:absorbs?'#1a2022':'#687e83'});
+  path.closePath();drawing.walls.push({path,fill:absorbs?'#1a2022':C.reflect});
   drawing.cover.push({points:coverFootprint(wall),absorbs});
  }
  mapDrawingCache.set(mapId,drawing);return drawing;
 }
 function coverFootprint(wall){
- const {r}=wall;
- const left=(wall.horizontal?wall.x0:wall.x)-r;
- const right=(wall.horizontal?wall.x1:wall.x)+r;
- const top=(wall.horizontal?wall.y:wall.y0)-r;
- const bottom=(wall.horizontal?wall.y:wall.y1)+r;
- return [{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}];
+ const {r}=wall,frame=wallFrame(wall);
+ return[[-r,r],[frame.length+r,r],[frame.length+r,-r],[-r,-r]].map(([along,across])=>({
+  x:frame.x+frame.tx*along+frame.ty*across,y:frame.y+frame.ty*along-frame.tx*across
+ }));
+}
+function drawMapMechanics(){
+ ctx.save();
+ for(const wall of WALLS)if(wall.kind==='rotor'){
+  ctx.fillStyle=C.blocked;circle(wall.cx,wall.cy,4);ctx.fill();
+ }
+ ctx.restore();
 }
 function drawMapField(){
  if(!mapFields.length)return;
@@ -4791,16 +5065,21 @@ function drawActivationPreviews(alpha,spectating){
 }
 function drawWalls(perspective=false){
  ctx.save();
- for(const wall of mapDrawing().walls){
-  if(perspective&&!wall.mask)continue;
-  if(wall.mask){ctx.fillStyle='#1b2224';ctx.fill(wall.mask,'evenodd');}else{ctx.fillStyle=wall.fill;ctx.fill(wall.path);}
+ const drawing=mapDrawing();
+ for(const wall of drawing.walls){
+  if(perspective&&!wall.mask&&!wall.ground)continue;
+  if(wall.mask){ctx.fillStyle=C.blocked;ctx.fill(wall.mask,'evenodd');}else if(wall.fill){ctx.fillStyle=wall.fill;ctx.fill(wall.path);}
   if(wall.width&&!(perspective&&wall.mask)){ctx.lineWidth=wall.width;ctx.strokeStyle=wall.stroke;ctx.stroke(wall.path);}
+ }
+ if(!perspective)for(const {wall,path} of drawing.rotors){
+  ctx.save();ctx.translate(wall.cx,wall.cy);ctx.rotate(wall.angle);
+  ctx.fillStyle=C.reflect;ctx.fill(path);ctx.restore();
  }
  ctx.restore();
 }
 function renderActorPose(actor,slot,alpha){
  if(!actor)return null;
- const pose=Object.assign(renderActors[slot],actor);pose.shattered=!!actor.shattered;pose.hitFlash=actor.hitFlash||0;pose.hitFlashStrength=actor.hitFlashStrength||0;pose.x=(actor.px??actor.x)+(actor.x-(actor.px??actor.x))*alpha;pose.y=(actor.py??actor.y)+(actor.y-(actor.py??actor.y))*alpha;return pose;
+ const pose=Object.assign(renderActors[slot],actor,actorPositionAt(actor,alpha));pose.shattered=!!actor.shattered;pose.hitFlash=actor.hitFlash||0;pose.hitFlashStrength=actor.hitFlashStrength||0;return pose;
 }
 function drawMistPuffs(mist,age){
  const alpha=ctx.globalAlpha;
@@ -4918,6 +5197,13 @@ function perspectiveScreenPoint(x,y,view,lift=0){
 }
 function drawPerspectiveCover(drawing,view){
  if(!drawing.cover.length)return;
+ for(const {wall,localPoints,points} of drawing.rotors){
+  const co=Math.cos(wall.angle),si=Math.sin(wall.angle);
+  for(let i=0;i<points.length;i++){
+   const local=localPoints[i],point=points[i];
+   point.x=wall.cx+co*local.x-si*local.y;point.y=wall.cy+si*local.x+co*local.y;
+  }
+ }
  const projection=view.projection,paint=labelContext,wallLift=80*projection.liftScale;
  const limit=perspectiveGroundY(VIEW_H-projection.anchorY+2*wallLift*view.zoom,projection);
  const depthAt=p=>view.zoom*(-view.si*(p.x-view.x)+view.co*(p.y-view.y));
@@ -4973,9 +5259,18 @@ function tracePerspectiveEdge(paint,x0,y0,x1,y1,view){
 function drawPerspectiveArenaEdges(drawing,view){
  const paint=labelContext,wrap=MAPS[mapId].wrap;
  paint.save();paint.strokeStyle=wrap?'#809d99':C.edge;paint.lineWidth=wrap?1.2:1;
- if(mapId==='ellipse'){
-  const {cx,cy,rx,ry,r}=WALLS.find(wall=>wall.kind==='ellipse');
-  paint.strokeStyle='#afbab8';paint.lineWidth=r*2;paint.lineCap='round';paint.beginPath();
+ if(mapId!=='ellipse'){
+  if(wrap)paint.setLineDash([9,6]);
+  for(const [x0,y0,x1,y1] of drawing.edgeSegments){
+   paint.beginPath();tracePerspectiveEdge(paint,x0,y0,x1,y1,view);paint.stroke();
+  }
+ }
+ for(const wall of WALLS){
+  if(wall.kind!=='ellipse'&&wall.kind!=='circle')continue;
+  const circular=wall.kind==='circle';
+  const cx=circular?wall.x:wall.cx,cy=circular?wall.y0:wall.cy;
+  const rx=circular?wall.r:wall.rx,ry=circular?wall.r:wall.ry;
+  paint.setLineDash([]);paint.strokeStyle=C.reflect;paint.lineWidth=circular?2:wall.r*2;paint.lineCap='round';paint.beginPath();
   const steps=192;
   let x=cx+rx,y=cy;
   for(let i=1;i<=steps;i++){
@@ -4983,11 +5278,6 @@ function drawPerspectiveArenaEdges(drawing,view){
    tracePerspectiveEdge(paint,x,y,nextX,nextY,view);x=nextX;y=nextY;
   }
   paint.stroke();
- }else{
-  if(wrap)paint.setLineDash([9,6]);
-  for(const [x0,y0,x1,y1] of drawing.edgeSegments){
-   paint.beginPath();tracePerspectiveEdge(paint,x0,y0,x1,y1,view);paint.stroke();
-  }
  }
  paint.restore();
 }
@@ -5041,6 +5331,7 @@ function render(alpha=1){
   ctx.restore();}
  drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending&&!spectating)drawRange(visualPlayer);
  drawWalls(perspective);
+ drawMapMechanics();
  if(!ending&&cfg.showActivationTrace)drawActivationTraces(alpha);
  if(!ending&&cfg.showActivationPreview)drawActivationPreviews(alpha,spectating);
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3),1,view);else drawBullet(b,null,alpha,view);}
@@ -5112,24 +5403,83 @@ function render(alpha=1){
 }
 
 // === 13 · Frame loop and input events ===
-let monitorStarted=null,monitorFrames=0,monitorCPU=0;
+// Bounded, allocation-free samples. Graph refresh is throttled; sampling is not.
+const MONITOR_CAPACITY=4096,MONITOR_HISTORY_MS=5000;
+const monitorTimes=new Float64Array(MONITOR_CAPACITY),monitorCPUs=new Float32Array(MONITOR_CAPACITY),monitorIntervals=new Float64Array(MONITOR_CAPACITY);
+// Exclusive timings: decision excludes aim; physics excludes AI and live projectiles.
+const MONITOR_PHASES=6;
+const monitorFrameCosts=new Float64Array(MONITOR_PHASES),monitorCosts=new Float32Array(MONITOR_CAPACITY*MONITOR_PHASES);
+const monitorPendingCosts=new Float64Array(MONITOR_PHASES);
+let monitorProfiling=false;
+const monitorGraph=$('performance-graph'),monitorPaint=monitorGraph.getContext('2d');
+let monitorLast=null,monitorPendingCPU=0,monitorHead=0,monitorCount=0,monitorGraphAt=null;
 function resetPerformanceMonitor(){
- monitorStarted=null;monitorFrames=0;monitorCPU=0;
- $('performance-monitor').hidden=!cfg.showPerformanceMonitor;
- setHudText('fps','FPS —');setHudText('cpu-time','CPU — ms');
+ monitorLast=monitorGraphAt=null;monitorHead=monitorCount=0;
+ $('performance-history').hidden=!cfg.showPerformanceMonitor;
+ monitorPaint.clearRect(0,0,monitorGraph.width,monitorGraph.height);
+ setHudText('performance-cpu','CPU — ms');setHudText('performance-interval',tr('帧间隔')+' — ms');
+ setHudText('performance-cpu-peak','');setHudText('performance-interval-peak','');
+ for(let phase=0;phase<MONITOR_PHASES;phase++)setHudText('performance-cost-'+phase,'— ms');
+}
+function drawPerformanceHistory(now,cpu,interval){
+ const paint=monitorPaint,width=Math.max(1,monitorGraph.clientWidth),height=54,left=0,right=width,plotWidth=width;
+ const dpr=window.devicePixelRatio||1,rasterWidth=Math.round(width*dpr),rasterHeight=Math.round(height*dpr);
+ if(monitorGraph.width!==rasterWidth)monitorGraph.width=rasterWidth;
+ if(monitorGraph.height!==rasterHeight)monitorGraph.height=rasterHeight;
+ let peakCPU=0,peakInterval=0,peakIndex=0;
+ const first=(monitorHead-monitorCount+MONITOR_CAPACITY)%MONITOR_CAPACITY;
+ for(let n=0;n<monitorCount;n++){
+  const i=(first+n)%MONITOR_CAPACITY;
+  if(n===0||monitorCPUs[i]>peakCPU){peakCPU=monitorCPUs[i];peakIndex=i;}
+  peakInterval=Math.max(peakInterval,monitorIntervals[i]);
+ }
+ paint.setTransform(monitorGraph.width/width,0,0,monitorGraph.height/height,0,0);
+ paint.clearRect(0,0,width,height);
+ const drawSeries=(values,top,bottom,maximum,color)=>{
+  paint.strokeStyle='#394447';paint.lineWidth=.5;paint.beginPath();paint.moveTo(left,bottom);paint.lineTo(right,bottom);paint.stroke();
+  // A reference, not an assumed display refresh rate.
+  if(maximum>=1000/60){
+   const y=bottom-(1000/60)/maximum*(bottom-top);
+   paint.setLineDash([3,3]);paint.beginPath();paint.moveTo(left,y);paint.lineTo(right,y);paint.stroke();paint.setLineDash([]);
+  }
+  paint.strokeStyle=color;paint.lineWidth=1;paint.beginPath();
+  for(let n=0;n<monitorCount;n++){
+   const i=(first+n)%MONITOR_CAPACITY,x=right-(now-monitorTimes[i])/MONITOR_HISTORY_MS*plotWidth;
+   const y=bottom-values[i]/maximum*(bottom-top);
+   if(n===0)paint.moveTo(x,y);else paint.lineTo(x,y);
+  }
+  paint.stroke();
+ };
+ const cpuScale=Math.max(4,Math.ceil(peakCPU*1.15)),intervalScale=Math.max(100/3,Math.ceil(peakInterval*1.15));
+ drawSeries(monitorCPUs,0,22,cpuScale,'#b2ceca');
+ drawSeries(monitorIntervals,32,54,intervalScale,'#d2b49b');
+ setHudText('performance-cpu','CPU '+cpu.toFixed(1)+' ms');
+ setHudText('performance-cpu-peak',tr('峰值')+' '+peakCPU.toFixed(1)+' ms');
+ setHudText('performance-interval',tr('帧间隔')+' '+(interval===null?'—':interval.toFixed(1))+' ms');
+ setHudText('performance-interval-peak',tr('峰值')+' '+peakInterval.toFixed(1)+' ms');
+ // All costs belong to the same peak CPU sample.
+ for(let phase=0;phase<MONITOR_PHASES;phase++)setHudText('performance-cost-'+phase,monitorCosts[peakIndex*MONITOR_PHASES+phase].toFixed(1)+' ms');
 }
 function updatePerformanceMonitor(now,cpu){
  if(document.hidden)return;
- if(monitorStarted===null){monitorStarted=now;return;}
- monitorFrames++;monitorCPU+=cpu;const duration=now-monitorStarted;
- if(duration<100)return;
- const averageCPU=monitorCPU/monitorFrames;
- setHudText('fps','FPS '+Math.round(monitorFrames*1000/duration));setHudText('cpu-time','CPU '+averageCPU.toFixed(1)+' ms');
- monitorStarted=now;monitorFrames=0;monitorCPU=0;
+ if(monitorLast===null){
+  monitorLast=now;monitorPendingCPU=cpu;monitorPendingCosts.set(monitorFrameCosts);return;
+ }
+ // Pair a completed callback's CPU with its actual start-to-next-start interval.
+ // Both use performance.now(), not the browser's animation timeline timestamp.
+ const interval=Math.max(0,now-monitorLast),completedCPU=monitorPendingCPU;
+ monitorTimes[monitorHead]=monitorLast;monitorCPUs[monitorHead]=completedCPU;monitorIntervals[monitorHead]=interval;
+ for(let phase=0;phase<MONITOR_PHASES;phase++)monitorCosts[monitorHead*MONITOR_PHASES+phase]=monitorPendingCosts[phase];
+ monitorLast=now;monitorPendingCPU=cpu;monitorPendingCosts.set(monitorFrameCosts);
+ monitorHead=(monitorHead+1)%MONITOR_CAPACITY;monitorCount=Math.min(monitorCount+1,MONITOR_CAPACITY);
+ while(monitorCount>0&&now-monitorTimes[(monitorHead-monitorCount+MONITOR_CAPACITY)%MONITOR_CAPACITY]>MONITOR_HISTORY_MS)monitorCount--;
+ if(monitorGraphAt===null||now-monitorGraphAt>=100){drawPerformanceHistory(now,completedCPU,interval);monitorGraphAt=now;}
 }
 document.addEventListener('visibilitychange',resetPerformanceMonitor);
 function frame(now){
  const frameStarted=cfg.showPerformanceMonitor?performance.now():null;
+ monitorProfiling=frameStarted!==null;
+ if(monitorProfiling)monitorFrameCosts.fill(0);
  botAimFrame++;
  // A controller can start or resume here; reset the clock before computing dt.
  const pad=pollPad(),dt=last?Math.max(0,Math.min((now-last)/1000,.05)):0;last=now;
@@ -5142,10 +5492,15 @@ function frame(now){
   accumulator+=dt;
   while(accumulator>=STEP&&(state==='running'||state==='ending')){
    accumulator-=STEP;
+   const stepStarted=monitorProfiling?performance.now():0;
+   const nestedBefore=monitorProfiling?monitorFrameCosts[0]+monitorFrameCosts[1]+monitorFrameCosts[5]:0;
    if(state==='running'){
     if(input)sampleFireInput(input,now-accumulator*1000);
     simulate(STEP,input);
    }else updateEnding(STEP);
+   if(monitorProfiling){
+    monitorFrameCosts[2]+=Math.max(0,performance.now()-stepStarted-(monitorFrameCosts[0]+monitorFrameCosts[1]+monitorFrameCosts[5]-nestedBefore));
+   }
    renderStepReady=true;
   }
  }
@@ -5154,9 +5509,18 @@ function frame(now){
   if(ending&&damageNumbers.length){updateDamageNumbers(dt);renderDirty=true;}
  }
  if(state==='running'||state==='ending')updateCamera(dt);
- if(state==='running'||state==='ending'||renderDirty||renderedState!==state)render(renderStepReady&&(state==='running'||state==='ending')?clamp(accumulator/STEP,0,1):1);
+ if(state==='running'||state==='ending'||renderDirty||renderedState!==state){
+  const drawStarted=monitorProfiling?performance.now():0;
+  render(renderStepReady&&(state==='running'||state==='ending')?clamp(accumulator/STEP,0,1):1);
+  if(monitorProfiling)monitorFrameCosts[3]=performance.now()-drawStarted;
+ }
  if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}
- if(frameStarted!==null)updatePerformanceMonitor(now,performance.now()-frameStarted);
+ monitorProfiling=false;
+ if(frameStarted!==null){
+  const cpu=performance.now()-frameStarted;
+  monitorFrameCosts[4]=Math.max(0,cpu-monitorFrameCosts[0]-monitorFrameCosts[1]-monitorFrameCosts[2]-monitorFrameCosts[3]-monitorFrameCosts[5]);
+  updatePerformanceMonitor(frameStarted,cpu);
+ }
  requestAnimationFrame(frame);
 }
 function pointerWorld(e){const b=canvas.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*VIEW_W-(VIEW_W-W)/2,y:(e.clientY-b.top)/b.height*VIEW_H-(VIEW_H-H)/2};}
@@ -5476,7 +5840,9 @@ function restoreSettings(){
   if(typeof mode==='string'&&(Object.hasOwn(BOT_LEVELS,mode)||mode==='practice'||mode==='practice-dodge'||mode==='spectate')){
    $('mode').value=mode;if(Object.hasOwn(BOT_LEVELS,mode))cfg.difficulty=mode;
   }
-  if(typeof saved.map==='string'&&Object.hasOwn(MAPS,saved.map))setMap(saved.map);
+  if(typeof saved.map==='string'&&!setMap(saved.map)){
+   setMap('open');rewrite=true;
+  }
  }
  $('preset-slot').value=activePresetSlot===null?'':String(activePresetSlot);
  applySettingValues(SETTING_NAMES,cfg);
