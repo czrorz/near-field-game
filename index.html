@@ -1083,6 +1083,7 @@ function createImpactSamples(rate){
 }
 // One shared, stereo reverb. Its output remains upstream of the master mute.
 let impactAudio=null;
+const MAX_SOUND_VOICES=8,MAX_SECONDARY_SOUND_VOICES=6;
 function prepareImpactAudio(){
  if(impactAudio&&impactAudio.context===audioCtx)return impactAudio;
  if(impactAudio)for(const node of impactAudio.nodes)try{node.disconnect();}catch{}
@@ -1205,7 +1206,8 @@ function impactSoundPan(kind,point){
 }
 function playShotSound(actor){
  const space=impactAudio;
- if(state!=='running'||!cfg.sound||document.hidden||audioCtx?.state!=='running'||space?.context!==audioCtx||space.shotVoices>=4||space.voices>=10)return;
+ if(state!=='running'||!cfg.sound||document.hidden||audioCtx?.state!=='running'||space?.context!==audioCtx||
+  space.shotVoices>=4||space.voices+space.shotVoices>=MAX_SECONDARY_SOUND_VOICES)return;
  let source,pan,counted=false;
  const cleanup=()=>{
   if(counted){space.shotVoices--;counted=false;}
@@ -1223,8 +1225,9 @@ function playShotSound(actor){
 function playSound(kind,strength=1,point){
  if(!Number.isFinite(strength)||((kind==='hit'||kind==='hurt')&&strength<=0))return;
  // Reserve voices for hit, hurt and kill sounds.
- const space=impactAudio,voiceLimit=kind==='intercept'||kind==='dodge'?10:12;
- if(!['hit','hurt','intercept','kill','dodge'].includes(kind)||!cfg.sound||!audioCtx||audioCtx.state!=='running'||space?.context!==audioCtx||space.voices>=voiceLimit)return;
+ const space=impactAudio,voiceLimit=kind==='intercept'||kind==='dodge'?MAX_SECONDARY_SOUND_VOICES:MAX_SOUND_VOICES;
+ if(!['hit','hurt','intercept','kill','dodge'].includes(kind)||!cfg.sound||!audioCtx||audioCtx.state!=='running'||space?.context!==audioCtx||
+  space.voices+space.shotVoices>=voiceLimit)return;
  let nodes=[],sources=[],counted=false,cleaned=false,remaining=0;
  const cleanup=()=>{if(cleaned)return;cleaned=true;if(counted){space.voices--;counted=false;}for(const node of nodes)try{node.disconnect();}catch{}};
  try{
@@ -1623,6 +1626,7 @@ function reset(run=false){
  if(!spectating&&headingView())centerFollowAim(p);
  ending=null;defeatedEnemy=null;
  bullets=[];bulletFades=[];activationPreviewFades=[];effects=[];woundParticles=[];damageNumbers=[];damageNumberIds=[0,0];elapsed=0;kills=0;hits=0;intercepts=0;shots=0;enemyDelay=0;shotId=0;accumulator=0;last=0;hudAt=-1;
+ visualEffectsChanged=false;
  activationTraces.length=0;
  skillReadyAt.clear();
  hitProjectiles.length=0;
@@ -2097,7 +2101,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtA
   b.motionSegments.length=0;
   b.damageSegments.length=0;
  }
- if(live){b.mapImpulses=[];b.impactCutoff=Infinity;}
+ if(live){b.mapImpulses=null;b.impactCutoff=Infinity;}
  // A newborn bullet is emitted after actors have moved in simulate(). Its
  // first collision sweep must therefore start at those emission-time poses.
  const motionCarrier=b.freshSpawn&&carrier?{...carrier,px:carrier.x,py:carrier.y,mapMotion:null}:carrier;
@@ -2216,7 +2220,7 @@ function integrateProjectile(b,dt,carrier=b.team===0?enemy:p,source=null,stopAtA
    respondProjectileWall(b,wallHit);
    if(live&&wallHit.wall.kind==='rotor'){
     const wall=wallHit.wall,torque=(wallHit.x-wall.cx)*(beforeVy-b.vy)-(wallHit.y-wall.cy)*(beforeVx-b.vx);
-    b.mapImpulses.push({wall,t:elapsed/dt,torque:torque*(b.r/ACTOR.shotRadius)**2/ROTOR_INERTIA});
+    (b.mapImpulses??=[]).push({wall,t:elapsed/dt,torque:torque*(b.r/ACTOR.shotRadius)**2/ROTOR_INERTIA});
    }
   }
   activateAt(elapsed);
@@ -2321,19 +2325,27 @@ function pausePlayerBullets(){
   b.pausedVelocity=[b.vx,b.vy];b.vx=b.vy=0;
  }
 }
+const liveProjectileSweeps=new WeakMap();
 function stepBullet(b,dt,playerSource=p){
  b.px=b.x;b.py=b.y;b.prevTravel=b.travel||0;
  const target=b.team===0?enemy:p;
+ let sweep=liveProjectileSweeps.get(b);
+ if(!sweep){
+  sweep={motion:[],damage:[]};
+  liveProjectileSweeps.set(b,sweep);
+ }
  if(b.pauseSteps>0){
-  b.mapImpulses=[];b.impactCutoff=Infinity;
+  b.mapImpulses=null;b.impactCutoff=Infinity;
   // A stationary segment still sweeps against the moving target.
-  b.motionSegments=b.damageSegments=[{from:0,to:1,x0:b.x,y0:b.y,x1:b.x,y1:b.y,
-   travel0:b.prevTravel,travel1:b.prevTravel,phase:'solid',solid:true,vx0:0,vy0:0,vx:0,vy:0}];
+  sweep.motion[0]={from:0,to:1,x0:b.x,y0:b.y,x1:b.x,y1:b.y,
+   travel0:b.prevTravel,travel1:b.prevTravel,phase:'solid',solid:true,vx0:0,vy0:0,vx:0,vy:0};
+  sweep.motion.length=1;sweep.damage.length=0;
+  b.motionSegments=b.damageSegments=sweep.motion;
   b.damageCarrierStart=b.freshSpawn&&target?{x:target.x,y:target.y,team:target.team}:null;
   b.freshSpawn=false;b.endPoint=b.wallEnd=null;b.lifetimeEnd=Infinity;
   if(--b.pauseSteps===0){[b.vx,b.vy]=b.pausedVelocity;b.pausedVelocity=null;}
  }else{
-  integrateProjectile(b,dt,target,b.team===0?playerSource:enemy,false,true);
+  integrateProjectile(b,dt,target,b.team===0?playerSource:enemy,false,true,sweep);
   b.age=(b.age||0)+dt*Math.min(1,b.lifetimeEnd);
  }
  // Swept collisions before the first cutoff still count within this step.
@@ -2416,13 +2428,16 @@ function collisionShape(a){
  const shape=bodyShape(a);return{shape,co:Math.cos(shape.angle),si:Math.sin(shape.angle)};
 }
 function projectileCollisionEnd(b){return Math.min(b.collisionEnd??Infinity,b.endPoint?.t??Infinity,b.wallEnd?.t??Infinity,b.lifetimeEnd??Infinity);}
-function collisionEvent(b,a,shapeCache=null){
+function collisionEvent(b,a,stepTargets=null){
  const segments=b.damageSegments;if(!segments?.length)return null;
  const end=projectileCollisionEnd(b);
- const {shape,co,si}=shapeCache?(shapeCache[a.team]??=collisionShape(a)):collisionShape(a),rx=shape.rx+b.r,ry=shape.ry+b.r;
+ const geometry=stepTargets?(stepTargets[a.team]??=collisionShape(a)):collisionShape(a);
+ const {shape,co,si}=geometry,rx=shape.rx+b.r,ry=shape.ry+b.r;
  const bound=Math.max(rx,ry)+PROJECTILE_PATH_EPS;
  const emissionPose=b.damageCarrierStart?.team===a.team?b.damageCarrierStart:null;
- const movements=emissionPose?[{from:0,to:1,x0:emissionPose.x,y0:emissionPose.y,x1:emissionPose.x,y1:emissionPose.y}]:actorMovementSegments(a);
+ const movements=emissionPose?
+  [{from:0,to:1,x0:emissionPose.x,y0:emissionPose.y,x1:emissionPose.x,y1:emissionPose.y}]:
+  stepTargets?(geometry.movements??=actorMovementSegments(a)):actorMovementSegments(a);
  for(const segment of segments){
   // Expiry is exclusive, as for projectile pairs; earlier hits still count.
   if(segment.from>=end)break;
@@ -2799,24 +2814,46 @@ function impactScatterBasis(contact,ux,uy){
  const tangentScale=Math.min(.12,60/Math.max(1,Math.hypot(tx,ty))),kick=Math.min(50,closing*.1);
  return{x:contact.nx*kick+tx*tangentScale,y:contact.ny*kick+ty*tangentScale};
 }
-const MAX_VISUAL_FRAGMENTS=200,MAX_LIGHT_DUST=80,MAX_WOUND_PARTICLES=48;
+const MAX_VISUAL_FRAGMENTS=200,MAX_LIGHT_DUST=80,MAX_WOUND_PARTICLES=48,MAX_IMPACT_MIST=64;
+let visualEffectsChanged=false;
 function capEffectCount(){
  while(effects.length>90){const index=effects.findIndex(e=>e.kind!=='breakup');effects.splice(index<0?0:index,1);}
 }
+function pruneExpiredParticles(particles,age){
+ let count=0;
+ for(const particle of particles){
+  if(age<particle.life)particles[count++]=particle;
+ }
+ particles.length=count;
+ return count;
+}
+function trimOldImpactParticles(key,excess){
+ for(const effect of effects){
+  if(excess<=0)break;
+  if(effect.kind!=='impact')continue;
+  const particles=effect[key];
+  if(!particles.length)continue;
+  const removed=Math.min(excess,particles.length);
+  particles.splice(0,removed);
+  excess-=removed;
+ }
+}
 function capVisualEffects(){
  capEffectCount();
- let count=0,dustCount=0;
+ let count=0,dustCount=0,mistCount=0;
  for(const e of effects){
   if(e.kind==='breakup'&&e.age<e.life)count+=e.pieces.length;
-  if(e.particles){for(let i=e.particles.length-1;i>=0;i--)if(e.age>=e.particles[i].life)e.particles.splice(i,1);count+=e.particles.length;}
-  if(e.dust){for(let i=e.dust.length-1;i>=0;i--)if(e.age>=e.dust[i].life)e.dust.splice(i,1);dustCount+=e.dust.length;}
+  if(e.kind!=='impact')continue;
+  count+=pruneExpiredParticles(e.particles,e.age);
+  dustCount+=pruneExpiredParticles(e.dust,e.age);
+  mistCount+=pruneExpiredParticles(e.mist,e.age);
  }
- let excess=count-MAX_VISUAL_FRAGMENTS;
  // Preserve complete death partitions and the newest impacts.
- for(const e of effects){if(excess<=0)break;if(e.particles?.length){const removed=Math.min(excess,e.particles.length);e.particles.splice(0,removed);excess-=removed;}}
+ trimOldImpactParticles('particles',count-MAX_VISUAL_FRAGMENTS);
  let dustExcess=dustCount+woundParticles.length-MAX_LIGHT_DUST;
  if(dustExcess>0&&woundParticles.length){const removed=Math.min(dustExcess,woundParticles.length);woundParticles.splice(0,removed);dustExcess-=removed;}
- for(const e of effects){if(dustExcess<=0)break;if(e.dust?.length){const removed=Math.min(dustExcess,e.dust.length);e.dust.splice(0,removed);dustExcess-=removed;}}
+ trimOldImpactParticles('dust',dustExcess);
+ trimOldImpactParticles('mist',mistCount-MAX_IMPACT_MIST);
 }
 // All sizes share the same signed triangular spin distribution.
 const IMPACT_SPIN_MAX=30;
@@ -2856,7 +2893,7 @@ function impactEffect(contact,damage,inheritedVx=0,inheritedVy=0,explosionDamage
  effects.push({kind:'impact',x:contact.x,y:contact.y,age:-contactOffset,life:1.02,damage:amount,bulletRadius,bulletTeam,
   flashX:(contact.bulletX??contact.x+contact.nx*bulletRadius)-contact.x,flashY:(contact.bulletY??contact.y+contact.ny*bulletRadius)-contact.y,
   flashVx:contact.vx??inheritedVx,flashVy:contact.vy??inheritedVy,particles,mist,dust});
- capVisualEffects();
+ visualEffectsChanged=true;
 }
 function interceptEffect(x,y){effects.push({kind:'intercept',x,y,age:0,life:.18});capEffectCount();}
 // Chunky quadrilateral, pentagonal and hexagonal patches, clipped to the body.
@@ -3074,7 +3111,8 @@ function breakupEffect(a,contact,ux,uy,kickX=0,kickY=0){
   const angle=visualRandom()*TAU,speed=8+visualRandom()*18,scale=a.r/15*1.5;
   mist.push({x:mxx*.7+(visualRandom()-.5)*a.r*.6,y:myx*.7+(visualRandom()-.5)*a.r*.6,vx:ux+kickX+Math.cos(angle)*speed,vy:uy+kickY+Math.sin(angle)*speed,damping:8,radius:(3.5+visualRandom()*4)*scale,expansion:(12+visualRandom()*14)*scale,life:.35+visualRandom()*.25,opacity:.17});
  }
- effects.push({kind:'breakup',x:a.x,y:a.y,bodyVx:ux+kickX,bodyVy:uy+kickY,splitDelay:.04,age:0,previousAge:0,life:.76,image,mxx,myx,mxy,myy,pieces,mist});capVisualEffects();
+ effects.push({kind:'breakup',x:a.x,y:a.y,bodyVx:ux+kickX,bodyVy:uy+kickY,splitDelay:.04,age:0,previousAge:0,life:.76,image,mxx,myx,mxy,myy,pieces,mist});
+ visualEffectsChanged=true;
 }
 function refreshBreakupPolygon(piece){
  const c=Math.cos(piece.angle),s=Math.sin(piece.angle),vertices=piece.vertices,world=piece.world;
@@ -3104,6 +3142,10 @@ function collideBreakupPieces(a,b){
  refreshBreakupPolygon(a);refreshBreakupPolygon(b);return true;
 }
 function updateEffects(dt){
+ if(visualEffectsChanged){
+  capVisualEffects();
+  visualEffectsChanged=false;
+ }
  for(const particle of woundParticles)particle.age+=dt;
  woundParticles=woundParticles.filter(particle=>particle.age<particle.life);
  for(const e of effects){
@@ -3142,7 +3184,7 @@ function addActorHitMark(a,contact,damage){
  mark.nextEmit=nextWoundEmission(mark);list.push(mark);if(list.length>10)list.shift();
 }
 function updateActorHitMarks(a,dt){
- if(!a?.hitMarks)return;
+ if(!a?.hitMarks?.length)return;
  let emitted=false;
  for(const mark of a.hitMarks){
   mark.age+=dt;
@@ -3152,7 +3194,7 @@ function updateActorHitMarks(a,dt){
   }
  }
  a.hitMarks=a.hitMarks.filter(mark=>mark.age<mark.life-1e-9);
- if(emitted)capVisualEffects();
+ if(emitted)visualEffectsChanged=true;
 }
 function emitWoundParticle(a,mark){
  const shape=bodyShape(a),co=Math.cos(shape.angle),si=Math.sin(shape.angle);
@@ -4398,7 +4440,11 @@ function botControlWork(actor,target,projectiles,dt,options={}){
  for(let i=bot.history.length-1;i>=0;i--)if(bot.history[i].time<=bot.time-level.delay){observation=bot.history[i];break;}
  if(!observation||!observation.target||observation.target.hp<=0){bot.output={...bot.output,x:0,y:0};bot.pendingShot=false;bot.aimJob=bot.aimMotion=bot.opening=null;return botTrigger(bot,level,actor);}
  const moveStarted=performance.now(),deadline=moveStarted+BOT_MOVE_LIMIT_MS-bot.moveSpent;
- const keepMove=()=>{bot.moveSpent+=performance.now()-moveStarted;bot.nextDecision=bot.time;return botTrigger(bot,level,actor);};
+ const keepMove=()=>{
+  // Keep the current move until the next scheduled decision.
+  bot.moveSpent+=performance.now()-moveStarted;
+  return botTrigger(bot,level,actor);
+ };
  botLearn(bot,observation,level);
  const age=bot.time-observation.time,observedMotion={...observation.target,vx:observation.target.vx*level.lead,vy:observation.target.vy*level.lead,ax:0,ay:0};
  const previous=bot.history.findLast(frame=>frame.time<observation.time-.05&&frame.target);
@@ -4693,14 +4739,14 @@ function simulate(dt,control){
  const playerSource=reduction>0&&dodgeVelocity?{x:p.x,y:p.y,vx:p.vx-reduction*dodgeVelocity.x,vy:p.vy-reduction*dodgeVelocity.y}:p;
  const projectileStarted=monitorProfiling?performance.now():0;
  for(const b of bullets)if(!b.dead)stepBullet(b,dt,playerSource);
- const events=[],ghosts=[[],[]],hitShapes=[];
+ const events=[],ghosts=[[],[]],hitTargets=[];
  for(const b of bullets){
   if(b.dead)continue;
   // Ghost motion can only precede activation.
   const first=cfg.annihilationChance>0?b.motionSegments[0]:null;
   if(first?.phase==='ghost'&&first.from<b.collisionEnd)ghosts[b.team].push(b);
   const target=b.team===1?p:e;
-  if(target){const contact=collisionEvent(b,target,hitShapes);if(contact)events.push({kind:'hit',t:contact.t,b,target,contact});}
+  if(target){const contact=collisionEvent(b,target,hitTargets);if(contact)events.push({kind:'hit',t:contact.t,b,target,contact});}
  }
  for(const a of ghosts[0])for(const b of ghosts[1]){
   const event=projectilePairEvent(a,b);if(event)events.push(event);
@@ -4723,8 +4769,11 @@ function simulate(dt,control){
  }
  for(const wall of WALLS)if(wall.kind==='rotor'){
   let torque=0;
-  for(const b of bullets)for(const impulse of b.mapImpulses||[]){
-   if(impulse.wall===wall&&impulse.t<=Math.min(b.impactCutoff??Infinity,projectileCollisionEnd(b)))torque+=impulse.torque;
+  for(const b of bullets){
+   if(!b.mapImpulses)continue;
+   for(const impulse of b.mapImpulses){
+    if(impulse.wall===wall&&impulse.t<=Math.min(b.impactCutoff??Infinity,projectileCollisionEnd(b)))torque+=impulse.torque;
+   }
   }
   wall.omega=clamp(wall.omega+torque,-ROTOR_MAX_SPEED,ROTOR_MAX_SPEED);
  }
@@ -6014,7 +6063,15 @@ reset();resize();initializeLanguage();requestAnimationFrame(frame);queueAudioPre
 
 // === 16 · Opt-in local test hooks (?test only) ===
 // Opt-in deterministic inspection for local development; absent in normal play.
-if(new URLSearchParams(location.search).has('test'))window.__fieldGame={snapshot:()=>({state,ending:ending?{...ending,actors:ending.actors.map(a=>a?{...a}:null)}:null,effects:effects.map(e=>({...e})),p:{...p},enemy:enemy?{...enemy,bot:enemy.bot?{time:enemy.bot.time,decisions:enemy.bot.decisions,observedAt:enemy.bot.observedAt,output:{...enemy.bot.output}}:null}:null,elapsed,kills,hits,intercepts,shots,bullets:bullets.map(b=>({...b})),bulletFades:bulletFades.map(fade=>({...fade})),cfg:{...cfg},renderFrames,inputMode,moveSource,aimSource,audioPlayed}),reset,pause,resume,step:(seconds,control={x:0,y:0,shoot:false})=>{for(let i=0;i<Math.round(seconds/STEP)&&(state==='running'||state==='ending');i++){if(i%2===0)botAimFrame++;if(state==='running')simulate(STEP,control);else updateEnding(STEP);}},frame,fieldWeight,projectilePhase,collisionEvent,applyImpact,fire,render,probe:(b,seconds)=>{const q={id:0,x:0,y:0,dx:1,dy:0,team:1,r:ACTOR.shotRadius,age:0,...b};for(let i=0;i<Math.round(seconds/STEP);i++)stepBullet(q,STEP);return q;},setPlayer:values=>Object.assign(p,values),inject:b=>bullets.push({id:++shotId,x:0,y:0,px:0,py:0,dx:1,dy:0,r:ACTOR.shotRadius,team:1,age:0,...b}),setEnemy:values=>{if(enemy)Object.assign(enemy,values);},config:values=>Object.assign(cfg,values)};
+if(new URLSearchParams(location.search).has('test')){
+ function snapshotBullet(b){
+  const snapshot={...b};
+  if(b.motionSegments)snapshot.motionSegments=b.motionSegments.slice();
+  if(b.damageSegments)snapshot.damageSegments=b.damageSegments===b.motionSegments?snapshot.motionSegments:b.damageSegments.slice();
+  return snapshot;
+ }
+ window.__fieldGame={snapshot:()=>({state,ending:ending?{...ending,actors:ending.actors.map(a=>a?{...a}:null)}:null,effects:effects.map(e=>({...e})),p:{...p},enemy:enemy?{...enemy,bot:enemy.bot?{time:enemy.bot.time,decisions:enemy.bot.decisions,observedAt:enemy.bot.observedAt,output:{...enemy.bot.output}}:null}:null,elapsed,kills,hits,intercepts,shots,bullets:bullets.map(snapshotBullet),bulletFades:bulletFades.map(fade=>({...fade})),cfg:{...cfg},renderFrames,inputMode,moveSource,aimSource,audioPlayed}),reset,pause,resume,step:(seconds,control={x:0,y:0,shoot:false})=>{for(let i=0;i<Math.round(seconds/STEP)&&(state==='running'||state==='ending');i++){if(i%2===0)botAimFrame++;if(state==='running')simulate(STEP,control);else updateEnding(STEP);}},frame,fieldWeight,projectilePhase,collisionEvent,applyImpact,fire,render,probe:(b,seconds)=>{const q={id:0,x:0,y:0,dx:1,dy:0,team:1,r:ACTOR.shotRadius,age:0,...b};for(let i=0;i<Math.round(seconds/STEP);i++)stepBullet(q,STEP);return q;},setPlayer:values=>Object.assign(p,values),inject:b=>bullets.push({id:++shotId,x:0,y:0,px:0,py:0,dx:1,dy:0,r:ACTOR.shotRadius,team:1,age:0,...b}),setEnemy:values=>{if(enemy)Object.assign(enemy,values);},config:values=>Object.assign(cfg,values)};
+}
 if(new URLSearchParams(location.search).has('test'))Object.assign(window.__fieldGame,{startupPreparation,runStartupSlice,scheduleStartupPreparation,stopStartupPreparation,projectilePairEvent,projectileActivationOverlap,projectileBlockedExitTime,startProjectileDamage,drawBullet,drawRange,shotRangePlan,integrateProjectile,projectileDamageActive,projectileEnd,brakingWeight,receiverSpin,shotSpin,drawActor,muzzleDistance,updateWeapon,WEAPON,bulletAcceleration,stepBullet,createActor,moveActor,separateActors,stick,pollPad,getInput,drawHealth,ACTOR,botControl,createBot,botAim,botAimProbe,botTrigger,BOT_LEVELS,BOT_TUNING,botBullet,botLearn,botForecastStep,botObservedThreats,botMoveScore});
 })();
 </script>
