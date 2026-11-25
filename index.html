@@ -9,7 +9,6 @@
 :root{--bg:#1a2022;--panel:#242c2e;--ink:#e0e5df;--muted:#9ca9a8;--line:#394447;--player:#b2ceca;--enemy:#d2b49b;--accent:#aec6c0;font-family:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);font-synthesis:none;overflow:hidden}
 *{box-sizing:border-box}
 body{margin:0;height:100dvh;padding:10px 28px 0;overflow:clip}
-body:has(main:not([data-spectate]) .overlay[hidden]){cursor:none}
 button,select,input{font:inherit}
 button,select,summary{color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:8px 12px;cursor:pointer}
 button:hover,summary:hover{background:#303b3d}
@@ -41,6 +40,7 @@ h1{font-size:24px;line-height:30px;letter-spacing:4px;margin:0;font-weight:500;w
 .performance-costs>div{display:flex;justify-content:space-between;gap:3px}
 .play-area{--play-height:calc(100dvh - var(--toolbar-bottom,136px) - var(--arena-gap) - env(safe-area-inset-bottom));touch-action:none}
 .arena{position:relative;width:min(100%,calc((var(--play-height) - 2px)*1.6 + 2px));margin-inline:auto;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#20282a;isolation:isolate}
+main:not([data-spectate]) .arena:has(> .overlay[hidden]){cursor:none}
 canvas{display:block;width:100%;aspect-ratio:8/5;touch-action:none;user-select:none}
 #perspective-plane{position:absolute;inset:0 auto auto 0;transform-origin:0 0;pointer-events:none}
 #perspective-plane[hidden]{display:none}
@@ -602,6 +602,7 @@ const VIEW_W=1200,VIEW_H=750,STEP=1/120,TAU=Math.PI*2;
 const VIEW_MODES=['heading','perspective','world'];
 const PERSPECTIVE_CENTER_Y=VIEW_H*.70,PERSPECTIVE_REACH=Math.hypot(VIEW_W,VIEW_H)+100;
 let perspectiveProjection=null,planeProjection=null;
+let perspectiveTranslate='';
 let W=1200,H=750;
 const ARENA_FRAME_INSET=24,BULLET_OVERHANG=20;
 const AIM_CIRCLE_RADIUS=100,AIM_CIRCLE_MAX_SHIFT=30;
@@ -649,8 +650,11 @@ let mapId='open',WALLS=MAPS.open.walls,mapFields=[];
 function setMap(id){if(!Object.hasOwn(MAPS,id))return false;mapId=id;const map=MAPS[id],width=map.width||VIEW_W,height=map.height||VIEW_H;mouse.x+=(width-W)/2;mouse.y+=(height-H)/2;W=width;H=height;WALLS=map.walls;mapFields=map.fields||[];return true;}
 function resetMapMechanics(){WALLS=MAPS[mapId].walls.map(wall=>({...wall}));mapDrawingCache.delete(mapId);}
 function advanceMapMechanics(dt){
- for(const wall of WALLS)if(wall.kind==='rotor'&&wall.omega!==0){
-  wall.angle=(wall.angle+wall.omega*dt)%TAU;wall.omega*=Math.exp(-.45*dt);
+ for(const wall of WALLS)if(wall.kind==='rotor'){
+  wall.angleStep=wall.omega*dt;
+  if(wall.omega!==0){
+   wall.angle=(wall.angle+wall.angleStep)%TAU;wall.omega*=Math.exp(-.45*dt);
+  }
  }
 }
 const mapAccelerationScratch={x:0,y:0};
@@ -1331,20 +1335,38 @@ function curveClosest(wall,x,y){
  const gx=qx/(a*a),gy=qy/(b*b),length=Math.hypot(gx,gy),inside=px*px/(a*a)+py*py/(b*b)<=1;
  return{x:wall.cx+qx,y:wall.cy+qy,nx:-gx/length,ny:-gy/length,d:Math.hypot(px-qx,py-qy)*(inside?1:-1)};
 }
-function reflectionPoint(wall,x,y){
+function reflectionPoint(wall,x,y,frame){
  if(wall.kind==='ellipse')return curveClosest(wall,x,y);
- const frame=wallFrame(wall),along=clamp((x-frame.x)*frame.tx+(y-frame.y)*frame.ty,0,frame.length);
+ frame??=wallFrame(wall);
+ const along=clamp((x-frame.x)*frame.tx+(y-frame.y)*frame.ty,0,frame.length);
  const cx=frame.x+frame.tx*along,cy=frame.y+frame.ty*along;
  const normal=unit(x-cx,y-cy);
  return{x:cx,y:cy,nx:normal.x,ny:normal.y,d:normal.d};
 }
+const wallFrameCache=new WeakMap();
 function wallFrame(wall){
- if(wall.kind==='rotor'){
-  const tx=Math.cos(wall.angle),ty=Math.sin(wall.angle);
-  return{x:wall.cx-tx*wall.halfLength,y:wall.cy-ty*wall.halfLength,tx,ty,length:wall.halfLength*2};
+ let frame=wallFrameCache.get(wall);
+ if(frame&&frame.angle===wall.angle)return frame;
+ if(!frame){
+  frame={};
+  wallFrameCache.set(wall,frame);
  }
- return wall.horizontal?{x:wall.x0,y:wall.y,tx:1,ty:0,length:wall.x1-wall.x0}:
-  {x:wall.x,y:wall.y0,tx:0,ty:1,length:wall.y1-wall.y0};
+ if(wall.kind==='rotor'){
+  frame.tx=Math.cos(wall.angle);frame.ty=Math.sin(wall.angle);
+  frame.x=wall.cx-frame.tx*wall.halfLength;frame.y=wall.cy-frame.ty*wall.halfLength;
+  frame.length=wall.halfLength*2;
+ }else if(wall.horizontal){
+  frame.x=wall.x0;frame.y=wall.y;
+  frame.tx=1;frame.ty=0;frame.length=wall.x1-wall.x0;
+ }else{
+  frame.x=wall.x;frame.y=wall.y0;
+  frame.tx=0;frame.ty=1;frame.length=wall.y1-wall.y0;
+ }
+ const endX=frame.x+frame.tx*frame.length,endY=frame.y+frame.ty*frame.length;
+ frame.minX=Math.min(frame.x,endX);frame.maxX=Math.max(frame.x,endX);
+ frame.minY=Math.min(frame.y,endY);frame.maxY=Math.max(frame.y,endY);
+ frame.angle=wall.angle;
+ return frame;
 }
 function curveWallHit(wall,x0,y0,x1,y1,r,bracketOnly){
  const radius=wall.r+r,dx=x1-x0,dy=y1-y0,aa=dx*dx+dy*dy;
@@ -1399,9 +1421,9 @@ function firstWallHit(x0,y0,x1,y1,r,projectile=false,bracketEllipse=false){
   const bodyRadius=projectile&&wall.type==='reflect'?0:r;
   if(wall.kind==='ellipse'){const hit=curveWallHit(wall,x0,y0,x1,y1,bodyRadius,bracketEllipse);if(hit&&hit.t<limit){limit=hit.t;best=hit;}continue;}
   const radius=wall.r+bodyRadius;
-  const frame=wallFrame(wall),endX=frame.x+frame.tx*frame.length,endY=frame.y+frame.ty*frame.length;
-  if(maxX<Math.min(frame.x,endX)-radius||minX>Math.max(frame.x,endX)+radius||
-     maxY<Math.min(frame.y,endY)-radius||minY>Math.max(frame.y,endY)+radius)continue;
+  const frame=wallFrame(wall);
+  if(maxX<frame.minX-radius||minX>frame.maxX+radius||
+     maxY<frame.minY-radius||minY>frame.maxY+radius)continue;
   const fx=frame.ty,fy=-frame.tx,ox=x0-frame.x,oy=y0-frame.y;
   const lx0=ox*fx+oy*fy,ly0=ox*frame.tx+oy*frame.ty,ldx=dx*fx+dy*fy,ldy=dx*frame.tx+dy*frame.ty;
   function accept(t,nx,ny){
@@ -1457,10 +1479,13 @@ function constrainActorWalls(a,radius=bodyShape(a).rx,dynamicRotors=false){
    removeInwardVelocity(a,point.nx,point.ny);
    continue;
   }
-  const point=reflectionPoint(wall,a.x,a.y),gap=radius+wall.r+3,dx=a.x-point.x,dy=a.y-point.y;
+  const frame=wallFrame(wall),gap=radius+wall.r+3;
+  if(frame.minX-a.x>=gap||a.x-frame.maxX>=gap||
+     frame.minY-a.y>=gap||a.y-frame.maxY>=gap)continue;
+  const point=reflectionPoint(wall,a.x,a.y,frame),dx=a.x-point.x,dy=a.y-point.y;
   if(Math.abs(dx)>=gap||Math.abs(dy)>=gap)continue;
   const distance=Math.hypot(dx,dy);if(distance>=gap)continue;
-  const frame=wallFrame(wall),side=((a.px??a.x)-point.x)*frame.ty-((a.py??a.y)-point.y)*frame.tx<0?-1:1;
+  const side=((a.px??a.x)-point.x)*frame.ty-((a.py??a.y)-point.y)*frame.tx<0?-1:1;
   const nx=distance>1e-9?dx/distance:frame.ty*side,ny=distance>1e-9?dy/distance:-frame.tx*side;
   a.x+=nx*(gap-distance);a.y+=ny*(gap-distance);
   if(wall.kind!=='rotor'||!dynamicRotors)removeInwardVelocity(a,nx,ny);
@@ -1508,11 +1533,16 @@ function constrainActor(a){
  }
  constrainActorWalls(a,inset-27,true);
 }
+function storePreviousActorPose(a){
+ a.px=a.x;a.py=a.y;
+ a.previousRadius=a.r;
+ a.previousQx=a.qx;a.previousQy=a.qy;
+}
 function resizeActors(){
  const actors=[p,enemy,...(ending?.actors||[])].filter(Boolean);
  for(const actor of actors){syncActorRadius(actor);constrainActor(actor);}
  if(p&&enemy)separateActors(p,enemy);
- for(const actor of actors){actor.px=actor.x;actor.py=actor.y;}
+ for(const actor of actors)storePreviousActorPose(actor);
 }
 function applyActorRepulsion(a,b,dt){
  if(!b||cfg.bodyRepulsion<=0||MAPS[mapId].divider)return;
@@ -1559,7 +1589,7 @@ function advanceActor(a,targetX,targetY,inertia,dt){
 }
 function moveActor(a,targetX,targetY,inertia,dt){
  inertia*=actorSizeRatio(a);
- a.px=a.x;a.py=a.y;
+ storePreviousActorPose(a);
  a.pvx=(inertia>0?a.mvx:targetX)+a.ivx;a.pvy=(inertia>0?a.mvy:targetY)+a.ivy+(a.gvy||0);
  constrainActorWalls(a,advanceActor(a,targetX,targetY,inertia,dt)-27,true);
 }
@@ -1703,7 +1733,7 @@ function finish(won){
 function updateBulletFades(dt){
  if(!bulletFades.length)return;
  for(const fade of bulletFades){fade.px=fade.x;fade.py=fade.y;fade.age+=dt;fade.x+=fade.vx*dt;fade.y+=fade.vy*dt;}
- bulletFades=bulletFades.filter(fade=>fade.age<fade.life);
+ pruneExpiredVisuals(bulletFades);
 }
 function updateEnding(dt){
  if(state!=='ending'||!ending)return;
@@ -2331,7 +2361,7 @@ function stepBullet(b,dt,playerSource=p){
  const target=b.team===0?enemy:p;
  let sweep=liveProjectileSweeps.get(b);
  if(!sweep){
-  sweep={motion:[],damage:[]};
+  sweep={bullet:b,motion:[],damage:[]};
   liveProjectileSweeps.set(b,sweep);
  }
  if(b.pauseSteps>0){
@@ -2473,6 +2503,33 @@ function collisionEvent(b,a,stepTargets=null){
   }
  }
  return null;
+}
+function updateGhostSweepBounds(sweep){
+ let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+ for(const segment of sweep.motion){
+  if(segment.phase!=='ghost')break;
+  minX=Math.min(minX,segment.x0,segment.x1);maxX=Math.max(maxX,segment.x0,segment.x1);
+  minY=Math.min(minY,segment.y0,segment.y1);maxY=Math.max(maxY,segment.y0,segment.y1);
+ }
+ sweep.minX=minX;sweep.maxX=maxX;sweep.minY=minY;sweep.maxY=maxY;
+}
+function collectGhostPairEvents(ghosts,events){
+ const [firstTeam,secondTeam]=ghosts;
+ if(!firstTeam.length||!secondTeam.length)return;
+ if(firstTeam.length===1&&secondTeam.length===1){
+  const event=projectilePairEvent(firstTeam[0].bullet,secondTeam[0].bullet);
+  if(event)events.push(event);
+  return;
+ }
+ for(const sweep of firstTeam)updateGhostSweepBounds(sweep);
+ for(const sweep of secondTeam)updateGhostSweepBounds(sweep);
+ for(const a of firstTeam)for(const b of secondTeam){
+  const radius=a.bullet.r+b.bullet.r;
+  if(a.minX>b.maxX+radius||b.minX>a.maxX+radius||
+     a.minY>b.maxY+radius||b.minY>a.maxY+radius)continue;
+  const event=projectilePairEvent(a.bullet,b.bullet);
+  if(event)events.push(event);
+ }
 }
 // Only the accepted integration segments participate. Their time coordinates
 // refer to the same simulation frame, so spatial crossings at different times
@@ -2819,12 +2876,12 @@ let visualEffectsChanged=false;
 function capEffectCount(){
  while(effects.length>90){const index=effects.findIndex(e=>e.kind!=='breakup');effects.splice(index<0?0:index,1);}
 }
-function pruneExpiredParticles(particles,age){
+function pruneExpiredVisuals(visuals,age){
  let count=0;
- for(const particle of particles){
-  if(age<particle.life)particles[count++]=particle;
+ for(const visual of visuals){
+  if((age??visual.age)<visual.life)visuals[count++]=visual;
  }
- particles.length=count;
+ visuals.length=count;
  return count;
 }
 function trimOldImpactParticles(key,excess){
@@ -2844,9 +2901,9 @@ function capVisualEffects(){
  for(const e of effects){
   if(e.kind==='breakup'&&e.age<e.life)count+=e.pieces.length;
   if(e.kind!=='impact')continue;
-  count+=pruneExpiredParticles(e.particles,e.age);
-  dustCount+=pruneExpiredParticles(e.dust,e.age);
-  mistCount+=pruneExpiredParticles(e.mist,e.age);
+  count+=pruneExpiredVisuals(e.particles,e.age);
+  dustCount+=pruneExpiredVisuals(e.dust,e.age);
+  mistCount+=pruneExpiredVisuals(e.mist,e.age);
  }
  // Preserve complete death partitions and the newest impacts.
  trimOldImpactParticles('particles',count-MAX_VISUAL_FRAGMENTS);
@@ -3147,7 +3204,7 @@ function updateEffects(dt){
   visualEffectsChanged=false;
  }
  for(const particle of woundParticles)particle.age+=dt;
- woundParticles=woundParticles.filter(particle=>particle.age<particle.life);
+ pruneExpiredVisuals(woundParticles);
  for(const e of effects){
   const previousAge=e.age;e.age+=dt;
   if(e.kind!=='breakup'||e.age>=e.life)continue;
@@ -3162,7 +3219,7 @@ function updateEffects(dt){
    for(let pass=0;pass<3;pass++)for(let i=0;i<pieces.length;i++)for(let j=i+1;j<pieces.length;j++)collideBreakupPieces(pieces[i],pieces[j]);
   }
  }
- effects=effects.filter(e=>e.age<e.life);
+ pruneExpiredVisuals(effects);
 }
 // Contact marks live in the actor's aim frame and follow its deformed boundary.
 const HIT_MARK_TIME_PER_DAMAGE=3.2,WOUND_PARTICLES_PER_DAMAGE=24;
@@ -3270,7 +3327,7 @@ function showDamageNumber(x,y,damage,team){
 function updateDamageNumbers(dt){
  if(!damageNumbers.length)return;
  for(const n of damageNumbers)n.age+=dt;
- damageNumbers=damageNumbers.filter(n=>n.age<n.life);
+ pruneExpiredVisuals(damageNumbers);
 }
 function formatCombatValue(value,maxHealth=p.maxHp){
  const baseValue=value*COMBAT_DISPLAY_SCALE;
@@ -4430,8 +4487,8 @@ function botControlWork(actor,target,projectiles,dt,options={}){
  if(bot.time>=bot.nextSample||(level.delay===0&&decisionDue)){
   bot.nextSample=bot.time+1/30;
   // Only the current visible phase enters observations, never the activation distance.
-  const seen=botRankThreats(projectiles.filter(b=>!b.dead&&!b.expired&&b.team!==self.team)
-   .map(botBullet).filter(b=>Number.isFinite(b.vx)&&Number.isFinite(b.vy)),self,24);
+  const incoming=projectiles.filter(b=>!b.dead&&!b.expired&&b.team!==self.team&&Number.isFinite(b.vx)&&Number.isFinite(b.vy));
+  const seen=botRankThreats(incoming,self,24).map(botBullet);
   bot.history.push({time:bot.time,self:botVisibleBody(actor),target:target?botVisibleBody(target):null,bullets:seen});
   while(bot.history.length>1&&bot.history[1].time<bot.time-.85)bot.history.shift();
  }
@@ -4677,6 +4734,15 @@ function scheduleStartupPreparation(){
 
 
 // === 11 · Fixed-step simulation and HUD ===
+const stepCollisionEvents=[],stepGhostSweeps=[[],[]],stepHitTargets=[];
+function clearStepCollisionLists(){
+ stepCollisionEvents.length=0;
+ stepGhostSweeps[0].length=stepGhostSweeps[1].length=0;
+ stepHitTargets.length=0;
+}
+function compareProjectileEvents(a,b){
+ return a.t-b.t||(a.kind==='annihilate'?0:1)-(b.kind==='annihilate'?0:1);
+}
 function beginSkillCooldown(skill){
  if(elapsed<(skillReadyAt.get(skill)??0))return false;
  skillReadyAt.set(skill,elapsed+SKILL_INTERVAL);
@@ -4739,20 +4805,19 @@ function simulate(dt,control){
  const playerSource=reduction>0&&dodgeVelocity?{x:p.x,y:p.y,vx:p.vx-reduction*dodgeVelocity.x,vy:p.vy-reduction*dodgeVelocity.y}:p;
  const projectileStarted=monitorProfiling?performance.now():0;
  for(const b of bullets)if(!b.dead)stepBullet(b,dt,playerSource);
- const events=[],ghosts=[[],[]],hitTargets=[];
+ clearStepCollisionLists();
+ const events=stepCollisionEvents,ghosts=stepGhostSweeps,hitTargets=stepHitTargets;
  for(const b of bullets){
   if(b.dead)continue;
   // Ghost motion can only precede activation.
   const first=cfg.annihilationChance>0?b.motionSegments[0]:null;
-  if(first?.phase==='ghost'&&first.from<b.collisionEnd)ghosts[b.team].push(b);
+  if(first?.phase==='ghost'&&first.from<b.collisionEnd)ghosts[b.team].push(liveProjectileSweeps.get(b));
   const target=b.team===1?p:e;
   if(target){const contact=collisionEvent(b,target,hitTargets);if(contact)events.push({kind:'hit',t:contact.t,b,target,contact});}
  }
- for(const a of ghosts[0])for(const b of ghosts[1]){
-  const event=projectilePairEvent(a,b);if(event)events.push(event);
- }
+ collectGhostPairEvents(ghosts,events);
  // Resolve contacts in time order, with cancellation first at equal times.
- events.sort((a,b)=>a.t-b.t||(a.kind==='annihilate'?0:1)-(b.kind==='annihilate'?0:1));
+ if(events.length>1)events.sort(compareProjectileEvents);
  for(const ev of events){
   if(ev.kind==='annihilate'){
    if(ev.a.dead||ev.b.dead)continue;
@@ -4767,6 +4832,7 @@ function simulate(dt,control){
   // Keep the swept projectile visible until the interpolated contact.
   if(ev.t>0)hitProjectiles.push({bullet:ev.b,t:ev.t});
  }
+ clearStepCollisionLists();
  for(const wall of WALLS)if(wall.kind==='rotor'){
   let torque=0;
   for(const b of bullets){
@@ -4794,7 +4860,10 @@ function simulate(dt,control){
   bulletFades.push({x,y,vx:b.vx*.12,vy:b.vy*.12,r:b.r,team:b.team,fadeSolid:projectileDamageActive(b),fadeDamage:projectileDamage(b),age:0,life:.14});
  }
  updateDamageNumbers(dt);
- bullets=bullets.filter(b=>!b.dead&&!b.expired);updateEffects(dt);
+ let activeBulletCount=0;
+ for(const b of bullets)if(!b.dead&&!b.expired)bullets[activeBulletCount++]=b;
+ bullets.length=activeBulletCount;
+ updateEffects(dt);
  if(!practice){if(p.hp<=0)finish(enemy===null?null:false);else if(enemy===null)finish(true);}updateHud();
 }
 function setHudText(id,text){const node=$(id);if(node.textContent!==text)node.textContent=text;}
@@ -4808,9 +4877,17 @@ function updateHud(force=false){
 // === 12 · Canvas drawing ===
 function circle(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,TAU);}
 const mapDrawingCache=new Map();
+const PERSPECTIVE_CURVE_STEPS=192;
+function perspectiveMapCurve(cx,cy,rx,ry,width){
+ const points=Array.from({length:PERSPECTIVE_CURVE_STEPS+1},(_,i)=>{
+  const angle=i*TAU/PERSPECTIVE_CURVE_STEPS;
+  return {x:cx+rx*Math.cos(angle),y:cy+ry*Math.sin(angle)};
+ });
+ return {points,width};
+}
 function mapDrawing(){
  const cached=mapDrawingCache.get(mapId);if(cached)return cached;
- const drawing={fields:[],walls:[],rotors:[],cover:[],edges:[],edgeSegments:[],grid:new Path2D()};
+ const drawing={fields:[],walls:[],rotors:[],cover:[],edges:[],edgeSegments:[],curvedEdges:[],grid:new Path2D()};
  const {divider,terrain}=MAPS[mapId];
  if(terrain){
   // Cached shading and contours share the summed height, including saddle regions.
@@ -4872,7 +4949,7 @@ function mapDrawing(){
    const localPoints=[{x:-extent,y:-wall.r},{x:extent,y:-wall.r},{x:extent,y:wall.r},{x:-extent,y:wall.r}];
    const points=localPoints.map(()=>({x:0,y:0}));
    drawing.rotors.push({wall,path,localPoints,points});
-   drawing.cover.push({points,absorbs:false});continue;
+   drawing.cover.push({points,absorbs:false,order:drawing.cover.length,depth:0});continue;
   }
   if(wall.type==='spring'){
    path.moveTo(wall.x0,wall.y);
@@ -4881,19 +4958,20 @@ function mapDrawing(){
   }
   if(wall.kind==='ellipse'){
    const mask=new Path2D();mask.rect(0,0,W,H);mask.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);path.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);
+   drawing.curvedEdges.push(perspectiveMapCurve(wall.cx,wall.cy,wall.rx,wall.ry,wall.r*2));
    drawing.walls.push({path,mask,width:wall.r*2,stroke:C.reflect});continue;
   }
   const absorbs=wall.type==='absorb';
   const radius=wall.r;
   if(wall.kind==='circle'){
    path.arc(wall.x,wall.y0,radius,0,TAU);
+   drawing.curvedEdges.push(perspectiveMapCurve(wall.x,wall.y0,radius,radius,2));
    drawing.walls.push({path,mask:path,width:2,stroke:C.reflect});continue;
-  }else{
-   const points=coverFootprint(wall);
-   path.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)path.lineTo(points[i].x,points[i].y);
   }
+  const points=coverFootprint(wall);
+  path.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)path.lineTo(points[i].x,points[i].y);
   path.closePath();drawing.walls.push({path,fill:absorbs?'#1a2022':C.reflect});
-  drawing.cover.push({points:coverFootprint(wall),absorbs});
+  drawing.cover.push({points,absorbs,order:drawing.cover.length,depth:0});
  }
  mapDrawingCache.set(mapId,drawing);return drawing;
 }
@@ -4973,11 +5051,19 @@ function paintActorBody(drawing,paint=ctx){
  // Add only the extra light, so transparent projections keep their dark center.
  if(drawing.flash>0){paint.save();paint.globalAlpha*=drawing.flash;paint.globalCompositeOperation='lighter';paint.drawImage(drawing.flashImage,-rx,-ry,rx*2,ry*2);paint.restore();}
 }
-function drawActor(a,team,projection=false,drawing=actorDrawing(a,team),zoom=1){
- ctx.save();ctx.translate(a.x,a.y);ctx.rotate(drawing.shape.angle);
- paintActorBody(drawing);
- if(drawing.body){ctx.clip(drawing.body);drawActorHitMarks(a,drawing.shape);}
- ctx.restore();if(!projection&&a.hp>0&&!perspectiveView())drawHealth(a,team,zoom);
+function drawActor(a,drawing,view,x=a.x,y=a.y,opacity=1){
+ const projection=view?.projection;
+ const transform=projection?perspectiveActorTransform(x,y,view,drawing.shape.rx):null;
+ if(projection&&!transform)return;
+ const paint=projection?labelContext:ctx;
+ paint.save();
+ if(transform)paint.transform(transform.xx,transform.yx,transform.xy,transform.yy,transform.x,transform.y);
+ else paint.translate(x,y);
+ paint.rotate(drawing.shape.angle);
+ if(opacity!==1)paint.globalAlpha=opacity;
+ paintActorBody(drawing,paint);
+ if(drawing.body){paint.clip(drawing.body);drawActorHitMarks(a,drawing.shape,paint);}
+ paint.restore();
 }
 
 function drawLoopImages(a,drawing,view=null){
@@ -4986,25 +5072,28 @@ function drawLoopImages(a,drawing,view=null){
  for(let iy=-1;iy<=1;iy++)for(let ix=-1;ix<=1;ix++){
   if(!ix&&!iy)continue;
   const dx=ix*(W-48),dy=iy*(H-48),x=a.x+dx,y=a.y+dy;
-  if(view?.projection){
-   const {originX,front,back}=view.projection;
-   const dx=x-view.x,dy=y-view.y,margin=r*view.zoom;
-   const u=view.zoom*(view.co*dx+view.si*dy),v=view.zoom*(-view.si*dx+view.co*dy);
-   if(Math.abs(u)>originX+margin||v<front-margin||v>back+margin)continue;
-  }
-  else if(view){
+  if(view&&!view.projection){
    const dx=x-view.x,dy=y-view.y,screenRadius=r*view.zoom;
    const sx=VIEW_W*.5+view.zoom*(view.co*dx+view.si*dy),sy=VIEW_H*.8+view.zoom*(-view.si*dx+view.co*dy);
    if(sx+screenRadius<0||sx-screenRadius>VIEW_W||sy+screenRadius<0||sy-screenRadius>VIEW_H)continue;
   }
-  else if(x+r< -ox||x-r>W+ox||y+r< -oy||y-r>H+oy)continue;
-  ctx.save();ctx.translate(dx,dy);ctx.globalAlpha=.4;
-  drawActor(a,a.team,true,drawing);ctx.restore();
+  else if(!view&&(x+r< -ox||x-r>W+ox||y+r< -oy||y-r>H+oy))continue;
+  drawActor(a,drawing,view,x,y,.4);
+ }
+}
+function drawActors(actors,view){
+ for(const actor of actors){
+  if(!actor||actor.shattered)continue;
+  const drawing=actorDrawing(actor,actor.team);
+  drawLoopImages(actor,drawing,view);
+  drawActor(actor,drawing,view);
+  if(actor.hp>0&&!view?.projection)drawHealth(actor,actor.team,view?.zoom??1);
  }
 }
 
 const HEALTH_FONT_SIZE=11,HEALTH_FONT_MIN_SCREEN_SIZE=10;
 let healthDrawScale=1;
+const overlayPoint={},overlayTopPoint={};
 function drawHealth(a,team,zoom=1,view=null){
  if(!cfg.showHealthNumbers)return;
  const scale=healthDrawScale/zoom,flash=actorFlashAmount(a);
@@ -5013,8 +5102,8 @@ function drawHealth(a,team,zoom=1,view=null){
  let y=-reservedRadius-7*scale;
  ctx.save();
  if(view){
-  const center=perspectiveScreenPoint(a.x,a.y,view);
-  const top=perspectiveScreenPoint(a.x+view.si*reservedRadius,a.y-view.co*reservedRadius,view);
+  const center=perspectiveScreenPoint(a.x,a.y,view,overlayPoint);
+  const top=perspectiveScreenPoint(a.x+view.si*reservedRadius,a.y-view.co*reservedRadius,view,overlayTopPoint);
   if(!center||!top){ctx.restore();return;}
   ctx.translate(center.x,top.y);y=-7*scale;
  }else{ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());}
@@ -5038,9 +5127,21 @@ function bulletGlow(radius,color){
  glow={image,extent:size/(2*scale)};bulletGlowCache.set(key,glow);return glow;
 }
 const bulletOutline=Array.from({length:16},(_,i)=>[Math.cos(i*TAU/16),Math.sin(i*TAU/16)]);
-function tracePerspectiveCircle(paint,x,y,r,view){
- for(let i=0;i<bulletOutline.length;i++){
-  const [dx,dy]=bulletOutline[i],p=perspectiveScreenPoint(x+r*dx,y+r*dy,view);
+const rotatedBulletOutline=bulletOutline.map(()=>[0,0]);
+const bulletCenter={},bulletRight={},bulletDown={},bulletVertex={};
+let bulletOutlineView=null;
+function tracePerspectiveCircle(paint,u,v,r,view){
+ if(bulletOutlineView!==view){
+  for(let i=0;i<bulletOutline.length;i++){
+   const [x,y]=bulletOutline[i],point=rotatedBulletOutline[i];
+   point[0]=view.co*x+view.si*y;
+   point[1]=-view.si*x+view.co*y;
+  }
+  bulletOutlineView=view;
+ }
+ for(let i=0;i<rotatedBulletOutline.length;i++){
+  const [dx,dy]=rotatedBulletOutline[i];
+  const p=projectPerspectivePoint(u+r*dx,v+r*dy,view.projection,bulletVertex);
   if(!p)return false;
   if(i===0)paint.moveTo(p.x,p.y);else paint.lineTo(p.x,p.y);
  }
@@ -5048,12 +5149,15 @@ function tracePerspectiveCircle(paint,x,y,r,view){
  return true;
 }
 function drawPerspectiveBrightBullet(x,y,r,color,charge,fade,view){
- const point=perspectiveScreenPoint(x,y,view);
+ cameraPlanePoint(x,y,view,bulletCenter);
+ const u=bulletCenter.x,v=bulletCenter.y,projection=view.projection;
+ const point=projectPerspectivePoint(u,v,projection,bulletCenter);
  const margin=32;
  if(!point||point.x< -margin||point.x>VIEW_W+margin||point.y< -margin||point.y>VIEW_H+margin)return;
  const paint=labelContext;
- const right=perspectiveScreenPoint(x+view.co*r,y+view.si*r,view);
- const down=perspectiveScreenPoint(x-view.si*r,y+view.co*r,view);
+ const cameraRadius=r*view.zoom;
+ const right=projectPerspectivePoint(u+cameraRadius,v,projection,bulletRight);
+ const down=projectPerspectivePoint(u,v+cameraRadius,projection,bulletDown);
  if(!right||!down)return;
  const glow=bulletGlow(r,color),extent=glow.extent/r;
  paint.save();
@@ -5062,7 +5166,7 @@ function drawPerspectiveBrightBullet(x,y,r,color,charge,fade,view){
  paint.drawImage(glow.image,-extent,-extent,2*extent,2*extent);
  paint.restore();
  paint.save();paint.globalAlpha=fade*brightBulletAlpha(charge);paint.fillStyle=color;paint.beginPath();
- if(tracePerspectiveCircle(paint,x,y,r,view))paint.fill();
+ if(tracePerspectiveCircle(paint,u,v,cameraRadius,view))paint.fill();
  paint.restore();
 }
 function drawBullet(b,fade=null,alpha=1,view=null){
@@ -5125,7 +5229,11 @@ function drawActivationPreviews(alpha,spectating){
   if(opacity>0)drawActivationMarker(fade.point,fade.r,fade.team,opacity);
  }
 }
-function drawWalls(perspective=false){
+function renderRotorAngle(wall,alpha){
+ // The signed step stays continuous when the simulated angle wraps at a full turn.
+ return wall.angle-(1-alpha)*(wall.angleStep??0);
+}
+function drawWalls(perspective=false,alpha=1){
  ctx.save();
  const drawing=mapDrawing();
  for(const wall of drawing.walls){
@@ -5134,14 +5242,25 @@ function drawWalls(perspective=false){
   if(wall.width&&!(perspective&&wall.mask)){ctx.lineWidth=wall.width;ctx.strokeStyle=wall.stroke;ctx.stroke(wall.path);}
  }
  if(!perspective)for(const {wall,path} of drawing.rotors){
-  ctx.save();ctx.translate(wall.cx,wall.cy);ctx.rotate(wall.angle);
+  ctx.save();ctx.translate(wall.cx,wall.cy);ctx.rotate(renderRotorAngle(wall,alpha));
   ctx.fillStyle=C.reflect;ctx.fill(path);ctx.restore();
  }
  ctx.restore();
 }
 function renderActorPose(actor,slot,alpha){
  if(!actor)return null;
- const pose=Object.assign(renderActors[slot],actor,actorPositionAt(actor,alpha));pose.shattered=!!actor.shattered;pose.hitFlash=actor.hitFlash||0;pose.hitFlashStrength=actor.hitFlashStrength||0;return pose;
+ const pose=Object.assign(renderActors[slot],actor,actorPositionAt(actor,alpha));
+ if(alpha<1){
+  const {r,qx=0,qy=0}=actor;
+  const previousRadius=actor.previousRadius??r;
+  const previousQx=actor.previousQx??qx,previousQy=actor.previousQy??qy;
+  pose.r=previousRadius+(r-previousRadius)*alpha;
+  pose.qx=previousQx+(qx-previousQx)*alpha;
+  pose.qy=previousQy+(qy-previousQy)*alpha;
+ }
+ pose.shattered=!!actor.shattered;
+ pose.hitFlash=actor.hitFlash||0;pose.hitFlashStrength=actor.hitFlashStrength||0;
+ return pose;
 }
 function drawMistPuffs(mist,age){
  const alpha=ctx.globalAlpha;
@@ -5238,10 +5357,15 @@ function updatePerspectivePlane(projection){
  const {anchorY,xScale,yScale,depth,originX,originY,width:planeWidth,height:planeHeight}=projection;
  const sx=1/pointerWidthScale,sy=1/pointerDistanceScale;
  const rasterWidth=planeWidth*canvas.width/VIEW_W,rasterHeight=planeHeight*canvas.height/VIEW_H;
- const rasterScale=Math.min(1,4500/rasterWidth,4500/rasterHeight,Math.sqrt(16000000/(rasterWidth*rasterHeight)));
- const width=Math.ceil(rasterWidth*rasterScale),height=Math.ceil(rasterHeight*rasterScale);
+ // The projection can cover a much larger area than the visible viewport.
+ const viewportAreaScale=Math.sqrt(1.5*VIEW_W*VIEW_H/(planeWidth*planeHeight));
+ const rasterScale=Math.min(1,viewportAreaScale,4500/rasterWidth,4500/rasterHeight,Math.sqrt(16000000/(rasterWidth*rasterHeight)));
+ const width=Math.max(1,Math.floor(rasterWidth*rasterScale)),height=Math.max(1,Math.floor(rasterHeight*rasterScale));
  if(perspectivePlane.width!==width)perspectivePlane.width=width;
  if(perspectivePlane.height!==height)perspectivePlane.height=height;
+ if(perspectiveLabels.width!==canvas.width)perspectiveLabels.width=canvas.width;
+ if(perspectiveLabels.height!==canvas.height)perspectiveLabels.height=canvas.height;
+ labelContext.setTransform(canvas.width/VIEW_W,0,0,canvas.height/VIEW_H,0,0);
  perspectivePlane.style.width=planeWidth*sx+'px';
  perspectivePlane.style.height=planeHeight*sy+'px';
  // Canvas coordinates are translated to the camera origin before the
@@ -5250,94 +5374,148 @@ function updatePerspectivePlane(projection){
  perspectivePlane.style.transform=`matrix3d(${xScale},0,0,0,${-centerX*depth*sx/sy},${yScale-anchorY*depth},0,${-depth/sy},0,0,1,0,${(centerX*q0-xScale*originX)*sx},${(anchorY*q0-yScale*originY)*sy},0,${q0})`;
  planeProjection=projection;
 }
-function perspectiveScreenPoint(x,y,view,lift=0){
- const {anchorY,xScale,yScale,depth}=view.projection,dx=x-view.x,dy=y-view.y;
- const u=view.zoom*(view.co*dx+view.si*dy),v=view.zoom*(-view.si*dx+view.co*dy);
+function cameraPlanePoint(x,y,view,point){
+ const dx=x-view.x,dy=y-view.y;
+ point.x=view.zoom*(view.co*dx+view.si*dy);
+ point.y=view.zoom*(-view.si*dx+view.co*dy);
+}
+function projectPerspectivePoint(u,v,projection,point){
+ const {anchorY,xScale,yScale,depth}=projection;
  const q=1-depth*v;
  if(q<=0)return null;
- return{x:VIEW_W*.5+xScale*u/q,y:anchorY+(yScale*v-lift*view.zoom)/q};
+ const inverseDepth=1/q;
+ point.x=VIEW_W*.5+xScale*u*inverseDepth;
+ point.y=anchorY+yScale*v*inverseDepth;
+ return point;
 }
-function drawPerspectiveCover(drawing,view){
- if(!drawing.cover.length)return;
+function perspectiveScreenPoint(x,y,view,point){
+ cameraPlanePoint(x,y,view,point);
+ return projectPerspectivePoint(point.x,point.y,view.projection,point);
+}
+const actorProjectionPoint={};
+function perspectiveActorTransform(x,y,view,radius){
+ const {projection,co,si,zoom}=view;
+ const {originX,front,back,xScale,yScale,depth}=projection;
+ cameraPlanePoint(x,y,view,actorProjectionPoint);
+ const {x:u,y:v}=actorProjectionPoint,margin=(radius+3)*zoom;
+ if(Math.abs(u)>originX+margin||v<front-margin||v>back+margin)return null;
+ const point=projectPerspectivePoint(u,v,projection,actorProjectionPoint);
+ if(!point)return null;
+ // Use the local projection at the body center to paint directly at screen resolution.
+ const inverseDepth=1/(1-depth*v),scale=zoom*inverseDepth;
+ const horizontal=xScale*scale,vertical=yScale*scale*inverseDepth;
+ const shear=(point.x-VIEW_W*.5)*depth*scale;
+ point.xx=horizontal*co-shear*si;point.yx=-vertical*si;
+ point.xy=horizontal*si+shear*co;point.yy=vertical*co;
+ return point;
+}
+const coverCameraPoint={},coverVertices=[];
+function setCoverVertex(index,u,v){
+ const vertex=coverVertices[index]??(coverVertices[index]={});
+ vertex.x=u;vertex.y=v;
+}
+function compareCoverDepth(a,b){
+ return a.depth-b.depth||a.order-b.order;
+}
+function drawPerspectiveCover(drawing,view,alpha){
+ const walls=drawing.cover;
+ if(!walls.length)return;
  for(const {wall,localPoints,points} of drawing.rotors){
-  const co=Math.cos(wall.angle),si=Math.sin(wall.angle);
+  const angle=renderRotorAngle(wall,alpha),co=Math.cos(angle),si=Math.sin(angle);
   for(let i=0;i<points.length;i++){
    const local=localPoints[i],point=points[i];
    point.x=wall.cx+co*local.x-si*local.y;point.y=wall.cy+si*local.x+co*local.y;
   }
  }
- const projection=view.projection,paint=labelContext,wallLift=80*projection.liftScale;
- const limit=perspectiveGroundY(VIEW_H-projection.anchorY+2*wallLift*view.zoom,projection);
- const depthAt=p=>view.zoom*(-view.si*(p.x-view.x)+view.co*(p.y-view.y));
- const walls=drawing.cover.map(({points,absorbs})=>({
-  points,absorbs,depth:(depthAt(points[0])+depthAt(points[points.length/2]))*.5
- })).sort((a,b)=>a.depth-b.depth);
+ const projection=view.projection,paint=labelContext,wallLift=80*projection.liftScale*view.zoom;
+ const limit=perspectiveGroundY(VIEW_H-projection.anchorY+2*wallLift,projection);
+ for(const wall of walls){
+  const {points}=wall,first=points[0],opposite=points[points.length/2];
+  cameraPlanePoint((first.x+opposite.x)*.5,(first.y+opposite.y)*.5,view,coverCameraPoint);
+  wall.depth=coverCameraPoint.y;
+ }
+ walls.sort(compareCoverDepth);
  paint.save();
  for(const {points,absorbs} of walls){
-  const clipped=[];
-  let a=points[points.length-1],da=depthAt(a);
-  for(const b of points){
-   const db=depthAt(b);
-   if((da<=limit)!==(db<=limit)){
-    const t=(limit-da)/(db-da);
-    clipped.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+  const last=points[points.length-1];
+  cameraPlanePoint(last.x,last.y,view,coverCameraPoint);
+  let prevU=coverCameraPoint.x,prevV=coverCameraPoint.y,count=0;
+  for(const point of points){
+   cameraPlanePoint(point.x,point.y,view,coverCameraPoint);
+   const {x:u,y:v}=coverCameraPoint,within=v<=limit;
+   if((prevV<=limit)!==within){
+    const t=(limit-prevV)/(v-prevV);
+    setCoverVertex(count++,prevU+(u-prevU)*t,limit);
    }
-   if(db<=limit)clipped.push(b);
-   a=b;da=db;
+   if(within)setCoverVertex(count++,u,v);
+   prevU=u;prevV=v;
   }
-  if(clipped.length<3)continue;
-  const base=clipped.map(p=>perspectiveScreenPoint(p.x,p.y,view));
-  const top=clipped.map(p=>perspectiveScreenPoint(p.x,p.y,view,wallLift));
+  if(count<3)continue;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity,valid=true;
+  for(let i=0;i<count;i++){
+   const point=coverVertices[i],v=point.y;
+   if(!projectPerspectivePoint(point.x,v,projection,point)){valid=false;break;}
+   point.topY=point.y-wallLift/(1-projection.depth*v);
+   minX=Math.min(minX,point.x);maxX=Math.max(maxX,point.x);
+   minY=Math.min(minY,point.topY);maxY=Math.max(maxY,point.y);
+  }
+  if(!valid||maxX< -1||minX>VIEW_W+1||maxY< -1||minY>VIEW_H+1)continue;
   // Fill the whole silhouette first so the top and side never expose the
   // scene through independently antialiased edges.
   paint.fillStyle=absorbs?'#171d1f':'#475a60';paint.beginPath();
-  for(let i=0;i<base.length;i++){
-   const j=(i+1)%base.length;
-   const rim=base[i].x>base[j].x?base:top;
-   if(i===0)paint.moveTo(rim[i].x,rim[i].y);else paint.lineTo(rim[i].x,rim[i].y);
-   paint.lineTo(rim[j].x,rim[j].y);
+  for(let i=0;i<count;i++){
+   const point=coverVertices[i],next=coverVertices[(i+1)%count];
+   const base=point.x>next.x,y=base?point.y:point.topY;
+   if(i===0)paint.moveTo(point.x,y);else paint.lineTo(point.x,y);
+   paint.lineTo(next.x,base?next.y:next.topY);
   }
   paint.closePath();paint.fill();
   paint.fillStyle=absorbs?'#1a2022':'#83989d';paint.beginPath();
-  paint.moveTo(top[0].x,top[0].y);
-  for(let i=1;i<top.length;i++)paint.lineTo(top[i].x,top[i].y);
+  paint.moveTo(coverVertices[0].x,coverVertices[0].topY);
+  for(let i=1;i<count;i++)paint.lineTo(coverVertices[i].x,coverVertices[i].topY);
   paint.closePath();paint.fill();
  }
  paint.restore();
 }
-function tracePerspectiveEdge(paint,x0,y0,x1,y1,view){
+const edgeStart={},edgeEnd={},edgeScreenStart={},edgeScreenEnd={};
+function tracePerspectiveEdge(paint,start,end,projection,limit,margin){
  // Clip at the bottom of the viewport before dividing by depth.
- const projection=view.projection,limit=perspectiveGroundY(VIEW_H-projection.anchorY+4,projection);
- const depth0=view.zoom*(-view.si*(x0-view.x)+view.co*(y0-view.y));
- const depth1=view.zoom*(-view.si*(x1-view.x)+view.co*(y1-view.y));
- if(depth0>limit&&depth1>limit)return;
- if(depth0>limit||depth1>limit){
-  const t=(limit-depth0)/(depth1-depth0),x=x0+(x1-x0)*t,y=y0+(y1-y0)*t;
-  if(depth0>limit){x0=x;y0=y;}else{x1=x;y1=y;}
+ let u0=start.x,v0=start.y,u1=end.x,v1=end.y;
+ if(v0>limit&&v1>limit)return false;
+ if(v0>limit||v1>limit){
+  const u=u0+(u1-u0)*(limit-v0)/(v1-v0);
+  if(v0>limit){u0=u;v0=limit;}else{u1=u;v1=limit;}
  }
- const a=perspectiveScreenPoint(x0,y0,view),b=perspectiveScreenPoint(x1,y1,view);
- if(a&&b){paint.moveTo(a.x,a.y);paint.lineTo(b.x,b.y);}
+ const a=projectPerspectivePoint(u0,v0,projection,edgeScreenStart);
+ const b=projectPerspectivePoint(u1,v1,projection,edgeScreenEnd);
+ if(!a||!b)return false;
+ if(Math.max(a.x,b.x)< -margin||Math.min(a.x,b.x)>VIEW_W+margin||
+    Math.max(a.y,b.y)< -margin||Math.min(a.y,b.y)>VIEW_H+margin)return false;
+ paint.moveTo(a.x,a.y);paint.lineTo(b.x,b.y);
+ return true;
 }
 function drawPerspectiveArenaEdges(drawing,view){
- const paint=labelContext,wrap=MAPS[mapId].wrap;
+ const paint=labelContext,wrap=MAPS[mapId].wrap,projection=view.projection;
+ const limit=perspectiveGroundY(VIEW_H-projection.anchorY+4,projection);
  paint.save();paint.strokeStyle=wrap?'#809d99':C.edge;paint.lineWidth=wrap?1.2:1;
  if(mapId!=='ellipse'){
   if(wrap)paint.setLineDash([9,6]);
+  const margin=paint.lineWidth*.5+1;
   for(const [x0,y0,x1,y1] of drawing.edgeSegments){
-   paint.beginPath();tracePerspectiveEdge(paint,x0,y0,x1,y1,view);paint.stroke();
+   cameraPlanePoint(x0,y0,view,edgeStart);cameraPlanePoint(x1,y1,view,edgeEnd);
+   paint.beginPath();
+   if(tracePerspectiveEdge(paint,edgeStart,edgeEnd,projection,limit,margin))paint.stroke();
   }
  }
- for(const wall of WALLS){
-  if(wall.kind!=='ellipse'&&wall.kind!=='circle')continue;
-  const circular=wall.kind==='circle';
-  const cx=circular?wall.x:wall.cx,cy=circular?wall.y0:wall.cy;
-  const rx=circular?wall.r:wall.rx,ry=circular?wall.r:wall.ry;
-  paint.setLineDash([]);paint.strokeStyle=C.reflect;paint.lineWidth=circular?2:wall.r*2;paint.lineCap='round';paint.beginPath();
-  const steps=192;
-  let x=cx+rx,y=cy;
-  for(let i=1;i<=steps;i++){
-   const angle=i*TAU/steps,nextX=cx+rx*Math.cos(angle),nextY=cy+ry*Math.sin(angle);
-   tracePerspectiveEdge(paint,x,y,nextX,nextY,view);x=nextX;y=nextY;
+ for(const {points,width} of drawing.curvedEdges){
+  paint.setLineDash([]);paint.strokeStyle=C.reflect;paint.lineWidth=width;paint.lineCap='round';paint.beginPath();
+  const margin=width*.5+1;
+  let start=edgeStart,end=edgeEnd;
+  cameraPlanePoint(points[0].x,points[0].y,view,start);
+  for(let i=1;i<points.length;i++){
+   cameraPlanePoint(points[i].x,points[i].y,view,end);
+   tracePerspectiveEdge(paint,start,end,projection,limit,margin);
+   const prev=start;start=end;end=prev;
   }
   paint.stroke();
  }
@@ -5347,6 +5525,7 @@ function render(alpha=1){
  renderDirty=false;renderedState=state;
  const spectating=isSpectatorMode();
  const visualPlayer=renderActorPose(ending?.actors[0]||p,0,alpha),visualEnemy=renderActorPose(ending?ending.actors[1]:enemy,1,alpha);
+ const visualActors=[visualEnemy,visualPlayer];
  const aimPoint=pointerAimPoint();
  if(!ending&&aimPoint)aimAt(visualPlayer,aimPoint);
  const perspective=perspectiveView();
@@ -5354,31 +5533,35 @@ function render(alpha=1){
  const shake=hitShakeOffset();
  if(perspective){
   const offset=shake.x||shake.y?`${shake.x/pointerWidthScale}px ${shake.y/pointerDistanceScale}px`:'';
-  perspectivePlane.style.translate=perspectiveLabels.style.translate=offset;
-  if(perspectivePlane.hidden||planeProjection!==projection)updatePerspectivePlane(projection);
+  if(perspectiveTranslate!==offset){
+   perspectivePlane.style.translate=perspectiveLabels.style.translate=offset;
+   perspectiveTranslate=offset;
+  }
+  if(planeProjection!==projection)updatePerspectivePlane(projection);
  }
  if(perspectivePlane.hidden===perspective){
   perspectivePlane.hidden=!perspective;
   perspectiveLabels.hidden=!perspective;
  }
- if(perspective){
-  if(perspectiveLabels.width!==canvas.width)perspectiveLabels.width=canvas.width;
-  if(perspectiveLabels.height!==canvas.height)perspectiveLabels.height=canvas.height;
-  labelContext.setTransform(canvas.width/VIEW_W,0,0,canvas.height/VIEW_H,0,0);
-  labelContext.clearRect(0,0,VIEW_W,VIEW_H);
- }
+ if(perspective)labelContext.clearRect(0,0,VIEW_W,VIEW_H);
  const drawWidth=projection?.width??VIEW_W,drawHeight=projection?.height??VIEW_H;
  const surface=perspective?perspectivePlane:canvas;
  ctx=perspective?perspectiveContext:flatContext;
  renderFrames++;
- ctx.setTransform(surface.width/drawWidth,0,0,surface.height/drawHeight,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,drawWidth,drawHeight);
- if(!perspective)ctx.translate(shake.x,shake.y);
+ ctx.setTransform(surface.width/drawWidth,0,0,surface.height/drawHeight,0,0);
+ if(perspective)ctx.clearRect(0,0,drawWidth,drawHeight);
+ else{
+  ctx.fillStyle=C.bg;ctx.fillRect(0,0,drawWidth,drawHeight);
+  ctx.translate(shake.x,shake.y);
+ }
  const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,zoom=camera&&!projection?followViewZoom():1;
  const view=camera?{x:camera.x,y:camera.y,co:Math.cos(heading),si:Math.sin(heading),zoom,projection}:null;
  if(view){
   ctx.translate(projection?.originX??VIEW_W*.5,projection?.originY??VIEW_H*.8);
   ctx.scale(zoom,zoom);ctx.rotate(-heading);ctx.translate(-view.x,-view.y);
  }else ctx.translate((VIEW_W-W)/2,(VIEW_H-H)/2);
+ // The arena background covers the empty area around the projected map.
+ if(perspective){ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);}
  // Keep terrain shading and contours inside the arena; draw the border separately.
  const drawing=mapDrawing();
  if(drawing.terrain)ctx.drawImage(drawing.terrain,24,24,W-48,H-48,24,24,W-48,H-48);
@@ -5387,22 +5570,22 @@ function render(alpha=1){
   const {x,width,fill}=drawing.divider;
   ctx.fillStyle=fill;ctx.fillRect(x,24,width,H-48);
  }
- if(perspective)drawPerspectiveArenaEdges(drawing,view);
+ if(perspective){
+  drawActors(visualActors,view);
+  drawPerspectiveArenaEdges(drawing,view);
+ }
  else if(mapId!=='ellipse'){ctx.save();ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;ctx.lineWidth=MAPS[mapId].wrap?1.2:.75;if(MAPS[mapId].wrap)ctx.setLineDash([9,6]);
   for(const edge of drawing.edges)ctx.stroke(edge);
   ctx.restore();}
  drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending&&!spectating)drawRange(visualPlayer);
- drawWalls(perspective);
+ drawWalls(perspective,alpha);
  drawMapMechanics();
  if(!ending&&cfg.showActivationTrace)drawActivationTraces(alpha);
  if(!ending&&cfg.showActivationPreview)drawActivationPreviews(alpha,spectating);
  for(const b of bullets){if(ending)drawBullet({...b,fadeSolid:projectilePhase(b).solid},Math.max(0,1-ending.age/.3),1,view);else drawBullet(b,null,alpha,view);}
  for(const {bullet,t} of hitProjectiles)if(alpha<t)drawBullet(bullet,null,alpha,view);
  for(const fade of bulletFades)drawBullet(fade,1-Math.max(0,fade.age-(1-alpha)*STEP)/fade.life,alpha,view);
- for(const actor of [visualEnemy,visualPlayer])if(actor&&!actor.shattered){
-  const drawing=actorDrawing(actor,actor.team);
-  drawLoopImages(actor,drawing,view);drawActor(actor,actor.team,false,drawing,zoom);
- }
+ if(!perspective)drawActors(visualActors,view);
  ctx.save();ctx.globalAlpha=1;drawLightDust(woundParticles,null,(1-alpha)*STEP);ctx.restore();
  for(const e of effects){
   const interpolatedAge=e.age-(1-alpha)*STEP;
@@ -5428,7 +5611,7 @@ function render(alpha=1){
     let started=false;
     for(let i=0;i<=4;i++){
      const angle=start+i*Math.PI/8;
-     const point=perspectiveScreenPoint(aimX+radius*Math.cos(angle),aimY+radius*Math.sin(angle),view);
+     const point=perspectiveScreenPoint(aimX+radius*Math.cos(angle),aimY+radius*Math.sin(angle),view,overlayPoint);
      if(!point){started=false;continue;}
      if(started)paint.lineTo(point.x,point.y);else paint.moveTo(point.x,point.y);
      started=true;
@@ -5440,9 +5623,9 @@ function render(alpha=1){
   paint.stroke();
  }
  if(perspective){
-  drawPerspectiveCover(drawing,view);
+  drawPerspectiveCover(drawing,view,alpha);
   ctx=labelContext;
-  for(const actor of [visualEnemy,visualPlayer]){
+  for(const actor of visualActors){
    if(actor&&!actor.shattered&&actor.hp>0)drawHealth(actor,actor.team,1,view);
   }
  }
@@ -5452,7 +5635,7 @@ function render(alpha=1){
   const age=Math.max(0,n.age-(1-alpha)*STEP),fade=clamp((n.life-age)/(n.life-.4),0,1);
   const progress=clamp(age/n.life,0,1);
   const scale=1+n.growth-.3*progress;
-  const point=perspective?perspectiveScreenPoint(n.x,n.y,view):n;
+  const point=perspective?perspectiveScreenPoint(n.x,n.y,view,overlayPoint):n;
   if(!point)continue;
   ctx.save();ctx.translate(point.x,point.y);if(view&&!perspective)ctx.rotate(heading);
   ctx.globalAlpha=.70*fade;ctx.font='500 10px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
@@ -5972,7 +6155,9 @@ function commitMaxHealth(){
 }
 $('maxHealth').addEventListener('change',()=>{
  commitMaxHealth();
- for(const actor of [p,enemy])if(actor)syncActorRadius(actor);
+ for(const actor of [p,enemy])if(actor){
+  syncActorRadius(actor);actor.previousRadius=actor.r;
+ }
  updateHud(true);renderDirty=true;
 });
 for(const name of SETTING_CHECKBOXES)$(name).addEventListener('change',()=>{
@@ -6042,13 +6227,16 @@ window.addEventListener('pagehide',flushSettings);
 restoreSettings();refreshInput();resetPerformanceMonitor();
 function resize(){
  const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
- const widthScale=VIEW_W/Math.max(1,rect.width);
- pointerWidthScale=widthScale;
- pointerDistanceScale=VIEW_H/Math.max(1,rect.height);
- healthDrawScale=Math.max(1,Math.min(2,HEALTH_FONT_MIN_SCREEN_SIZE*widthScale/HEALTH_FONT_SIZE));
+ const widthScale=VIEW_W/Math.max(1,rect.width),distanceScale=VIEW_H/Math.max(1,rect.height);
  const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
- if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;renderDirty=true;}
- if(width&&height&&!perspectivePlane.hidden)updatePerspectivePlane(currentPerspectiveProjection());
+ if(widthScale!==pointerWidthScale||distanceScale!==pointerDistanceScale||canvas.width!==width||canvas.height!==height){
+  planeProjection=null;renderDirty=true;
+ }
+ pointerWidthScale=widthScale;
+ pointerDistanceScale=distanceScale;
+ healthDrawScale=Math.max(1,Math.min(2,HEALTH_FONT_MIN_SCREEN_SIZE*widthScale/HEALTH_FONT_SIZE));
+ if(canvas.width!==width)canvas.width=width;
+ if(canvas.height!==height)canvas.height=height;
 }
 const toolbar=document.querySelector('.top');
 const resizeObserver=new ResizeObserver(entries=>{
