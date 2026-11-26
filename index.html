@@ -173,16 +173,31 @@ html[lang="en"] h1{letter-spacing:.02em}
   html[lang="en"] h1{font-size:18px}
 }
 @media(max-width:410px){
-  .top{grid-template-columns:1fr 216px;row-gap:4px}
+  .top{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}
   .top h1,html[lang="en"] h1{font-size:16px}
   .tools{grid-area:1/2;justify-self:end}
   .match-options{grid-area:2/1 / 3/3;width:100%}
+}
+@media(max-width:340px){
+  .tools{gap:3px}
+  .tools>button,.settings>summary{width:28px}
 }
 @media(pointer:coarse) and (orientation:landscape) and (min-width:680px){
   .top{grid-template-columns:auto minmax(0,1fr) auto}
   .match-options{grid-area:auto / -3}
 }
 .settings-group .settings-subtitle{margin:20px 0 0;font-size:12px;font-weight:500;color:var(--muted)}
+:root[data-phosphor]{--bg:#0a1010;--panel:#111616;--line:#303837}
+:root[data-phosphor] .arena{width:min(100%,calc(var(--play-height)*1.6));border:0;background:#0c0f0f}
+:root[data-phosphor] :is(button,summary,.check):hover{background:#1a2020}
+:root[data-phosphor] option{background:var(--panel);color:var(--ink)}
+:root[data-phosphor] .primary{background:#141a19;color:var(--ink)}
+:root[data-phosphor] .overlay{background:rgba(9,8,8,.76)}
+:root[data-phosphor] .performance-history{background:rgba(10,16,16,.96)}
+:root[data-phosphor] .toast{background:rgba(15,20,20,.94)}
+:root[data-phosphor] .touch-stick{background:#111616c9}
+:root[data-phosphor] .touch-knob{background:#253232}
+:root[data-phosphor] .touch-stick[data-held] .touch-knob{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -223,6 +238,9 @@ html[lang="en"] h1{letter-spacing:.02em}
    <button id="view" type="button" data-view="heading" title="随瞄准转动" aria-label="随瞄准转动">
     <svg data-view-icon="heading" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2l3.5 6L8 14 4.5 8z"/><path class="compass-fill" d="M8 2l3.5 6h-7z" fill="currentColor" stroke="none"/></svg>
     <svg data-view-icon="perspective" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4.5 11.5 8 8 11.5 4.5 8Z"/><path d="M8 4.5 11.5 8H4.5Z" fill="currentColor" stroke="none"/></svg>
+   </button>
+   <button id="phosphor" type="button" title="荧光显示" aria-label="荧光显示" aria-pressed="false">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path stroke-width="1" d="M8 5.25q.5 2.25 2.75 2.75q-2.25.5-2.75 2.75q-.5-2.25-2.75-2.75q2.25-.5 2.75-2.75Z"/></svg>
    </button>
    <button id="language" type="button" lang="en" title="English" aria-label="Switch to English">EN</button>
    <details class="settings" id="settings">
@@ -607,7 +625,9 @@ let W=1200,H=750;
 const ARENA_FRAME_INSET=24,BULLET_OVERHANG=20;
 const AIM_CIRCLE_RADIUS=100,AIM_CIRCLE_MAX_SHIFT=30;
 const AIM_STROKE=1.8;
-const C={bg:'#20282a',edge:'#414f50',reflect:'#687e83',blocked:'#1e2628',player:'#b2ceca',enemy:'#d2b49b'};
+const STANDARD_COLORS={bg:'#20282a',edge:'#414f50',reflect:'#687e83',blocked:'#1e2628',player:'#b2ceca',enemy:'#d2b49b'};
+const PHOSPHOR_COLORS={...STANDARD_COLORS,bg:'#0b0505',outside:'#0c0f0f',edge:'#344342',reflect:'#617571',blocked:'#111817'};
+let C=STANDARD_COLORS;
 const ROTOR_INERTIA=150000,ROTOR_MAX_SPEED=2.5,ROTOR_ACTOR_MASS=4,ROTOR_RESTITUTION=.15;
 const MAPS={
  open:{walls:[]},
@@ -720,7 +740,7 @@ const DEFAULTS={
  radius:150,controlRadius:1000,drag:.020,spinForce:5400,minimumDamage:0,momentumDamageScale:.0005,momentumDamageCap:.20,damageRampDistance:150,knockbackScale:.24,
  difficulty:'easy',holdToFire:false,continuousFire:false,mobileAutoFire:true,sound:true,playerShotSound:false,showField:false,showRange:false,showAimCircle:false,showActivationPreview:false,showActivationTrace:false,showHealthNumbers:true,showDamageNumbers:true,hitScreenShakeStrength:2.5,scaleCombatNumbersByWins:false,showPerformanceMonitor:false,implosionEnabled:false,bulletMirrorEnabled:false,dodgeEnabled:false,bulletPauseEnabled:false
 };
-const cfg={...DEFAULTS,view:'heading'};
+const cfg={...DEFAULTS,view:'heading',phosphor:false};
 const DEFAULT_PERSPECTIVE_PITCH=DEFAULTS.perspectivePitch*Math.PI/180;
 const DEFAULT_PERSPECTIVE_FOCAL=VIEW_W*.5/Math.tan(DEFAULTS.perspectiveFov*Math.PI/360);
 const DEFAULT_PERSPECTIVE_SCALE=DEFAULT_PERSPECTIVE_FOCAL/(
@@ -822,6 +842,7 @@ const ENGLISH={
  "最低爆炸伤害": "Minimum explosion damage",
  "爆炸伤害增长路程": "Distance to full damage",
  "近场": "Near Field",
+ "荧光显示": "Phosphor display",
  "其他设置": "Other settings",
  "显示性能监控窗口": "Show performance monitor",
  "最近 5 秒的逐帧 CPU 耗时和帧间隔曲线。青色为 CPU，棕色为帧间隔，虚线为 16.7 毫秒参考线。": "Per-frame CPU time and frame intervals over the last 5 seconds. Teal: CPU. Brown: frame interval. Dashed line: 16.7 ms reference.",
@@ -1643,6 +1664,7 @@ function applyMouseMotion(dx,dy,relative=false){
 }
 function losePad(){flushSettings();const used=moveSource==='pad'||aimSource==='pad';gamepadIndex=null;padPrev=[];padFireDown=false;cancelFireEvents('pad');rightAnchor=rightPrev={x:0,y:0,m:0};if(moveSource==='pad')moveSource='keyboard';if(aimSource==='pad')aimSource='mouse';refreshInput();if(used){pause();toast('手柄已断开');}}
 function reset(run=false){
+ if(cfg.phosphor){clearPhosphor();phosphorTime=0;}
  hitShakes.length=0;
  mouseFocusInterrupted=false;
  flushSettings();renderDirty=true;renderStepReady=false;roundMode=$('mode').value;
@@ -3168,7 +3190,7 @@ function breakupEffect(a,contact,ux,uy,kickX=0,kickY=0){
   const angle=visualRandom()*TAU,speed=8+visualRandom()*18,scale=a.r/15*1.5;
   mist.push({x:mxx*.7+(visualRandom()-.5)*a.r*.6,y:myx*.7+(visualRandom()-.5)*a.r*.6,vx:ux+kickX+Math.cos(angle)*speed,vy:uy+kickY+Math.sin(angle)*speed,damping:8,radius:(3.5+visualRandom()*4)*scale,expansion:(12+visualRandom()*14)*scale,life:.35+visualRandom()*.25,opacity:.17});
  }
- effects.push({kind:'breakup',x:a.x,y:a.y,bodyVx:ux+kickX,bodyVy:uy+kickY,splitDelay:.04,age:0,previousAge:0,life:.76,image,mxx,myx,mxy,myy,pieces,mist});
+ effects.push({kind:'breakup',team:a.team,x:a.x,y:a.y,bodyVx:ux+kickX,bodyVy:uy+kickY,splitDelay:.04,age:0,previousAge:0,life:.76,image,mxx,myx,mxy,myy,pieces,mist});
  visualEffectsChanged=true;
 }
 function refreshBreakupPolygon(piece){
@@ -3276,19 +3298,23 @@ function drawActorHitMarks(a,shape,paint=ctx){
   const fade=Math.max(0,1-mark.age/mark.life),pose=actorHitMarkPose(a,mark,shape),scale=a.r/15;
   const width=mark.width*scale,depth=mark.depth*scale;
   paint.save();paint.transform(pose.co*depth,pose.si*depth,-pose.si*width,pose.co*width,pose.x,pose.y);
-  paint.globalAlpha=opacity*(mark.opacity??.9)*fade;paint.drawImage(getHitMarkSprite(mark.shape),-1,-1,2,2);
+  const extent=cfg.phosphor?2:1;
+  paint.globalAlpha=opacity*(mark.opacity??.9)*fade;paint.drawImage(getHitMarkSprite(mark.shape),-extent,-extent,2*extent,2*extent);
   paint.restore();
  }
 }
-const hitMarkSprites=[];
+const hitMarkSprites=[],phosphorHitMarkSprites=[];
 function getHitMarkSprite(index){
- if(hitMarkSprites[index])return hitMarkSprites[index];
- const image=document.createElement('canvas');image.width=image.height=64;
- const paint=image.getContext('2d');paint.setTransform(32,0,0,32,32,32);
+ const sprites=cfg.phosphor?phosphorHitMarkSprites:hitMarkSprites;
+ if(sprites[index])return sprites[index];
+ const center=cfg.phosphor?64:32;
+ const image=document.createElement('canvas');image.width=image.height=center*2;
+ const paint=image.getContext('2d');paint.setTransform(32,0,0,32,center,center);
  const gradient=paint.createRadialGradient(0,0,0,0,0,1.15);
  gradient.addColorStop(0,'rgba(255,255,255,1)');gradient.addColorStop(.35,'rgba(255,255,255,.72)');
  gradient.addColorStop(.75,'rgba(255,255,255,.26)');gradient.addColorStop(1,'rgba(255,255,255,0)');
- paint.fillStyle=gradient;paint.fill(HIT_MARK_SHAPES[index]);return hitMarkSprites[index]=image;
+ if(cfg.phosphor){paint.shadowColor='rgba(255,255,250,.82)';paint.shadowBlur=18;}
+ paint.fillStyle=gradient;paint.fill(HIT_MARK_SHAPES[index]);return sprites[index]=image;
 }
 function contactClosingSpeed(a,b,contact){
  const vx=(contact.vx??b.vx)-a.vx-(contact.targetVxOffset??0),vy=(contact.vy??b.vy)-a.vy-(contact.targetVyOffset??0);
@@ -4676,7 +4702,10 @@ function createStartupAIJob(){
    else if(index===32)getImpactMistSprite();
    else if(index===33)getInterceptHaloSprite();
    else if(index<36)getMuzzleSprite(index-34);
-   else if(index<38)getActorTintSprite(index-36);
+   else if(index<38){
+    if(cfg.phosphor)getPhosphorActorSprites(index-36);
+    else getActorTintSprite(index-36);
+   }
    else bulletGlow(ACTOR.shotRadius,BULLET_COLORS[index-38].solid);
    if(++index===40){phase++;index=0;}
   }else if(phase===0){
@@ -4876,27 +4905,106 @@ function updateHud(force=false){
 
 // === 12 · Canvas drawing ===
 function circle(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,TAU);}
+const PHOSPHOR_PADDING=32,PHOSPHOR_BRIGHTNESS_LIMIT=.62;
+let phosphorImage,phosphorPaint;
+let phosphorTime=0,phosphorDecayTime=0,phosphorExposure=0,phosphorFadeRemaining=0;
+let phosphorMap,phosphorWorldWidth,phosphorWorldHeight,combatLight=1;
+
+function clearPhosphor(){
+ if(!phosphorImage){
+  phosphorImage=document.createElement('canvas');
+  phosphorImage.width=896;phosphorImage.height=560;
+  phosphorPaint=phosphorImage.getContext('2d');
+ }
+ phosphorMap=mapId;
+ phosphorWorldWidth=W+2*PHOSPHOR_PADDING;
+ phosphorWorldHeight=H+2*PHOSPHOR_PADDING;
+ phosphorPaint.resetTransform();
+ phosphorPaint.clearRect(0,0,phosphorImage.width,phosphorImage.height);
+ const sx=phosphorImage.width/phosphorWorldWidth,sy=phosphorImage.height/phosphorWorldHeight;
+ phosphorPaint.setTransform(sx,0,0,sy,sx*PHOSPHOR_PADDING,sy*PHOSPHOR_PADDING);
+ phosphorDecayTime=phosphorExposure=phosphorFadeRemaining=0;
+}
+function beginPhosphorFrame(dt,emitting){
+ if(phosphorMap!==mapId)clearPhosphor();
+ phosphorExposure=emitting?Math.min(dt,1/40):0;
+ if(!dt)return;
+ if(emitting){phosphorTime+=dt;phosphorFadeRemaining=1;}
+ else{
+  phosphorFadeRemaining=Math.max(0,phosphorFadeRemaining-dt);
+  if(!phosphorFadeRemaining){clearPhosphor();return;}
+ }
+ phosphorDecayTime+=dt;
+ // Batch the decay so the 8-bit buffer can shed its faintest visible marks.
+ if(phosphorDecayTime>=1/30){
+  phosphorPaint.save();
+  phosphorPaint.resetTransform();
+  phosphorPaint.globalCompositeOperation='destination-out';
+  phosphorPaint.globalAlpha=1-Math.exp(-phosphorDecayTime/.19);
+  phosphorPaint.fillRect(0,0,phosphorImage.width,phosphorImage.height);
+  phosphorPaint.restore();
+  phosphorDecayTime=0;
+ }
+}
+function phosphorDeposit(rate){
+ // Successive exposures accumulate with source-over and approach full opacity.
+ return -Math.expm1(-rate*phosphorExposure);
+}
+function drawPhosphor(){
+ if(!phosphorFadeRemaining)return;
+ // Draw the stored light through the same camera and projection as the map.
+ ctx.save();
+ ctx.globalCompositeOperation='lighter';
+ ctx.globalAlpha=PHOSPHOR_BRIGHTNESS_LIMIT*combatLight;
+ ctx.drawImage(phosphorImage,-PHOSPHOR_PADDING,-PHOSPHOR_PADDING,phosphorWorldWidth,phosphorWorldHeight);
+ ctx.restore();
+}
+function makePhosphorSprite(size,stops){
+ const image=document.createElement('canvas');
+ image.width=image.height=size;
+ const paint=image.getContext('2d'),center=size/2;
+ const gradient=paint.createRadialGradient(center,center,0,center,center,center);
+ for(const [radius,color] of stops)gradient.addColorStop(radius,color);
+ paint.fillStyle=gradient;paint.fillRect(0,0,size,size);
+ return image;
+}
+let beamSpots,actorPhosphor,shotPhosphor;
+function preparePhosphorSprites(){
+ if(beamSpots)return;
+ beamSpots=[
+  makePhosphorSprite(48,[[0,'#f2f7ff'],[.14,'#e0f3ff'],[.34,'#8dbdff88'],[.67,'#80a8ff29'],[1,'#80a8ff00']]),
+  makePhosphorSprite(48,[[0,'#fffaf1'],[.14,'#fff1da'],[.34,'#ffd09388'],[.67,'#e7a67529'],[1,'#e7a67500']])
+ ];
+ actorPhosphor=makePhosphorSprite(128,[
+  [0,'#879b4000'],[.57,'#879b4000'],[.67,'#97ab4d48'],
+  [.75,'#c9d66bce'],[.80,'#b1c15289'],[.89,'#8d9c4a29'],[1,'#8d9c4a00']
+ ]);
+ shotPhosphor=makePhosphorSprite(48,[
+  [0,'#e0e983f0'],[.25,'#c8d269bb'],[.53,'#a4b44a57'],[.82,'#899a3c18'],[1,'#899a3c00']
+ ]);
+}
+
 const mapDrawingCache=new Map();
 const PERSPECTIVE_CURVE_STEPS=192;
-function perspectiveMapCurve(cx,cy,rx,ry,width){
- const points=Array.from({length:PERSPECTIVE_CURVE_STEPS+1},(_,i)=>{
+function perspectiveEllipsePoints(cx,cy,rx,ry){
+ return Array.from({length:PERSPECTIVE_CURVE_STEPS+1},(_,i)=>{
   const angle=i*TAU/PERSPECTIVE_CURVE_STEPS;
   return {x:cx+rx*Math.cos(angle),y:cy+ry*Math.sin(angle)};
  });
- return {points,width};
 }
 function mapDrawing(){
  const cached=mapDrawingCache.get(mapId);if(cached)return cached;
- const drawing={fields:[],walls:[],rotors:[],cover:[],edges:[],edgeSegments:[],curvedEdges:[],grid:new Path2D()};
+ const drawing={fields:[],walls:[],rotors:[],cover:[],edges:[],edgeSegments:[],curvedEdges:[]};
  const {divider,terrain}=MAPS[mapId];
  if(terrain){
   // Cached shading and contours share the summed height, including saddle regions.
   const image=document.createElement('canvas');image.width=W;image.height=H;const paint=image.getContext('2d');
   const shade=document.createElement('canvas');shade.width=Math.ceil(W/4);shade.height=Math.ceil(H/4);
   const shadeCtx=shade.getContext('2d'),pixels=shadeCtx.createImageData(shade.width,shade.height);
+  const baseColor=cfg.phosphor?[11,5,5]:[32,40,42],heightTint=cfg.phosphor?[14,12,11]:[18,22,18];
   for(let y=0;y<shade.height;y++)for(let x=0;x<shade.width;x++){
    const h=terrainHeight((x+.5)*W/shade.width,(y+.5)*H/shade.height,terrain),i=(y*shade.width+x)*4;
-   pixels.data[i]=Math.round(32+18*h);pixels.data[i+1]=Math.round(40+22*h);pixels.data[i+2]=Math.round(42+18*h);pixels.data[i+3]=255;
+   pixels.data[i]=Math.round(baseColor[0]+heightTint[0]*h);pixels.data[i+1]=Math.round(baseColor[1]+heightTint[1]*h);pixels.data[i+2]=Math.round(baseColor[2]+heightTint[2]*h);pixels.data[i+3]=255;
   }
   shadeCtx.putImageData(pixels,0,0);paint.imageSmoothingEnabled=true;paint.drawImage(shade,0,0,W,H);
   const step=8,cols=Math.ceil(W/step),rows=Math.ceil(H/step),heights=new Float32Array((cols+1)*(rows+1));
@@ -4919,9 +5027,15 @@ function mapDrawing(){
   paint.stroke();
   drawing.terrain=image;
  }
- for(let x=W/2%60;x<W-24;x+=60)for(let y=H/2%60;y<H-24;y+=60){if(x<24||y<24)continue;drawing.grid.moveTo(x+1.15,y);drawing.grid.arc(x,y,1.15,0,TAU);}
  const edge=ARENA_FRAME_INSET;
- drawing.edgeSegments.push([edge,edge,W-edge,edge],[edge,H-edge,W-edge,H-edge],[edge,edge,edge,H-edge],[W-edge,edge,W-edge,H-edge]);
+ if(cfg.phosphor){
+  drawing.floor=new Path2D();drawing.floor.rect(edge,edge,W-2*edge,H-2*edge);
+  drawing.floorPoints=[{x:edge,y:edge},{x:W-edge,y:edge},{x:W-edge,y:H-edge},{x:edge,y:H-edge}];
+ }else{
+  drawing.grid=new Path2D();
+  for(let x=W/2%60;x<W-24;x+=60)for(let y=H/2%60;y<H-24;y+=60){if(x<24||y<24)continue;drawing.grid.moveTo(x+1.15,y);drawing.grid.arc(x,y,1.15,0,TAU);}
+  drawing.edgeSegments.push([edge,edge,W-edge,edge],[edge,H-edge,W-edge,H-edge],[edge,edge,edge,H-edge],[W-edge,edge,W-edge,H-edge]);
+ }
  if(divider){
   const {x0,x1}=divider;
   drawing.divider={x:x0,width:x1-x0,fill:C.blocked};
@@ -4953,24 +5067,28 @@ function mapDrawing(){
   }
   if(wall.type==='spring'){
    path.moveTo(wall.x0,wall.y);
-   for(let x=wall.x0;x<wall.x1;x+=32){path.lineTo(Math.min(x+16,wall.x1),wall.y+9);path.lineTo(Math.min(x+32,wall.x1),wall.y);}
+   const tipY=wall.y+(cfg.phosphor?-9:9);
+   for(let x=wall.x0;x<wall.x1;x+=32){path.lineTo(Math.min(x+16,wall.x1),tipY);path.lineTo(Math.min(x+32,wall.x1),wall.y);}
    drawing.walls.push({path,width:1.5,stroke:C.reflect,ground:true});continue;
   }
   if(wall.kind==='ellipse'){
-   const mask=new Path2D();mask.rect(0,0,W,H);mask.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);path.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);
-   drawing.curvedEdges.push(perspectiveMapCurve(wall.cx,wall.cy,wall.rx,wall.ry,wall.r*2));
+   path.ellipse(wall.cx,wall.cy,wall.rx,wall.ry,0,0,TAU);
+   const points=perspectiveEllipsePoints(wall.cx,wall.cy,wall.rx,wall.ry);
+   if(cfg.phosphor){drawing.floor=path;drawing.floorPoints=points;continue;}
+   const mask=new Path2D();mask.rect(0,0,W,H);mask.addPath(path);
+   drawing.curvedEdges.push({points,width:wall.r*2});
    drawing.walls.push({path,mask,width:wall.r*2,stroke:C.reflect});continue;
   }
   const absorbs=wall.type==='absorb';
   const radius=wall.r;
   if(wall.kind==='circle'){
    path.arc(wall.x,wall.y0,radius,0,TAU);
-   drawing.curvedEdges.push(perspectiveMapCurve(wall.x,wall.y0,radius,radius,2));
+   drawing.curvedEdges.push({points:perspectiveEllipsePoints(wall.x,wall.y0,radius,radius),width:2});
    drawing.walls.push({path,mask:path,width:2,stroke:C.reflect});continue;
   }
   const points=coverFootprint(wall);
   path.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)path.lineTo(points[i].x,points[i].y);
-  path.closePath();drawing.walls.push({path,fill:absorbs?'#1a2022':C.reflect});
+  path.closePath();drawing.walls.push({path,fill:absorbs?(cfg.phosphor?C.blocked:'#1a2022'):C.reflect});
   drawing.cover.push({points,absorbs,order:drawing.cover.length,depth:0});
  }
  mapDrawingCache.set(mapId,drawing);return drawing;
@@ -5024,6 +5142,43 @@ function drawRange(actor=p){
  ctx.restore();
 }
 
+const ACTOR_RIM_COUNT=28,ACTOR_RIM_STEP=TAU/ACTOR_RIM_COUNT;
+const actorRimPoints=Array.from({length:ACTOR_RIM_COUNT},(_,i)=>{
+ const angle=i*ACTOR_RIM_STEP;
+ return {x:Math.cos(angle),y:Math.sin(angle),radius:(9+.7*Math.cos(i*2.4))/48,opacity:.84+.16*Math.sin(i*1.7)};
+});
+const phosphorActorSprites=[null,null];
+function getPhosphorActorSprites(team){
+ if(!phosphorActorSprites[team]){
+  const body=document.createElement('canvas'),rim=document.createElement('canvas');
+  body.width=body.height=rim.width=rim.height=128;
+  const bodyPaint=body.getContext('2d'),paint=rim.getContext('2d');
+  const interior=bodyPaint.createRadialGradient(64,64,0,64,64,48);
+  const bodyTint=team===0?'141,163,154':'174,155,135';
+  interior.addColorStop(0,'rgba(9,13,13,.83)');
+  interior.addColorStop(.81,'rgba('+bodyTint+',.17)');
+  interior.addColorStop(1,'rgba('+bodyTint+',.25)');
+  bodyPaint.fillStyle=interior;
+  bodyPaint.beginPath();bodyPaint.arc(64,64,48,0,TAU);bodyPaint.fill();
+
+  const tint=team===0?'136,177,236':'243,178,122';
+  const halo=paint.createRadialGradient(64,64,0,64,64,64);
+  // The light peaks at the body edge and falls away on both sides.
+  halo.addColorStop(.52,'rgba('+tint+',0)');
+  halo.addColorStop(.64,'rgba('+tint+',.075)');
+  halo.addColorStop(.75,'rgba('+tint+',.26)');
+  halo.addColorStop(.86,'rgba('+tint+',.085)');
+  halo.addColorStop(.98,'rgba('+tint+',0)');
+  paint.fillStyle=halo;paint.fillRect(0,0,128,128);
+  for(const point of actorRimPoints){
+   const x=64+48*point.x,y=64+48*point.y,r=48*point.radius;
+   paint.globalAlpha=point.opacity;
+   paint.drawImage(beamSpots[team],x-r,y-r,2*r,2*r);
+  }
+  phosphorActorSprites[team]={body,rim};
+ }
+ return phosphorActorSprites[team];
+}
 const ACTOR_TINT_COLORS=[[141,163,154],[174,155,135]];
 const actorTintSprites=[null,null];
 // Cache the body and extra light separately; full-brightness colors would clip before blending.
@@ -5043,10 +5198,20 @@ function actorDrawing(a,team){
  const shape=bodyShape(a),flash=actorFlashAmount(a);
  let body=null;
  if(a.hitMarks?.length){body=new Path2D();body.ellipse(0,0,shape.rx,shape.ry,0,0,TAU);}
+ if(cfg.phosphor)return {shape,body,sprites:getPhosphorActorSprites(team)};
  return{shape,body,image:getActorTintSprite(team),flash,flashImage:flash>0?getActorTintSprite(team,true):null};
 }
 function paintActorBody(drawing,paint=ctx){
  const {rx,ry}=drawing.shape;
+ if(drawing.sprites){
+  const width=rx*4/3,height=ry*4/3;
+  paint.save();
+  paint.drawImage(drawing.sprites.body,-width,-height,2*width,2*height);
+  paint.globalCompositeOperation='lighter';paint.globalAlpha*=.85;
+  paint.drawImage(drawing.sprites.rim,-width,-height,2*width,2*height);
+  paint.restore();
+  return;
+ }
  paint.drawImage(drawing.image,-rx,-ry,rx*2,ry*2);
  // Add only the extra light, so transparent projections keep their dark center.
  if(drawing.flash>0){paint.save();paint.globalAlpha*=drawing.flash;paint.globalCompositeOperation='lighter';paint.drawImage(drawing.flashImage,-rx,-ry,rx*2,ry*2);paint.restore();}
@@ -5060,7 +5225,8 @@ function drawActor(a,drawing,view,x=a.x,y=a.y,opacity=1){
  if(transform)paint.transform(transform.xx,transform.yx,transform.xy,transform.yy,transform.x,transform.y);
  else paint.translate(x,y);
  paint.rotate(drawing.shape.angle);
- if(opacity!==1)paint.globalAlpha=opacity;
+ if(cfg.phosphor)paint.globalAlpha*=opacity*combatLight;
+ else if(opacity!==1)paint.globalAlpha=opacity;
  paintActorBody(drawing,paint);
  if(drawing.body){paint.clip(drawing.body);drawActorHitMarks(a,drawing.shape,paint);}
  paint.restore();
@@ -5081,10 +5247,21 @@ function drawLoopImages(a,drawing,view=null){
   drawActor(a,drawing,view,x,y,.4);
  }
 }
+function leaveActorPhosphor(actor,drawing){
+ if(!phosphorExposure)return;
+ const {rx,ry,angle}=drawing.shape,width=rx*4/3,height=ry*4/3;
+ phosphorPaint.save();
+ phosphorPaint.translate(actor.x,actor.y);
+ phosphorPaint.rotate(angle);
+ phosphorPaint.globalAlpha=phosphorDeposit(18);
+ phosphorPaint.drawImage(actorPhosphor,-width,-height,2*width,2*height);
+ phosphorPaint.restore();
+}
 function drawActors(actors,view){
  for(const actor of actors){
   if(!actor||actor.shattered)continue;
   const drawing=actorDrawing(actor,actor.team);
+  if(cfg.phosphor)leaveActorPhosphor(actor,drawing);
   drawLoopImages(actor,drawing,view);
   drawActor(actor,drawing,view);
   if(actor.hp>0&&!view?.projection)drawHealth(actor,actor.team,view?.zoom??1);
@@ -5094,6 +5271,14 @@ function drawActors(actors,view){
 const HEALTH_FONT_SIZE=11,HEALTH_FONT_MIN_SCREEN_SIZE=10;
 let healthDrawScale=1;
 const overlayPoint={},overlayTopPoint={};
+function fillCombatNumber(text,x,y){
+ if(!cfg.phosphor){ctx.fillText(text,x,y);return;}
+ ctx.save();
+ ctx.shadowColor=ctx.fillStyle;
+ ctx.shadowBlur=5*ctx.canvas.width*pointerWidthScale/VIEW_W;
+ ctx.fillText(text,x,y);
+ ctx.restore();
+}
 function drawHealth(a,team,zoom=1,view=null){
  if(!cfg.showHealthNumbers)return;
  const scale=healthDrawScale/zoom,flash=actorFlashAmount(a);
@@ -5109,7 +5294,7 @@ function drawHealth(a,team,zoom=1,view=null){
  }else{ctx.translate(a.x,a.y);ctx.rotate(cameraHeading());}
  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.7;ctx.fillStyle=team===0?C.player:C.enemy;ctx.font=`500 ${HEALTH_FONT_SIZE*scale}px system-ui, sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
  if(view){ctx.lineWidth=2;ctx.lineJoin='round';ctx.strokeStyle=C.bg;ctx.strokeText(text,0,y);}
- ctx.fillText(text,0,y);
+ fillCombatNumber(text,0,y);
  if(flash>0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.42*flash;ctx.fillText(text,0,y);}
  ctx.restore();
 }
@@ -5121,8 +5306,11 @@ function bulletGlow(radius,color){
  const key=color+':'+radius;let glow=bulletGlowCache.get(key);if(glow)return glow;
  const image=document.createElement('canvas'),size=Math.ceil(radius*5.6*scale)+2,center=size*.5;
  image.width=image.height=size;const paint=image.getContext('2d');
- const gradient=paint.createRadialGradient(center,center,radius*.5*scale,center,center,radius*2.8*scale);
- gradient.addColorStop(0,color+'66');gradient.addColorStop(1,color+'00');
+ const gradient=paint.createRadialGradient(center,center,radius*(cfg.phosphor ? .22 : .5)*scale,center,center,radius*2.8*scale);
+ if(cfg.phosphor){
+  gradient.addColorStop(0,color+'9c');gradient.addColorStop(.28,color+'48');gradient.addColorStop(.60,color+'17');
+ }else gradient.addColorStop(0,color+'66');
+ gradient.addColorStop(1,color+'00');
  paint.fillStyle=gradient;paint.fillRect(0,0,size,size);
  glow={image,extent:size/(2*scale)};bulletGlowCache.set(key,glow);return glow;
 }
@@ -5148,7 +5336,23 @@ function tracePerspectiveCircle(paint,u,v,r,view){
  paint.closePath();
  return true;
 }
-function drawPerspectiveBrightBullet(x,y,r,color,charge,fade,view){
+function paintBeamShot(paint,x,y,r,team,charge,fade,glow,extent){
+ paint.save();
+ paint.globalCompositeOperation='lighter';
+ paint.globalAlpha=fade*(.48+.31*charge);
+ paint.drawImage(glow,x-extent,y-extent,2*extent,2*extent);
+ paint.globalAlpha=fade*brightBulletAlpha(charge)*.96;
+ const spot=r*2.35;
+ paint.drawImage(beamSpots[team],x-spot,y-spot,2*spot,2*spot);
+ paint.restore();
+}
+function leaveShotPhosphor(x,y,r,opacity){
+ const extent=1.65*r;
+ phosphorPaint.globalAlpha=opacity;
+ phosphorPaint.drawImage(shotPhosphor,x-extent,y-extent,2*extent,2*extent);
+}
+function drawPerspectiveBrightBullet(x,y,r,team,charge,fade,view){
+ const color=BULLET_COLORS[team].solid;
  cameraPlanePoint(x,y,view,bulletCenter);
  const u=bulletCenter.x,v=bulletCenter.y,projection=view.projection;
  const point=projectPerspectivePoint(u,v,projection,bulletCenter);
@@ -5162,6 +5366,11 @@ function drawPerspectiveBrightBullet(x,y,r,color,charge,fade,view){
  const glow=bulletGlow(r,color),extent=glow.extent/r;
  paint.save();
  paint.transform(right.x-point.x,right.y-point.y,down.x-point.x,down.y-point.y,point.x,point.y);
+ if(cfg.phosphor){
+  paintBeamShot(paint,0,0,1,team,charge,fade,glow.image,extent);
+  paint.restore();
+  return;
+ }
  paint.globalAlpha=fade*(.12+.48*charge);
  paint.drawImage(glow.image,-extent,-extent,2*extent,2*extent);
  paint.restore();
@@ -5176,14 +5385,23 @@ function drawBullet(b,fade=null,alpha=1,view=null){
   for(let i=b.motionSegments.length-1;i>=0;i--){const s=b.motionSegments[i];if(alpha<s.from||alpha>=s.to)continue;const t=clamp((alpha-s.from)/(s.to-s.from),0,1);x=s.x0+(s.x1-s.x0)*t;y=s.y0+(s.y1-s.y0)*t;solid=s.solid;travel=Number.isFinite(s.travel0)?s.travel0+(s.travel1-s.travel0)*t:(b.prevTravel??travel)+(travel-(b.prevTravel??travel))*alpha;break;}
  }else if(alpha<1){x=(b.px??x)+(x-(b.px??x))*alpha;y=(b.py??y)+(y-(b.py??y))*alpha;}
  const charge=solid?(fade===null?projectileDamage(b,travel):b.fadeDamage??projectileDamage(b)):0;
- const fadeScale=fade===null?1:clamp(fade,0,1);
- const palette=BULLET_COLORS[b.team===0?0:1],color=solid?palette.solid:palette.ghost;
- if(solid&&view?.projection){drawPerspectiveBrightBullet(x,y,b.r,color,charge,fadeScale,view);return;}
+ const fadeScale=combatLight*(fade===null?1:clamp(fade,0,1));
+ const team=b.team===0?0:1,palette=BULLET_COLORS[team],color=solid?palette.solid:palette.ghost;
+ if(cfg.phosphor&&solid&&fade===null&&phosphorExposure>0){
+  const speed=Math.hypot(b.vx??0,b.vy??0);
+  const dwell=clamp(120*b.r/Math.max(1,speed),.25,1);
+  leaveShotPhosphor(x,y,b.r,phosphorDeposit(dwell*(9+15*charge)));
+ }
+ if(solid&&view?.projection){drawPerspectiveBrightBullet(x,y,b.r,team,charge,fadeScale,view);return;}
  ctx.save();
  // Fixed geometry: charge changes fill/glow brightness, never projectile size.
  if(solid){
-  const glow=bulletGlow(b.r,color),r=glow.extent;ctx.globalAlpha=fadeScale*(.12+.48*charge);ctx.drawImage(glow.image,x-r,y-r,r*2,r*2);
-  ctx.globalAlpha=fadeScale*brightBulletAlpha(charge);ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();
+  const glow=bulletGlow(b.r,color),r=glow.extent;
+  if(cfg.phosphor)paintBeamShot(ctx,x,y,b.r,team,charge,fadeScale,glow.image,r);
+  else{
+   ctx.globalAlpha=fadeScale*(.12+.48*charge);ctx.drawImage(glow.image,x-r,y-r,r*2,r*2);
+   ctx.globalAlpha=fadeScale*brightBulletAlpha(charge);ctx.fillStyle=color;circle(x,y,b.r);ctx.fill();
+  }
  }else{
   const line=b.r*.5;ctx.globalAlpha=fadeScale*.30;ctx.strokeStyle=color;ctx.lineWidth=line;
   circle(x,y,b.r-line/2);ctx.stroke();
@@ -5200,7 +5418,7 @@ function getActivationPreviewSprite(team){
  return activationPreviewSprites[team]=image;
 }
 function drawActivationMarker(point,radius,team,opacity){
- const r=radius*1.65;ctx.save();ctx.globalAlpha=opacity;ctx.translate(point.x,point.y);ctx.rotate(point.angle);
+ const r=radius*1.65;ctx.save();ctx.globalAlpha=opacity*combatLight;ctx.translate(point.x,point.y);ctx.rotate(point.angle);
  ctx.drawImage(getActivationPreviewSprite(team),-r,-r,r*2,r*2);ctx.restore();
 }
 function drawActivationTraces(alpha){
@@ -5209,7 +5427,7 @@ function drawActivationTraces(alpha){
  for(const {team,points,at} of activationTraces){
   const opacity=1-clamp((time-at-ACTIVATION_TRACE_HOLD)/ACTIVATION_TRACE_FADE,0,1);
   if(opacity<=0||points.length<2)continue;
-  ctx.globalAlpha=.45*opacity;ctx.strokeStyle=BULLET_COLORS[team].solid;
+  ctx.globalAlpha=.45*opacity*combatLight;ctx.strokeStyle=BULLET_COLORS[team].solid;
   ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
   for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
   ctx.stroke();
@@ -5280,14 +5498,21 @@ function drawMuzzleEffect(e,age,pose=e.actor){
  // Keep the flash attached to the current rendered muzzle, including aim changes.
  const angle=pose.aim||0,distance=muzzleDistance(pose,angle)+2;
  ctx.save();ctx.translate(pose.x+Math.cos(angle)*distance,pose.y+Math.sin(angle)*distance);ctx.rotate(angle);
- ctx.globalAlpha=.9*(1-t)**.65;
+ ctx.globalAlpha*=.9*(1-t)**.65;
  ctx.drawImage(getMuzzleSprite(e.team),-2,-radius*3,24*size,radius*6);ctx.restore();
 }
 function drawInterceptEffect(e,age){
  if(age>=e.life)return;
  const t=clamp(age/e.life,0,1),radius=3+t*9;
- ctx.save();ctx.globalAlpha=.8*(1-t)**.8;
+ ctx.save();ctx.globalAlpha*=.8*(1-t)**.8;
  ctx.drawImage(getInterceptHaloSprite(),e.x-radius,e.y-radius,radius*2,radius*2);ctx.restore();
+}
+function drawFragmentHalo(x,y,extent,team,opacity){
+ const alpha=ctx.globalAlpha,composite=ctx.globalCompositeOperation;
+ ctx.globalCompositeOperation='lighter';
+ ctx.globalAlpha=opacity;
+ ctx.drawImage(beamSpots[team],x-extent,y-extent,2*extent,2*extent);
+ ctx.globalCompositeOperation=composite;ctx.globalAlpha=alpha;
 }
 function drawBreakupEffect(e,age=e.age){
  const extent=48/42,alpha=e.age>e.previousAge?clamp((age-e.previousAge)/(e.age-e.previousAge),0,1):1;
@@ -5299,13 +5524,15 @@ function drawBreakupEffect(e,age=e.age){
  }
  for(const piece of e.pieces){
   if(age>=piece.life)continue;
-  const fade=clamp((piece.life-age)/(piece.life-.08),0,1);
+  const fade=ctx.globalAlpha*clamp((piece.life-age)/(piece.life-.08),0,1);
+  const x=piece.px+(piece.x-piece.px)*alpha,y=piece.py+(piece.y-piece.py)*alpha;
   ctx.save();ctx.globalAlpha=fade;
-  ctx.translate(piece.px+(piece.x-piece.px)*alpha,piece.py+(piece.y-piece.py)*alpha);ctx.rotate(piece.previousAngle+(piece.angle-piece.previousAngle)*alpha);
+  ctx.translate(x,y);ctx.rotate(piece.previousAngle+(piece.angle-piece.previousAngle)*alpha);
   ctx.transform(e.mxx,e.myx,e.mxy,e.myy,0,0);ctx.clip(piece.prefab.path);
   ctx.drawImage(e.image,-extent-piece.prefab.cx,-extent-piece.prefab.cy,extent*2,extent*2);
   if(age<.07){ctx.globalAlpha=fade*.22*(1-age/.07);ctx.fillStyle='#fff4dc';ctx.fill(piece.prefab.path);}
   ctx.restore();
+  if(cfg.phosphor)drawFragmentHalo(x,y,Math.max(3.5,piece.radius*1.9),e.team,fade*.43);
  }
 }
 function drawLightDust(dust,age,ageOffset=0){
@@ -5327,22 +5554,25 @@ function drawLightDust(dust,age,ageOffset=0){
  ctx.globalAlpha=alpha;ctx.globalCompositeOperation=composite;
 }
 function drawImpactEffect(e,age=e.age){
+ const brightness=ctx.globalAlpha,team=e.bulletTeam===1?1:0;
  ctx.save();ctx.translate(e.x,e.y);
  drawMistPuffs(e.mist,age);
  // Fade opacity only: each fragment keeps its individual size and velocity.
  for(const p of e.particles){
   if(age>=p.life)continue;
   const x=p.x+p.vx*age,y=p.y+p.vy*age,angle=p.rotation+p.spin*age,co=Math.cos(angle),si=Math.sin(angle);
-  ctx.fillStyle=p.color;ctx.globalAlpha=(1-age/p.life)**.95;ctx.beginPath();
+  const fade=brightness*(1-age/p.life)**.95;
+  ctx.fillStyle=p.color;ctx.globalAlpha=fade;ctx.beginPath();
   for(let j=0;j<p.vertices.length;j+=2){
    const px=x+co*p.vertices[j]-si*p.vertices[j+1],py=y+si*p.vertices[j]+co*p.vertices[j+1];
    if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
   }
   ctx.closePath();ctx.fill();
+  if(cfg.phosphor)drawFragmentHalo(x,y,2+Math.sqrt(p.area)*2.7,team,fade*.37);
  }
- ctx.globalAlpha=1;drawLightDust(e.dust,age);
+ ctx.globalAlpha=brightness;drawLightDust(e.dust,age);
  if(age<.035){
-  const flash=(1-age/.035)**1.5,r=e.bulletRadius??ACTOR.shotRadius,palette=BULLET_COLORS[e.bulletTeam===1?1:0];
+  const flash=brightness*(1-age/.035)**1.5,r=e.bulletRadius??ACTOR.shotRadius,palette=BULLET_COLORS[team];
   const x=(e.flashX||0)+(e.flashVx||0)*age,y=(e.flashY||0)+(e.flashVy||0)*age;
   const glow=bulletGlow(r,palette.solid),extent=glow.extent,composite=ctx.globalCompositeOperation;
   ctx.globalCompositeOperation='lighter';ctx.globalAlpha=flash;
@@ -5470,7 +5700,7 @@ function drawPerspectiveCover(drawing,view,alpha){
    paint.lineTo(next.x,base?next.y:next.topY);
   }
   paint.closePath();paint.fill();
-  paint.fillStyle=absorbs?'#1a2022':'#83989d';paint.beginPath();
+  paint.fillStyle=cfg.phosphor?(absorbs?C.blocked:C.reflect):(absorbs?'#1a2022':'#83989d');paint.beginPath();
   paint.moveTo(coverVertices[0].x,coverVertices[0].topY);
   for(let i=1;i<count;i++)paint.lineTo(coverVertices[i].x,coverVertices[i].topY);
   paint.closePath();paint.fill();
@@ -5478,6 +5708,30 @@ function drawPerspectiveCover(drawing,view,alpha){
  paint.restore();
 }
 const edgeStart={},edgeEnd={},edgeScreenStart={},edgeScreenEnd={};
+function clipPerspectiveFloor(points,view){
+ const projection=view.projection,limit=projection.back;
+ let previous=edgeStart,current=edgeEnd;
+ const last=points[points.length-1];
+ cameraPlanePoint(last.x,last.y,view,previous);
+ labelContext.beginPath();
+ for(const point of points){
+  cameraPlanePoint(point.x,point.y,view,current);
+  const inside=current.y<=limit;
+  if(inside!==(previous.y<=limit)){
+   // Intersect the arena with the visible ground before dividing by depth.
+   const u=previous.x+(current.x-previous.x)*(limit-previous.y)/(current.y-previous.y);
+   const screen=projectPerspectivePoint(u,limit,projection,edgeScreenStart);
+   if(screen)labelContext.lineTo(screen.x,screen.y);
+  }
+  if(inside){
+   const screen=projectPerspectivePoint(current.x,current.y,projection,edgeScreenStart);
+   if(screen)labelContext.lineTo(screen.x,screen.y);
+  }
+  const next=previous;previous=current;current=next;
+ }
+ labelContext.closePath();
+ labelContext.clip();
+}
 function tracePerspectiveEdge(paint,start,end,projection,limit,margin){
  // Clip at the bottom of the viewport before dividing by depth.
  let u0=start.x,v0=start.y,u1=end.x,v1=end.y;
@@ -5495,7 +5749,8 @@ function tracePerspectiveEdge(paint,start,end,projection,limit,margin){
  return true;
 }
 function drawPerspectiveArenaEdges(drawing,view){
- const paint=labelContext,wrap=MAPS[mapId].wrap,projection=view.projection;
+ if(!drawing.edgeSegments.length&&!drawing.curvedEdges.length)return;
+ const paint=labelContext,wrap=!cfg.phosphor&&MAPS[mapId].wrap,projection=view.projection;
  const limit=perspectiveGroundY(VIEW_H-projection.anchorY+4,projection);
  paint.save();paint.strokeStyle=wrap?'#809d99':C.edge;paint.lineWidth=wrap?1.2:1;
  if(mapId!=='ellipse'){
@@ -5521,7 +5776,7 @@ function drawPerspectiveArenaEdges(drawing,view){
  }
  paint.restore();
 }
-function render(alpha=1){
+function render(alpha=1,dt=0){
  renderDirty=false;renderedState=state;
  const spectating=isSpectatorMode();
  const visualPlayer=renderActorPose(ending?.actors[0]||p,0,alpha),visualEnemy=renderActorPose(ending?ending.actors[1]:enemy,1,alpha);
@@ -5546,12 +5801,13 @@ function render(alpha=1){
  if(perspective)labelContext.clearRect(0,0,VIEW_W,VIEW_H);
  const drawWidth=projection?.width??VIEW_W,drawHeight=projection?.height??VIEW_H;
  const surface=perspective?perspectivePlane:canvas;
- ctx=perspective?perspectiveContext:flatContext;
+ const worldPaint=perspective?perspectiveContext:flatContext;
+ ctx=worldPaint;
  renderFrames++;
  ctx.setTransform(surface.width/drawWidth,0,0,surface.height/drawHeight,0,0);
  if(perspective)ctx.clearRect(0,0,drawWidth,drawHeight);
  else{
-  ctx.fillStyle=C.bg;ctx.fillRect(0,0,drawWidth,drawHeight);
+  ctx.fillStyle=cfg.phosphor?C.outside:C.bg;ctx.fillRect(0,0,drawWidth,drawHeight);
   ctx.translate(shake.x,shake.y);
  }
  const heading=cameraHeading(),camera=headingView()?headingCameraPosition(visualPlayer):null,zoom=camera&&!projection?followViewZoom():1;
@@ -5560,23 +5816,35 @@ function render(alpha=1){
   ctx.translate(projection?.originX??VIEW_W*.5,projection?.originY??VIEW_H*.8);
   ctx.scale(zoom,zoom);ctx.rotate(-heading);ctx.translate(-view.x,-view.y);
  }else ctx.translate((VIEW_W-W)/2,(VIEW_H-H)/2);
- // The arena background covers the empty area around the projected map.
- if(perspective){ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);}
- // Keep terrain shading and contours inside the arena; draw the border separately.
  const drawing=mapDrawing();
+ if(cfg.phosphor){
+  const active=state==='running'||state==='ending';
+  beginPhosphorFrame(dt,active);
+  combatLight=active ? .943-.032*Math.sin(phosphorTime*78)-.023*Math.sin(phosphorTime*127):1;
+  ctx.fillStyle=C.bg;ctx.fill(drawing.floor);
+  worldPaint.save();worldPaint.clip(drawing.floor);
+  if(perspective){labelContext.save();clipPerspectiveFloor(drawing.floorPoints,view);}
+ }else if(perspective){
+  ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
+ }
+ // Keep terrain shading and contours inside the arena.
  if(drawing.terrain)ctx.drawImage(drawing.terrain,24,24,W-48,H-48,24,24,W-48,H-48);
- if(view){ctx.fillStyle='rgba(160,181,177,.24)';ctx.fill(drawing.grid);}
+ if(view&&drawing.grid){ctx.fillStyle='rgba(160,181,177,.24)';ctx.fill(drawing.grid);}
  if(drawing.divider){
   const {x,width,fill}=drawing.divider;
   ctx.fillStyle=fill;ctx.fillRect(x,24,width,H-48);
  }
+ if(cfg.phosphor)drawPhosphor();
  if(perspective){
   drawActors(visualActors,view);
   drawPerspectiveArenaEdges(drawing,view);
  }
- else if(mapId!=='ellipse'){ctx.save();ctx.strokeStyle=MAPS[mapId].wrap?'#809d99':C.edge;ctx.lineWidth=MAPS[mapId].wrap?1.2:.75;if(MAPS[mapId].wrap)ctx.setLineDash([9,6]);
+ else if(drawing.edges.length){
+  const wrap=!cfg.phosphor&&MAPS[mapId].wrap;
+  ctx.save();ctx.strokeStyle=wrap?'#809d99':C.edge;ctx.lineWidth=wrap?1.2:.75;if(wrap)ctx.setLineDash([9,6]);
   for(const edge of drawing.edges)ctx.stroke(edge);
-  ctx.restore();}
+  ctx.restore();
+ }
  drawMapField();if(visualEnemy)drawField(visualEnemy,1);drawField(visualPlayer,0);if(!ending&&!spectating)drawRange(visualPlayer);
  drawWalls(perspective,alpha);
  drawMapMechanics();
@@ -5586,7 +5854,8 @@ function render(alpha=1){
  for(const {bullet,t} of hitProjectiles)if(alpha<t)drawBullet(bullet,null,alpha,view);
  for(const fade of bulletFades)drawBullet(fade,1-Math.max(0,fade.age-(1-alpha)*STEP)/fade.life,alpha,view);
  if(!perspective)drawActors(visualActors,view);
- ctx.save();ctx.globalAlpha=1;drawLightDust(woundParticles,null,(1-alpha)*STEP);ctx.restore();
+ ctx.save();ctx.globalAlpha=combatLight;
+ drawLightDust(woundParticles,null,(1-alpha)*STEP);
  for(const e of effects){
   const interpolatedAge=e.age-(1-alpha)*STEP;
   if(e.kind==='impact'){
@@ -5598,6 +5867,7 @@ function render(alpha=1){
   if(e.kind==='intercept'){drawInterceptEffect(e,age);continue;}
   if(e.kind==='breakup')drawBreakupEffect(e,age);
  }
+ ctx.restore();
  if(state==='running'&&!spectating){
   const {aim,range,x,y}=visualPlayer;
   const aimX=x+Math.cos(aim)*range,aimY=y+Math.sin(aim)*range;
@@ -5642,7 +5912,11 @@ function render(alpha=1){
   ctx.lineWidth=2;ctx.lineJoin='round';ctx.strokeStyle=C.bg;ctx.fillStyle=n.team===0?C.enemy:C.player;
   const textScale=perspective?scale*healthDrawScale:scale/zoom;
   ctx.translate(n.offsetX,n.offsetY-age*DAMAGE_NUMBER_RISE_SPEED);ctx.scale(textScale,textScale);
-  ctx.strokeText(n.text,0,0);ctx.fillText(n.text,0,0);ctx.restore();
+  ctx.strokeText(n.text,0,0);fillCombatNumber(n.text,0,0);ctx.restore();
+ }
+ if(cfg.phosphor){
+  if(perspective)labelContext.restore();
+  worldPaint.restore();
  }
  ctx=flatContext;
 }
@@ -5753,10 +6027,12 @@ function frame(now){
   accumulator=0;
   if(ending&&damageNumbers.length){updateDamageNumbers(dt);renderDirty=true;}
  }
- if(state==='running'||state==='ending')updateCamera(dt);
- if(state==='running'||state==='ending'||renderDirty||renderedState!==state){
+ const animating=state==='running'||state==='ending';
+ const fadingPhosphor=cfg.phosphor&&ending&&state!=='paused'&&phosphorFadeRemaining>0;
+ if(animating)updateCamera(dt);
+ if(animating||fadingPhosphor||renderDirty||renderedState!==state){
   const drawStarted=monitorProfiling?performance.now():0;
-  render(renderStepReady&&(state==='running'||state==='ending')?clamp(accumulator/STEP,0,1):1);
+  render(renderStepReady&&animating?clamp(accumulator/STEP,0,1):1,animating||fadingPhosphor?dt:0);
   if(monitorProfiling)monitorFrameCosts[3]=performance.now()-drawStarted;
  }
  if(toastUntil&&now>toastUntil){$('toast').classList.remove('show');toastUntil=0;}
@@ -6062,7 +6338,7 @@ function restoreSettings(){
     ??PRESET_SLOTS.find(slot=>!presets[slot-1])??null;
    rewrite=true;
   }
-  for(const name of ['sound','mobileAutoFire',...SETTING_CHECKBOXES])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
+  for(const name of ['sound','mobileAutoFire','phosphor',...SETTING_CHECKBOXES])if(typeof saved[name]==='boolean')cfg[name]=saved[name];
   if(typeof saved.scaleCombatNumbersByWins!=='boolean'&&typeof saved.scaleDamageNumbersByWins==='boolean')cfg.scaleCombatNumbersByWins=saved.scaleDamageNumbersByWins;
   if(typeof saved.bulletPauseEnabled!=='boolean'&&typeof saved.petrifyEnabled==='boolean')cfg.bulletPauseEnabled=saved.petrifyEnabled;
   if(VIEW_MODES.includes(saved.view))cfg.view=saved.view;
@@ -6110,7 +6386,7 @@ function writeSettings(presets,slot,values){
  }
  const savedValues=slot===null?values:{...values,...presets[slot-1]};
  const saved={version:1,gameplayDefaultsVersion:GAMEPLAY_DEFAULTS_VERSION,values:savedValues,presets,presetSlot:slot,autoPresets:true,
-  sound:cfg.sound,mobileAutoFire:cfg.mobileAutoFire,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view};
+  sound:cfg.sound,mobileAutoFire:cfg.mobileAutoFire,map:mapId,mode:$('mode').value,difficulty:cfg.difficulty,view:cfg.view,phosphor:cfg.phosphor};
  for(const name of SETTING_CHECKBOXES)saved[name]=cfg[name];
  try{
   localStorage.setItem(SETTINGS_KEY,JSON.stringify(saved));
@@ -6219,12 +6495,30 @@ $('defaults').addEventListener('click',()=>{
  commitMaxHealth();resizeActors();syncWorldMouseLock();syncDifficultyControl();
  saveSettings();updateHud(true);$('defaults').blur();render();
 });
+function applyPhosphorMode(){
+ C=cfg.phosphor?PHOSPHOR_COLORS:STANDARD_COLORS;
+ document.documentElement.toggleAttribute('data-phosphor',cfg.phosphor);
+ $('phosphor').setAttribute('aria-pressed',String(cfg.phosphor));
+ mapDrawingCache.clear();bulletGlowCache.clear();
+ if(cfg.phosphor){
+  preparePhosphorSprites();
+  clearPhosphor();phosphorTime=0;
+ }else{
+  phosphorExposure=0;phosphorFadeRemaining=0;combatLight=1;
+ }
+ renderDirty=true;
+}
+$('phosphor').addEventListener('click',()=>{
+ cfg.phosphor=!cfg.phosphor;
+ applyPhosphorMode();saveSettings();
+ if(state==='running')$('phosphor').blur();
+});
 $('language').addEventListener('click',()=>{language=language==='zh'?'en':'zh';try{localStorage.setItem('near-field-language',language);}catch{}applyLanguage();$('language').blur();renderDirty=true;});
 for(const name of SETTING_NAMES)$(name).addEventListener('change',saveSettings);
 window.addEventListener('pagehide',flushSettings);
 
 // === 15 · Boot and resize ===
-restoreSettings();refreshInput();resetPerformanceMonitor();
+restoreSettings();applyPhosphorMode();refreshInput();resetPerformanceMonitor();
 function resize(){
  const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
  const widthScale=VIEW_W/Math.max(1,rect.width),distanceScale=VIEW_H/Math.max(1,rect.height);
